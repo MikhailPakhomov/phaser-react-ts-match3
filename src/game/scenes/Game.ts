@@ -172,7 +172,7 @@ export class Game extends Scene {
         tileB.setData("gridY", yA);
 
         const spacing = 8;
-        const cellSize = 50;
+        const cellSize = 74;
 
         const newPosA = {
             x: this.offsetX + xB * (cellSize + spacing),
@@ -315,7 +315,7 @@ export class Game extends Scene {
         tileB.setData("gridY", oldB.y);
 
         const spacing = 8;
-        const cellSize = 50;
+        const cellSize = 74;
 
         const posA = {
             x: this.offsetX + oldA.x * (cellSize + spacing),
@@ -388,7 +388,7 @@ export class Game extends Scene {
     //     });
     // }
     dropTiles() {
-        const cellSize = 50;
+        const cellSize = 74;
         const gap = 8;
 
         for (let x = 0; x < this.grid[0].length; x++) {
@@ -424,7 +424,7 @@ export class Game extends Scene {
         }
     }
     fillEmptyTiles() {
-        const cellSize = 50;
+        const cellSize = 74;
         const gap = 8;
         const types = ["youtube", "whatsapp", "telegram", "vk", "instagram"];
 
@@ -566,7 +566,7 @@ export class Game extends Scene {
         }
     }
     create() {
-        const cellSize: number = 50;
+        const cellSize: number = 74;
         const gap: number = 8;
 
         const cols = levelGrid[0].length;
