@@ -13,10 +13,10 @@ const config: Phaser.Types.Core.GameConfig = {
     backgroundColor: "#028af8",
     scene: [Boot, Preloader, MainMenu, MainGame, GameOver],
     scale: {
+        mode: Phaser.Scale.FIT, // Масштабировать по размеру экрана
+        autoCenter: Phaser.Scale.CENTER_BOTH, // Центрировать по горизонтали и вертикали
         width: 720,
         height: 900,
-        mode: Phaser.Scale.FIT,
-        autoCenter: Phaser.Scale.CENTER_HORIZONTALLY,
     },
 };
 

@@ -566,9 +566,6 @@ export class Game extends Scene {
         }
     }
     create() {
-        this.background = this.add.image(512, 1024, "background");
-        this.background.setAlpha(0.5);
-
         const cellSize: number = 50;
         const gap: number = 8;
 
