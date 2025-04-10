@@ -10,7 +10,7 @@ import { Preloader } from "./scenes/Preloader";
 const config: Phaser.Types.Core.GameConfig = {
     type: AUTO,
     parent: "game-container",
-    backgroundColor: "#028af8",
+    backgroundColor: "#43a1e7",
     scene: [Boot, Preloader, MainMenu, MainGame, GameOver],
     scale: {
         mode: Phaser.Scale.FIT, // Масштабировать по размеру экрана
