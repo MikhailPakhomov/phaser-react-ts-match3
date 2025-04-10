@@ -31,6 +31,9 @@ export class Preloader extends Scene {
         this.load.image("telegram", "telegram.png");
         this.load.image("vk", "vk.png");
         this.load.image("youtube", "youtube.png");
+        this.load.image("horizontalHelper", "horizontalHelper.png");
+        this.load.image("verticalHelper", "verticalHelper.png");
+        this.load.image("discoball", "discoball.png");
     }
 
     create() {
