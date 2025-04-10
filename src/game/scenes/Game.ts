@@ -2,8 +2,26 @@ import { EventBus } from "../EventBus";
 import { Scene } from "phaser";
 
 const levelGrid: (string | null)[][] = [
-    ["youtube", "whatsapp", "telegram", null, null, null, null, null],
-    ["whatsapp", "youtube", "vk", "telegram", "instagram", null, null, null],
+    [
+        "youtube",
+        "whatsapp",
+        "telegram",
+        "telegram",
+        "youtube",
+        "whatsapp",
+        "whatsapp",
+        "vk",
+    ],
+    [
+        "whatsapp",
+        "youtube",
+        "vk",
+        "telegram",
+        "instagram",
+        "instagram",
+        "telegram",
+        "youtube",
+    ],
     [
         "telegram",
         "vk",
@@ -11,8 +29,8 @@ const levelGrid: (string | null)[][] = [
         "youtube",
         "whatsapp",
         "telegram",
-        null,
-        null,
+        "vk",
+        "instagram",
     ],
     [
         "vk",
@@ -22,7 +40,7 @@ const levelGrid: (string | null)[][] = [
         "instagram",
         "vk",
         "telegram",
-        null,
+        "youtube",
     ],
     [
         "instagram",
