@@ -34,9 +34,9 @@ const levelGrid: (string | null)[][] = [
     ],
     [
         "vk",
-        "telegram",
+        "verticalHelper",
+        "horizontalHelper",
         "youtube",
-        "whatsapp",
         "instagram",
         "vk",
         "telegram",
@@ -91,6 +91,9 @@ export class Game extends Scene {
     holePositions: Set<string> = new Set();
     lastMovedCell: { row: number; col: number } | null = null;
 
+    selectedSprite: Phaser.GameObjects.Sprite | null = null;
+    pointerDownPos: { x: number; y: number } | null = null;
+
     rows = 8;
     cols = 8;
 
@@ -108,6 +111,12 @@ export class Game extends Scene {
     handleTileClick(tile: Phaser.GameObjects.Sprite) {
         if (this.isProcessing) return;
 
+        const isHelper = tile.getData("isHelper");
+        if (isHelper) {
+            this.activateHelper(tile);
+            return;
+        }
+
         const selectedAnimation = {
             targets: tile,
             scale: { from: 1, to: 1.2, yoyo: true },
@@ -124,9 +133,10 @@ export class Game extends Scene {
             this.selectedTileTween = this.tweens.add(selectedAnimation);
             return;
         }
+
         if (tile === this.selectedTile) {
             this.tweens.remove(this.selectedTileTween);
-            this.selectedTile?.setScale(1);
+            this.selectedTile.setScale(1);
             this.selectedTile = null;
             this.selectedTileTween = null;
             return;
@@ -153,10 +163,84 @@ export class Game extends Scene {
         }
     }
 
+    handleSwipe(
+        tile: Phaser.GameObjects.Sprite,
+        pointer: Phaser.Input.Pointer,
+        start: { x: number; y: number }
+    ) {
+        const dx = pointer.x - start.x;
+        const dy = pointer.y - start.y;
+
+        let dirX = 0;
+        let dirY = 0;
+
+        const angle = Phaser.Math.RadToDeg(Math.atan2(dy, dx));
+
+        if (angle >= -45 && angle <= 45) dirX = 1;
+        else if (angle >= 135 || angle <= -135) dirX = -1;
+        else if (angle > 45 && angle < 135) dirY = 1;
+        else if (angle < -45 && angle > -135) dirY = -1;
+
+        const gridX = tile.getData("gridX");
+        const gridY = tile.getData("gridY");
+
+        const targetX = gridX + dirX;
+        const targetY = gridY + dirY;
+
+        if (
+            targetX >= 0 &&
+            targetX < this.cols &&
+            targetY >= 0 &&
+            targetY < this.rows
+        ) {
+            const neighbor = this.grid[targetY][targetX];
+            if (neighbor) {
+                this.swapTiles(tile, neighbor);
+            }
+        }
+    }
+
     swapTiles(
         tileA: Phaser.GameObjects.Sprite,
         tileB: Phaser.GameObjects.Sprite
     ) {
+        const isHelperA = tileA?.getData("isHelper");
+        const isHelperB = tileB?.getData("isHelper");
+
+        const typeA = tileA?.getData("type");
+        const typeB = tileB?.getData("type");
+
+        const isDiscoA = typeA === "discoball";
+        const isDiscoB = typeB === "discoball";
+
+        if (isDiscoA && !isDiscoB) {
+            this.activateHelper(tileA, tileB); // диско шар активируется, второй — обычный/хелпер
+            return;
+        }
+        if (isDiscoB && !isDiscoA) {
+            this.activateHelper(tileB, tileA);
+            return;
+        }
+        if (isDiscoA && isDiscoB) {
+            this.activateHelper(tileA); // оба дискошара — активируем любой
+            return;
+        }
+
+        // если оба хелперы, но не дискошары — активируем оба
+        if (isHelperA && isHelperB) {
+            this.activateHelper(tileA);
+            this.activateHelper(tileB);
+            return;
+        }
+        if (isHelperA) {
+            this.activateHelper(tileA, tileB);
+            return;
+        }
+        if (isHelperB) {
+            this.activateHelper(tileB, tileA);
+            return;
+        }
+
         const xA = tileA.getData("gridX");
         const yA = tileA.getData("gridY");
         const xB = tileB.getData("gridX");
@@ -175,7 +259,6 @@ export class Game extends Scene {
 
         tileA.setData("gridX", xB);
         tileA.setData("gridY", yB);
-
         tileB.setData("gridX", xA);
         tileB.setData("gridY", yA);
 
@@ -198,7 +281,6 @@ export class Game extends Scene {
             duration: 300,
             ease: "Power2",
         });
-
         this.tweens.add({
             targets: tileB,
             x: newPosB.x,
@@ -206,15 +288,6 @@ export class Game extends Scene {
             duration: 300,
             ease: "Power2",
         });
-
-        if (tileA?.getData("isHelper")) {
-            this.activateHelper(tileA, tileB);
-            return;
-        }
-        if (tileB?.getData("isHelper")) {
-            this.activateHelper(tileB, tileA);
-            return;
-        }
 
         tileA.setScale(1);
         tileB.setScale(1);
@@ -224,11 +297,11 @@ export class Game extends Scene {
             if (matches && matches.length > 0) {
                 this.removeMatches(matches);
 
+                let helperSpawned = false;
+
                 for (const match of matches) {
                     if (match.length === 4 || match.length === 5) {
-                        console.log(1);
                         const isHorizontal = this.isHorizontalMatch(match);
-
                         const type =
                             match.length === 5
                                 ? "discoball"
@@ -236,27 +309,28 @@ export class Game extends Scene {
                                 ? "verticalHelper"
                                 : "horizontalHelper";
 
+                        helperSpawned = true;
+
+                        // Сначала спавним хелпер
                         this.time.delayedCall(250, () => {
-                            this.createSprite(
-                                this.lastMovedCell.row,
-                                this.lastMovedCell.col,
-                                type
-                            );
+                            this.createHelperWithEffect(xB, yB, type);
                         });
                     }
                 }
 
-                this.time.delayedCall(350, () => {
+                // Если хелпер был создан — подождать чуть дольше перед падением
+                const delay = helperSpawned ? 650 : 350;
+
+                this.time.delayedCall(delay, () => {
                     this.dropTiles();
                 });
 
-                this.time.delayedCall(400, () => {
+                this.time.delayedCall(delay + 100, () => {
                     this.fillEmptyTiles();
                     this.processMatchesLoop();
                 });
             } else {
-                // Нет совпадений — откатываем свайп обратно
-                this.undoSwap(tileA, tileB, oldCoords); // можно сделать отдельный метод undoSwap
+                this.undoSwap(tileA, tileB, oldCoords);
             }
         });
     }
@@ -443,7 +517,7 @@ export class Game extends Scene {
                 mergedMatches.push(match); // Добавляем как отдельное совпадение
             }
         });
-        console.log(mergedMatches);
+
         return mergedMatches;
     }
     // removeMatches(matches: Phaser.GameObjects.Sprite[][]) {
@@ -463,23 +537,42 @@ export class Game extends Scene {
     //     });
     // }
 
-    removeMatches(matches: Phaser.GameObjects.Sprite[][]) {
+    removeMatches(
+        matches: Phaser.GameObjects.Sprite[][],
+        onComplete?: () => void
+    ) {
+        let tweensRemaining = 0;
+
         matches.forEach((group) => {
             group.forEach((tile) => {
                 const x = tile.getData("gridX");
                 const y = tile.getData("gridY");
 
                 this.grid[y][x] = null;
+                tweensRemaining++;
 
                 this.tweens.add({
                     targets: tile,
                     alpha: 0,
                     scale: 0,
-                    duration: 100,
-                    onComplete: () => tile.destroy(),
+                    duration: 200,
+                    delay: 100 + y * 15,
+                    ease: "Power1",
+                    onComplete: () => {
+                        tile.destroy();
+                        tweensRemaining--;
+                        if (tweensRemaining === 0 && onComplete) {
+                            onComplete();
+                        }
+                    },
                 });
             });
         });
+
+        // если совпадений не было, сразу вызываем
+        if (tweensRemaining === 0 && onComplete) {
+            onComplete();
+        }
     }
     undoSwap(
         tileA: Phaser.GameObjects.Sprite,
@@ -529,87 +622,6 @@ export class Game extends Scene {
         });
     }
 
-    // dropTiles(): Promise<void> {
-    //     return new Promise((resolve) => {
-    //         const cellSize = 50;
-    //         const gap = 8;
-
-    //         let falling = false;
-
-    //         // Проходим по всем клеткам и проверяем, падают ли фишки
-    //         for (let x = 0; x < this.grid[0].length; x++) {
-    //             for (let y = this.grid.length - 1; y >= 0; y--) {
-    //                 if (this.grid[y][x] === null) {
-    //                     // Ищем выше фишку
-    //                     for (let aboveY = y - 1; aboveY >= 0; aboveY--) {
-    //                         const tileAbove = this.grid[aboveY][x];
-    //                         if (tileAbove) {
-    //                             // Сдвигаем фишку
-    //                             this.grid[y][x] = tileAbove;
-    //                             this.grid[aboveY][x] = null;
-
-    //                             tileAbove.setData("gridY", y);
-
-    //                             const newY = y * (cellSize + gap);
-
-    //                             this.tweens.add({
-    //                                 targets: tileAbove,
-    //                                 y: newY,
-    //                                 duration: 200,
-    //                                 ease: "Power2",
-    //                             });
-
-    //                             break; // Переходим к следующей пустой ячейке
-    //                         }
-    //                     }
-    //                 }
-    //                 falling = true;
-    //             }
-    //         }
-
-    //         // Если фишки не падают — завершаем
-    //         if (!falling) {
-    //             resolve();
-    //         }
-    //     });
-    // }
-    // dropTiles() {
-    //     const cellSize = 74;
-    //     const gap = 8;
-
-    //     for (let x = 0; x < this.grid[0].length; x++) {
-    //         for (let y = this.grid.length - 1; y >= 0; y--) {
-    //             if (
-    //                 this.grid[y][x] === null &&
-    //                 !this.holePositions.has(`${x},${y}`)
-    //             ) {
-    //                 // Ищем выше фишку
-    //                 for (let aboveY = y - 1; aboveY >= 0; aboveY--) {
-    //                     const tileAbove = this.grid[aboveY][x];
-    //                     if (tileAbove) {
-    //                         // Сдвигаем фишку
-    //                         this.grid[y][x] = tileAbove;
-    //                         this.grid[aboveY][x] = null;
-
-    //                         tileAbove.setData("gridY", y);
-
-    //                         const newY = this.offsetY + y * (cellSize + gap);
-
-    //                         this.tweens.add({
-    //                             targets: tileAbove,
-    //                             y: newY,
-    //                             duration: 200,
-    //                             ease: "Power2",
-    //                         });
-
-    //                         break; // Переходим к следующей пустой ячейке
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-
     dropTiles() {
         const cellSize = 74;
         const gap = 8;
@@ -639,14 +651,31 @@ export class Game extends Scene {
                             y:
                                 this.offsetY +
                                 (y + emptySpots) * (cellSize + gap),
-                            duration: 200,
-                            ease: "Power2",
+                            duration: 300,
+                            delay: emptySpots * 40, // последовательность
+                            ease: "Cubic.easeIn",
                         });
                     }
                 }
             }
         }
     }
+    // fillEmptyTiles() {
+    //     const cellSize = 74;
+    //     const gap = 8;
+    //     const types = ["youtube", "whatsapp", "telegram", "vk", "instagram"];
+
+    //     for (let y = 0; y < this.grid.length; y++) {
+    //         for (let x = 0; x < this.grid[0].length; x++) {
+    //             if (!this.grid[y][x] && !this.holePositions.has(`${x},${y}`)) {
+    //                 const type = Phaser.Utils.Array.GetRandom(types);
+
+    //                 this.createSprite(x, y, type);
+    //             }
+    //         }
+    //     }
+    // }
+
     fillEmptyTiles() {
         const cellSize = 74;
         const gap = 8;
@@ -657,233 +686,51 @@ export class Game extends Scene {
                 if (!this.grid[y][x] && !this.holePositions.has(`${x},${y}`)) {
                     const type = Phaser.Utils.Array.GetRandom(types);
 
-                    this.createSprite(x, y, type);
+                    const sprite = this.add.sprite(
+                        this.offsetX + x * (cellSize + gap),
+                        -cellSize, // старт выше экрана
+                        type
+                    );
+
+                    sprite.setOrigin(0);
+                    sprite.setDisplaySize(cellSize, cellSize);
+                    sprite.setInteractive();
+
+                    sprite.setData("gridX", x);
+                    sprite.setData("gridY", y);
+                    sprite.setData("type", type);
+
+                    // Hover эффекты
+                    sprite.on("pointerover", () => sprite.setAlpha(0.7));
+                    sprite.on("pointerout", () => sprite.setAlpha(1));
+
+                    // 👇 ОБЯЗАТЕЛЬНО: сохранение выбранного спрайта и позиции при нажатии
+                    sprite.on(
+                        "pointerdown",
+                        (pointer: Phaser.Input.Pointer) => {
+                            this.selectedSprite = sprite;
+                            this.pointerDownPos = {
+                                x: pointer.x,
+                                y: pointer.y,
+                            };
+                        }
+                    );
+
+                    this.grid[y][x] = sprite;
+
+                    // 🧈 Анимация с каскадом
+                    this.tweens.add({
+                        targets: sprite,
+                        y: this.offsetY + y * (cellSize + gap),
+                        delay: x * 40,
+                        duration: 500,
+                        ease: "Bounce.easeOut",
+                    });
                 }
             }
         }
     }
 
-    // fillEmptyTiles(): Promise<void> {
-    //     return new Promise((resolve) => {
-    //         const cellSize = 50;
-    //         const gap = 8;
-    //         const types = [
-    //             "youtube",
-    //             "whatsapp",
-    //             "telegram",
-    //             "vk",
-    //             "instagram",
-    //         ];
-    //         let filling = false;
-
-    //         for (let y = 0; y < this.grid.length; y++) {
-    //             for (let x = 0; x < this.grid[0].length; x++) {
-    //                 if (
-    //                     !this.grid[y][x] &&
-    //                     !this.holePositions.has(`${x},${y}`)
-    //                 ) {
-    //                     const type = Phaser.Utils.Array.GetRandom(types);
-
-    //                     const sprite = this.add.sprite(
-    //                         x * (cellSize + gap),
-    //                         -cellSize, // старт выше экрана
-    //                         type
-    //                     );
-
-    //                     sprite.setOrigin(0);
-    //                     sprite.setDisplaySize(cellSize, cellSize);
-    //                     sprite.setInteractive();
-
-    //                     sprite.setData("gridX", x);
-    //                     sprite.setData("gridY", y);
-    //                     sprite.setData("type", type);
-
-    //                     sprite.on("pointerover", () => sprite.setAlpha(0.7));
-    //                     sprite.on("pointerout", () => sprite.setAlpha(1));
-    //                     sprite.on("pointerdown", () =>
-    //                         this.handleTileClick(sprite)
-    //                     );
-
-    //                     this.grid[y][x] = sprite;
-
-    //                     // Анимируем падение новой фишки
-    //                     this.tweens.add({
-    //                         targets: sprite,
-    //                         y: y * (cellSize + gap),
-    //                         duration: 250,
-    //                         ease: "Power2",
-    //                         onComplete: () => {
-    //                             filling = true;
-    //                         },
-    //                     });
-    //                 }
-    //             }
-    //         }
-
-    //         if (!filling) {
-    //             resolve();
-    //         }
-    //     });
-    // }
-    // processMatchesLoop() {
-    //     const matches = this.findMatches();
-    //     if (matches.size > 0) {
-    //         this.removeMatches(matches);
-    //         this.time.delayedCall(450, () => {
-    //             // Падаем после удаления совпадений
-    //             this.dropTiles();
-    //         });
-
-    //         this.time.delayedCall(550, () => {
-    //             // Заполняем пустые клетки
-    //             this.fillEmptyTiles();
-    //             this.processMatchesLoop(); // Рекурсивно ищем новые совпадения
-    //         });
-    //     }
-    // }
-    // processMatchesLoop() {
-    //     this.isProcessing = true;
-    //     const matches = this.findMatches();
-    //     if (matches && matches.size > 0) {
-    //         this.removeMatches(matches);
-    //         if (matches.size >= 4) {
-    //             this.time.delayedCall(250, () => {
-    //                 this.createHelpers(
-    //                     this.posForHelpersX,
-    //                     this.posForHelpersY,
-    //                     "horizontalHelper"
-    //                 );
-    //             });
-    //         }
-    //         this.time.delayedCall(300, () => {
-    //             this.dropTiles();
-
-    //             this.time.delayedCall(300, () => {
-    //                 this.fillEmptyTiles();
-
-    //                 this.time.delayedCall(400, () => {
-    //                     this.processMatchesLoop();
-    //                 });
-    //             });
-    //         });
-    //     } else {
-    //         this.isProcessing = false;
-    //     }
-    // }
-
-    // processMatchesLoop(swapInfo?: {
-    //     from: { x: number; y: number };
-    //     to: { x: number; y: number };
-    // }) {
-    //     this.isProcessing = true;
-    //     const matches = this.findMatches();
-
-    //     if (matches && matches.size > 0) {
-    //         this.removeMatches(matches);
-
-    //         // Обработка хелперов
-    //         for (const match of matches) {
-    //             if (match.length === 4) {
-    //                 const isHorizontal = this.isHorizontalMatch(match);
-    //                 const helperType = isHorizontal
-    //                     ? "verticalHelper"
-    //                     : "horizontalHelper";
-
-    //                 // Приоритет: позиция свапа -> позиция первой фишки в комбе
-    //                 const spawnX = swapInfo?.to?.x ?? match[0].getData("gridX");
-    //                 const spawnY = swapInfo?.to?.y ?? match[0].getData("gridY");
-
-    //                 this.time.delayedCall(250, () => {
-    //                     this.createHelpers(spawnX, spawnY, helperType);
-    //                 });
-    //             } else if (match.length === 5) {
-    //                 // Дискошар
-    //                 const spawnX = swapInfo?.to?.x ?? match[0].getData("gridX");
-    //                 const spawnY = swapInfo?.to?.y ?? match[0].getData("gridY");
-
-    //                 this.time.delayedCall(250, () => {
-    //                     this.createHelpers(spawnX, spawnY, "discoBall");
-    //                 });
-    //             }
-    //         }
-
-    //         // Продолжаем процесс падения и заполнения
-    //         this.time.delayedCall(300, () => {
-    //             this.dropTiles();
-
-    //             this.time.delayedCall(300, () => {
-    //                 this.fillEmptyTiles();
-
-    //                 this.time.delayedCall(400, () => {
-    //                     // Следующий цикл — уже без swapInfo
-    //                     this.processMatchesLoop();
-    //                 });
-    //             });
-    //         });
-    //     } else {
-    //         this.isProcessing = false;
-    //     }
-    // }
-
-    // processMatchesLoop() {
-    //     this.isProcessing = true;
-    //     const matches = this.findMatches(); // Теперь массив массивов
-
-    //     if (matches.length > 0) {
-    //         // Создаем хелперы
-    //         const helpersToCreate: { x: number; y: number; type: string }[] =
-    //             [];
-
-    //         for (const match of matches) {
-    //             if (match.length === 4 || match.length === 5) {
-    //                 const isHorizontal = this.isHorizontalMatch(match);
-
-    //                 const type =
-    //                     match.length === 5
-    //                         ? "discoball"
-    //                         : isHorizontal
-    //                         ? "verticalHelper"
-    //                         : "horizontalHelper";
-
-    //                 const spawnTile = match.find((tile) => tile.active); // любой живой тайл
-    //                 const spawnX = spawnTile?.getData("gridX") ?? 0;
-    //                 const spawnY = spawnTile?.getData("gridY") ?? 0;
-
-    //                 helpersToCreate.push({ x: spawnX, y: spawnY, type });
-
-    //                 for (const sprite of match) {
-    //                     const x = sprite.getData("gridX");
-    //                     const y = sprite.getData("gridY");
-    //                     this.grid[y][x] = null;
-    //                 }
-
-    //                 this.time.delayedCall(100, () => {
-    //                     this.removeMatches(matches);
-    //                 });
-
-    //                 this.time.delayedCall(300, () => {
-    //                     for (const helper of helpersToCreate) {
-    //                         this.createSprite(helper.x, helper.y, helper.type);
-    //                     }
-    //                 });
-
-    //                 this.time.delayedCall(500, () => {
-    //                     this.dropTiles();
-
-    //                     this.time.delayedCall(300, () => {
-    //                         this.fillEmptyTiles();
-
-    //                         this.time.delayedCall(300, () => {
-    //                             this.processMatchesLoop();
-    //                         });
-    //                     });
-    //                 });
-    //             }
-    //         }
-    //     } else {
-    //         this.isProcessing = false;
-    //     }
-    // }
     processMatchesLoop() {
         this.isProcessing = true;
         const matches = this.findMatches();
@@ -893,7 +740,6 @@ export class Game extends Scene {
                 [];
 
             for (const match of matches) {
-                // Собираем координаты хелперов
                 if (match.length === 4 || match.length === 5) {
                     const isHorizontal = this.isHorizontalMatch(match);
                     const type =
@@ -903,31 +749,13 @@ export class Game extends Scene {
                             ? "verticalHelper"
                             : "horizontalHelper";
 
-                    let spawnX = 0;
-                    let spawnY = 0;
-
-                    const movedCell = this.lastMovedCell;
-                    const movedMatchTile = match.find(
-                        (tile) =>
-                            tile.getData("gridX") === movedCell?.col &&
-                            tile.getData("gridY") === movedCell?.row
-                    );
-
-                    if (movedMatchTile) {
-                        spawnX = movedMatchTile.getData("gridX");
-                        spawnY = movedMatchTile.getData("gridY");
-                    } else {
-                        const spawnTile =
-                            match.find((tile) => tile.active) ??
-                            match[Math.floor(match.length / 2)];
-                        spawnX = spawnTile.getData("gridX");
-                        spawnY = spawnTile.getData("gridY");
-                    }
+                    const spawnTile = match.find((tile) => tile.active);
+                    const spawnX = spawnTile?.getData("gridX") ?? 0;
+                    const spawnY = spawnTile?.getData("gridY") ?? 0;
 
                     helpersToCreate.push({ x: spawnX, y: spawnY, type });
                 }
 
-                // Удаляем тайлы из сетки
                 for (const sprite of match) {
                     const x = sprite.getData("gridX");
                     const y = sprite.getData("gridY");
@@ -935,27 +763,26 @@ export class Game extends Scene {
                 }
             }
 
-            // 1. Удаляем анимированно
-            this.time.delayedCall(200, () => {
-                this.removeMatches(matches);
-            });
-
-            // 2. После удаления создаем хелперы
-            this.time.delayedCall(300, () => {
+            // 💣 Удаление совпадений + создание хелперов → потом дроп
+            this.removeMatches(matches, () => {
                 for (const helper of helpersToCreate) {
-                    this.createSprite(helper.x, helper.y, helper.type);
+                    this.createHelperWithEffect(
+                        helper.x,
+                        helper.y,
+                        helper.type
+                    );
                 }
-            });
 
-            // 3. Дропаем всё после
-            this.time.delayedCall(550, () => {
-                this.dropTiles();
+                // 🧊 Подождём, пока хелпер приземлится
+                this.time.delayedCall(450, () => {
+                    this.dropTiles();
 
-                this.time.delayedCall(300, () => {
-                    this.fillEmptyTiles();
+                    this.time.delayedCall(350, () => {
+                        this.fillEmptyTiles();
 
-                    this.time.delayedCall(300, () => {
-                        this.processMatchesLoop();
+                        this.time.delayedCall(450, () => {
+                            this.processMatchesLoop();
+                        });
                     });
                 });
             });
@@ -964,16 +791,61 @@ export class Game extends Scene {
         }
     }
 
-    createSprite(x: number, y: number, type: string) {
-        console.log(type);
+    // createSprite(x: number, y: number, type: string) {
+    //     const cellSize = 74;
+    //     const spacing = 8;
+
+    //     const sprite = this.add.sprite(
+    //         this.offsetX + x * (cellSize + spacing),
+    //         -cellSize,
+    //         type
+    //     );
+    //     sprite.setOrigin(0);
+    //     sprite.setDisplaySize(cellSize, cellSize);
+    //     sprite.setInteractive();
+
+    //     sprite.setData("gridX", x);
+    //     sprite.setData("gridY", y);
+    //     sprite.setData("type", type);
+
+    //     sprite.on("pointerover", () => sprite.setAlpha(0.7));
+    //     sprite.on("pointerout", () => sprite.setAlpha(1));
+
+    //     sprite.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+    //         sprite.setData("pointerDown", { x: pointer.x, y: pointer.y });
+    //         this.selectedSprite = sprite;
+    //         this.pointerDownPos = { x: pointer.x, y: pointer.y };
+    //     });
+
+    //     if (
+    //         type === "verticalHelper" ||
+    //         type === "horizontalHelper" ||
+    //         type === "discoball"
+    //     ) {
+    //         sprite.setData("isHelper", true);
+    //         sprite.setData("helperType", type);
+    //     }
+
+    //     this.grid[y][x] = sprite;
+
+    //     this.tweens.add({
+    //         targets: sprite,
+    //         y: this.offsetY + y * (cellSize + spacing),
+    //         duration: 400,
+    //         delay: y * 40 + 100, // каскад по Y и доп. задержка
+    //         ease: "Bounce.easeOut",
+    //     });
+    // }
+    createHelperWithEffect(x: number, y: number, type: string) {
         const cellSize = 74;
         const spacing = 8;
 
         const sprite = this.add.sprite(
             this.offsetX + x * (cellSize + spacing),
-            -cellSize, // старт выше экрана
+            this.offsetY + y * (cellSize + spacing),
             type
         );
+
         sprite.setOrigin(0);
         sprite.setDisplaySize(cellSize, cellSize);
         sprite.setInteractive();
@@ -981,31 +853,29 @@ export class Game extends Scene {
         sprite.setData("gridX", x);
         sprite.setData("gridY", y);
         sprite.setData("type", type);
-
-        if (
-            type === "verticalHelper" ||
-            type === "horizontalHelper" ||
-            type === "discoball"
-        ) {
-            sprite.setData("isHelper", true);
-            sprite.setData("helperType", type);
-            sprite.on("pointerdown", () => {
-                this.activateHelper(sprite);
-            });
-        }
+        sprite.setData("isHelper", true);
+        sprite.setData("helperType", type);
 
         sprite.on("pointerover", () => sprite.setAlpha(0.7));
         sprite.on("pointerout", () => sprite.setAlpha(1));
-        sprite.on("pointerdown", () => this.handleTileClick(sprite));
+        sprite.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+            sprite.setData("pointerDown", { x: pointer.x, y: pointer.y });
+            this.selectedSprite = sprite;
+            this.pointerDownPos = { x: pointer.x, y: pointer.y };
+        });
 
-        this.grid[y][x] = sprite;
-
+        // 👇 Эффект появления
+        sprite.setAlpha(0);
+        sprite.setScale(0.5);
         this.tweens.add({
             targets: sprite,
-            y: this.offsetY + y * (cellSize + spacing),
-            duration: 250,
-            ease: "Power2",
+            alpha: 1,
+            scale: 1,
+            duration: 300,
+            ease: "Back.easeOut",
         });
+
+        this.grid[y][x] = sprite;
     }
 
     isHorizontalMatch(match: Phaser.GameObjects.Sprite[]): boolean {
@@ -1040,17 +910,24 @@ export class Game extends Scene {
                 }
             }
         } else if (type === "discoball") {
-            for (let y = 0; y < this.grid.length; y++) {
-                for (let x = 0; x < this.grid[y].length; x++) {
-                    const currentTile = this.grid[y][x];
-                    if (
-                        currentTile &&
-                        currentTile.getData("type") === typeToRemove
-                    ) {
-                        toRemove.push(currentTile);
-                        this.grid[y][x] = null;
-                    }
-                }
+            if (!typeToRemove) {
+                // ✨ Добавим вращение, затем вызываем метод
+                this.tweens.add({
+                    targets: sprite,
+                    angle: 360,
+                    duration: 400,
+                    ease: "Cubic.easeOut",
+                    onComplete: () => {
+                        sprite.setAngle(0);
+                        this.activateDiscoballWithRandomNeighbor(sprite);
+                    },
+                });
+
+                return;
+            } else {
+                // свайп с элементом — сразу удаляем
+                this.removeDiscoTiles(x, y, typeToRemove, sprite);
+                return;
             }
         }
 
@@ -1071,6 +948,124 @@ export class Game extends Scene {
             });
         });
     }
+    activateDiscoballWithRandomNeighbor(sprite: Phaser.GameObjects.Sprite) {
+        const x = sprite.getData("gridX");
+        const y = sprite.getData("gridY");
+
+        const neighbors: Phaser.GameObjects.Sprite[] = [];
+        const directions = [
+            { dx: -1, dy: 0 },
+            { dx: 1, dy: 0 },
+            { dx: 0, dy: -1 },
+            { dx: 0, dy: 1 },
+        ];
+
+        for (const { dx, dy } of directions) {
+            const nx = x + dx;
+            const ny = y + dy;
+            if (
+                ny >= 0 &&
+                ny < this.rows &&
+                nx >= 0 &&
+                nx < this.cols &&
+                this.grid[ny][nx]
+            ) {
+                const neighbor = this.grid[ny][nx];
+                const neighborType = neighbor.getData("type");
+                const isHelper = neighbor.getData("helperType");
+
+                if (!isHelper && neighborType) {
+                    neighbors.push(neighbor);
+                }
+            }
+        }
+
+        if (neighbors.length > 0) {
+            const randomNeighbor = Phaser.Math.RND.pick(neighbors);
+            const finalTypeToRemove = randomNeighbor.getData("type");
+
+            // 🔥 Анимация выбранного соседа
+            this.tweens.add({
+                targets: randomNeighbor,
+                duration: 300,
+                scale: 1.2,
+                ease: "Power1",
+                yoyo: true,
+                onComplete: () => {
+                    randomNeighbor.setScale(1);
+
+                    this.time.delayedCall(300, () => {
+                        this.removeDiscoTiles(x, y, finalTypeToRemove, sprite);
+                    });
+                },
+            });
+        }
+    }
+    removeDiscoTiles(
+        centerX: number,
+        centerY: number,
+        typeToRemove: string,
+        discoSprite: Phaser.GameObjects.Sprite
+    ) {
+        const toRemove: Phaser.GameObjects.Sprite[] = [];
+        const helpersToActivate: Phaser.GameObjects.Sprite[] = [];
+
+        for (let y = 0; y < this.grid.length; y++) {
+            for (let x = 0; x < this.grid[y].length; x++) {
+                const tile = this.grid[y][x];
+                if (!tile) continue;
+
+                const tileType = tile.getData("type");
+                const isHelper = tile.getData("isHelper");
+
+                if (tileType === typeToRemove) {
+                    if (isHelper) {
+                        helpersToActivate.push(tile); // отложим активацию
+                    } else {
+                        toRemove.push(tile);
+                        this.grid[y][x] = null;
+
+                        tile.setTint(0xffff00);
+                        this.tweens.add({
+                            targets: tile,
+                            duration: 300,
+                            scale: 1.2,
+                            yoyo: true,
+                            ease: "Power1",
+                            onComplete: () => {
+                                tile.setScale(1);
+                                tile.clearTint();
+                            },
+                        });
+                    }
+                }
+            }
+        }
+
+        // Удаляем сам дискошар
+        this.grid[centerY][centerX] = null;
+        toRemove.push(discoSprite);
+
+        this.removeTiles(toRemove);
+
+        this.time.delayedCall(400, () => {
+            if (helpersToActivate.length > 0) {
+                // Активируем хелперы
+                helpersToActivate.forEach((helper) => {
+                    this.activateHelper(helper);
+                });
+            } else {
+                // Если нет хелперов — вручную запустить цепочку
+                this.dropTiles();
+                this.time.delayedCall(350, () => {
+                    this.fillEmptyTiles();
+                    this.time.delayedCall(450, () => {
+                        this.processMatchesLoop();
+                    });
+                });
+            }
+        });
+    }
     removeTiles(tiles: Phaser.GameObjects.Sprite[]) {
         for (const tile of tiles) {
             this.tweens.add({
@@ -1084,7 +1079,31 @@ export class Game extends Scene {
             });
         }
     }
+
     create() {
+        this.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {
+            if (this.selectedSprite && this.pointerDownPos) {
+                const dx = pointer.x - this.pointerDownPos.x;
+                const dy = pointer.y - this.pointerDownPos.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < 10) {
+                    // 👉 Это клик
+                    this.handleTileClick(this.selectedSprite);
+                } else {
+                    // 👉 Это свайп
+                    this.handleSwipe(
+                        this.selectedSprite,
+                        pointer,
+                        this.pointerDownPos
+                    );
+                }
+
+                this.selectedSprite = null;
+                this.pointerDownPos = null;
+            }
+        });
+
         const cellSize: number = 74;
         const gap: number = 8;
 
@@ -1111,7 +1130,7 @@ export class Game extends Scene {
 
                 const posY = this.offsetY + y * (cellSize + gap);
                 const posX = this.offsetX + x * (cellSize + gap);
-
+                // this.createSprite(x, y, type);
                 const sprite = this.add.sprite(posX, posY, type);
                 sprite.setOrigin(0);
                 sprite.setDisplaySize(cellSize, cellSize);
@@ -1121,6 +1140,10 @@ export class Game extends Scene {
                 sprite.setData("gridY", y);
                 sprite.setData("type", type);
 
+                if (type === "verticalHelper" || type === "horizontalHelper") {
+                    sprite.setData("isHelper", true);
+                    sprite.setData("helperType", type);
+                }
                 sprite.on("pointerover", () => {
                     sprite.setAlpha(0.7);
                 });
@@ -1129,8 +1152,13 @@ export class Game extends Scene {
                     sprite.setAlpha(1);
                 });
 
-                sprite.on("pointerdown", () => {
-                    this.handleTileClick(sprite);
+                sprite.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+                    sprite.setData("pointerDown", {
+                        x: pointer.x,
+                        y: pointer.y,
+                    });
+                    this.selectedSprite = sprite;
+                    this.pointerDownPos = { x: pointer.x, y: pointer.y };
                 });
                 this.grid[y][x] = sprite;
             });
