@@ -38,8 +38,8 @@ const levelGrid: (string | null)[][] = [
         "horizontalHelper",
         "youtube",
         "instagram",
+        "verticalHelper",
         "vk",
-        "telegram",
         "youtube",
     ],
     [
@@ -893,25 +893,41 @@ export class Game extends Scene {
         const typeToRemove = tile?.getData("type");
         const toRemove: Phaser.GameObjects.Sprite[] = [];
 
+        const triggerChain = new Set<Phaser.GameObjects.Sprite>(); // защитим от повторной активации
+
+        const triggerHelper = (target: Phaser.GameObjects.Sprite) => {
+            if (!triggerChain.has(target)) {
+                triggerChain.add(target);
+                this.activateHelper(target);
+            }
+        };
+
         if (type === "verticalHelper") {
             for (let row = 0; row < this.rows; row++) {
                 const tile = this.grid[row][x];
                 if (tile && tile !== sprite) {
-                    toRemove.push(tile);
-                    this.grid[row][x] = null;
+                    if (tile.getData("isHelper")) {
+                        triggerHelper(tile);
+                    } else {
+                        toRemove.push(tile);
+                        this.grid[row][x] = null;
+                    }
                 }
             }
         } else if (type === "horizontalHelper") {
             for (let col = 0; col < this.cols; col++) {
                 const tile = this.grid[y][col];
                 if (tile && tile !== sprite) {
-                    toRemove.push(tile);
-                    this.grid[y][col] = null;
+                    if (tile.getData("isHelper")) {
+                        triggerHelper(tile);
+                    } else {
+                        toRemove.push(tile);
+                        this.grid[y][col] = null;
+                    }
                 }
             }
         } else if (type === "discoball") {
             if (!typeToRemove) {
-                // ✨ Добавим вращение, затем вызываем метод
                 this.tweens.add({
                     targets: sprite,
                     angle: 360,
@@ -922,20 +938,17 @@ export class Game extends Scene {
                         this.activateDiscoballWithRandomNeighbor(sprite);
                     },
                 });
-
                 return;
             } else {
-                // свайп с элементом — сразу удаляем
                 this.removeDiscoTiles(x, y, typeToRemove, sprite);
                 return;
             }
         }
 
-        // Удаляем саму ракету
+        // Удаляем сам хелпер
         this.grid[y][x] = null;
         toRemove.push(sprite);
 
-        // Анимация и удаление
         this.removeTiles(toRemove);
 
         this.time.delayedCall(200, () => {
