@@ -109,12 +109,12 @@ export class Game extends Scene {
         super("Game");
     }
 
-    handleTileClick(tile: Phaser.GameObjects.Sprite) {
+    async handleTileClick(tile: Phaser.GameObjects.Sprite) {
         if (this.isProcessing) return;
 
         const isHelper = tile.getData("isHelper");
         if (isHelper) {
-            this.activateHelper(tile);
+            await this.activateHelperChain([tile]);
             return;
         }
 
@@ -153,7 +153,7 @@ export class Game extends Scene {
 
         if ((dx === 1 && dy === 0) || (dx === 0 && dy === 1)) {
             this.tweens.remove(this.selectedTileTween);
-            this.swapTiles(this.selectedTile, tile);
+            await this.swapTiles(this.selectedTile, tile);
             this.selectedTile = null;
             this.selectedTileTween = null;
         } else {
@@ -164,7 +164,7 @@ export class Game extends Scene {
         }
     }
 
-    handleSwipe(
+    async handleSwipe(
         tile: Phaser.GameObjects.Sprite,
         pointer: Phaser.Input.Pointer,
         start: { x: number; y: number }
@@ -198,56 +198,55 @@ export class Game extends Scene {
         ) {
             const neighbor = this.grid[targetY][targetX];
             if (neighbor) {
-                this.swapTiles(tile, neighbor);
+                await this.swapTiles(tile, neighbor);
             }
         }
     }
 
-    swapTiles(
+    async swapTiles(
         tileA: Phaser.GameObjects.Sprite,
         tileB: Phaser.GameObjects.Sprite
     ) {
         if (this.isProcessing) return;
-
         this.isProcessing = true;
 
         const isHelperA = tileA?.getData("isHelper");
         const isHelperB = tileB?.getData("isHelper");
-
         const typeA = tileA?.getData("type");
         const typeB = tileB?.getData("type");
 
         const isDiscoA = typeA === "discoball";
         const isDiscoB = typeB === "discoball";
 
+        // 🎯 Обработка дискошара
         if (isDiscoA && !isDiscoB) {
-            this.activateHelper(tileA, tileB); // диско шар активируется, второй — обычный/хелпер
+            await this._activateSingleHelper(tileA, tileB, new Set());
             return;
         }
         if (isDiscoB && !isDiscoA) {
-            this.activateHelper(tileB, tileA);
+            await this._activateSingleHelper(tileB, tileA, new Set());
             return;
         }
         if (isDiscoA && isDiscoB) {
-            this.activateHelper(tileA); // оба дискошара — активируем любой
+            await this.activateHelperChain([tileA]);
             return;
         }
 
-        // если оба хелперы, но не дискошары — активируем оба
+        // 💥 Обычные хелперы
         if (isHelperA && isHelperB) {
-            this.activateHelper(tileA);
-            this.activateHelper(tileB);
+            await this.activateHelperChain([tileA, tileB]);
             return;
         }
         if (isHelperA) {
-            this.activateHelper(tileA, tileB);
+            await this.activateHelperChain([tileA]);
             return;
         }
         if (isHelperB) {
-            this.activateHelper(tileB, tileA);
+            await this.activateHelperChain([tileB]);
             return;
         }
 
+        // 🧩 Обычный свап
         const xA = tileA.getData("gridX");
         const yA = tileA.getData("gridY");
         const xB = tileB.getData("gridX");
@@ -260,7 +259,7 @@ export class Game extends Scene {
             tileB: { x: xB, y: yB },
         };
 
-        // Поменять местами в массиве
+        // Меняем местами в сетке
         this.grid[yA][xA] = tileB;
         this.grid[yB][xB] = tileA;
 
@@ -281,122 +280,56 @@ export class Game extends Scene {
             y: this.offsetY + yA * (cellSize + spacing),
         };
 
-        this.tweens.add({
-            targets: tileA,
-            x: newPosA.x,
-            y: newPosA.y,
-            duration: 300,
-            ease: "Power2",
-        });
-        this.tweens.add({
-            targets: tileB,
-            x: newPosB.x,
-            y: newPosB.y,
-            duration: 300,
-            ease: "Power2",
-        });
+        await Promise.all([
+            tweenPromise(this, {
+                targets: tileA,
+                x: newPosA.x,
+                y: newPosA.y,
+                duration: 300,
+                ease: "Power2",
+            }),
+            tweenPromise(this, {
+                targets: tileB,
+                x: newPosB.x,
+                y: newPosB.y,
+                duration: 300,
+                ease: "Power2",
+            }),
+        ]);
 
         tileA.setScale(1);
         tileB.setScale(1);
 
-        this.time.delayedCall(400, () => {
-            const matches = this.findMatches?.();
-            if (matches && matches.length > 0) {
-                this.removeMatches(matches);
+        const matches = this.findMatches?.();
+        if (matches && matches.length > 0) {
+            this.removeMatches(matches);
 
-                let helperSpawned = false;
+            let helperSpawned = false;
+            for (const match of matches) {
+                if (match.length === 4 || match.length === 5) {
+                    const isHorizontal = this.isHorizontalMatch(match);
+                    const type =
+                        match.length === 5
+                            ? "discoball"
+                            : isHorizontal
+                            ? "verticalHelper"
+                            : "horizontalHelper";
 
-                for (const match of matches) {
-                    if (match.length === 4 || match.length === 5) {
-                        const isHorizontal = this.isHorizontalMatch(match);
-                        const type =
-                            match.length === 5
-                                ? "discoball"
-                                : isHorizontal
-                                ? "verticalHelper"
-                                : "horizontalHelper";
-
-                        helperSpawned = true;
-
-                        // Сначала спавним хелпер
-                        this.time.delayedCall(250, () => {
-                            this.createHelperWithEffect(xB, yB, type);
-                        });
-                    }
+                    helperSpawned = true;
+                    await delayPromise(this, 250);
+                    this.createHelperWithEffect(xB, yB, type);
                 }
-
-                // Если хелпер был создан — подождать чуть дольше перед падением
-                const delay = helperSpawned ? 650 : 350;
-
-                this.time.delayedCall(delay, () => {
-                    this.dropTiles();
-                });
-
-                this.time.delayedCall(delay + 100, () => {
-                    this.fillEmptyTiles();
-                    this.processMatchesLoop();
-                });
-            } else {
-                this.undoSwap(tileA, tileB, oldCoords);
             }
-        });
+
+            await delayPromise(this, helperSpawned ? 650 : 350);
+            await this.dropTiles();
+            await delayPromise(this, 100);
+            await this.fillEmptyTiles();
+            await this.processMatchesLoop();
+        } else {
+            this.undoSwap(tileA, tileB, oldCoords);
+        }
     }
-
-    // findMatches() {
-    //     const matches: Phaser.GameObjects.Sprite[][] = [];
-
-    //     const height = this.grid.length;
-    //     const width = this.grid[0].length;
-
-    //     for (let y = 0; y < height; y++) {
-    //         let streak: Phaser.GameObjects.Sprite[] = [];
-    //         let prevType = null;
-
-    //         for (let x = 0; x < width; x++) {
-    //             const tile = this.grid[y][x];
-    //             const type = tile?.getData("type") || null;
-
-    //             if (type === prevType && tile) {
-    //                 streak.push(tile);
-    //             } else {
-    //                 if (streak.length >= 3) {
-    //                     streak.forEach((tile) => matches.push(tile));
-    //                 }
-    //                 streak = tile ? [tile] : [];
-    //             }
-    //             prevType = type;
-    //         }
-    //         if (streak.length >= 3) {
-    //             streak.forEach((tile) => matches.push(tile));
-    //         }
-    //     }
-
-    //     for (let x = 0; x < width; x++) {
-    //         let streak: Phaser.GameObjects.Sprite[] = [];
-    //         let prevType = null;
-
-    //         for (let y = 0; y < height; y++) {
-    //             const tile = this.grid[y][x];
-    //             const type = tile?.getData("type") || null;
-
-    //             if (type === prevType && tile) {
-    //                 streak.push(tile);
-    //             } else {
-    //                 if (streak.length >= 3) {
-    //                     streak.forEach((t) => matches.push(t));
-    //                 }
-    //                 streak = tile ? [tile] : [];
-    //             }
-    //             prevType = type;
-    //         }
-
-    //         if (streak.length >= 3) {
-    //             streak.forEach((t) => matches.push(t));
-    //         }
-    //     }
-
-    //     return matches;
-    // }
 
     findMatches(): Phaser.GameObjects.Sprite[][] {
         const matches: Phaser.GameObjects.Sprite[][] = [];
@@ -810,13 +743,25 @@ export class Game extends Scene {
         const y = match[0].getData("gridY");
         return match.every((sprite) => sprite.getData("gridY") === y);
     }
-    async activateHelper(
+
+    async activateHelperChain(
+        helpers: Phaser.GameObjects.Sprite[]
+    ): Promise<void> {
+        const triggerChain = new Set<Phaser.GameObjects.Sprite>();
+
+        for (const helper of helpers) {
+            await this._activateSingleHelper(helper, undefined, triggerChain);
+        }
+
+        await this.dropTiles();
+        await this.fillEmptyTiles();
+        await this.processMatchesLoop();
+    }
+    async _activateSingleHelper(
         sprite: Phaser.GameObjects.Sprite,
         tile?: Phaser.GameObjects.Sprite,
-        triggerChain: Set<Phaser.GameObjects.Sprite> = new Set()
+        triggerChain: Set<Phaser.GameObjects.Sprite>
     ): Promise<void> {
-        this.isProcessing = true;
-
         const x = sprite.getData("gridX");
         const y = sprite.getData("gridY");
         const type = sprite.getData("helperType");
@@ -826,34 +771,33 @@ export class Game extends Scene {
         if (triggerChain.has(sprite)) return;
         triggerChain.add(sprite);
 
+        const helpersToActivate: Phaser.GameObjects.Sprite[] = [];
+
         const triggerHelper = (target: Phaser.GameObjects.Sprite) => {
-            this.activateHelper(target, undefined, triggerChain);
+            helpersToActivate.push(target);
+        };
+
+        const collectLine = (tiles: Phaser.GameObjects.Sprite[]) => {
+            for (const tile of tiles) {
+                if (!tile || tile === sprite) continue;
+
+                if (tile.getData("isHelper")) {
+                    triggerHelper(tile);
+                } else {
+                    const tx = tile.getData("gridX");
+                    const ty = tile.getData("gridY");
+                    this.grid[ty][tx] = null;
+                    toRemove.push(tile);
+                }
+            }
         };
 
         if (type === "verticalHelper") {
-            for (let row = 0; row < this.rows; row++) {
-                const tile = this.grid[row][x];
-                if (tile && tile !== sprite) {
-                    if (tile.getData("isHelper")) {
-                        triggerHelper(tile);
-                    } else {
-                        toRemove.push(tile);
-                        this.grid[row][x] = null;
-                    }
-                }
-            }
+            const column = this.grid.map((row) => row[x]);
+            collectLine(column);
         } else if (type === "horizontalHelper") {
-            for (let col = 0; col < this.cols; col++) {
-                const tile = this.grid[y][col];
-                if (tile && tile !== sprite) {
-                    if (tile.getData("isHelper")) {
-                        triggerHelper(tile);
-                    } else {
-                        toRemove.push(tile);
-                        this.grid[y][col] = null;
-                    }
-                }
-            }
+            const row = this.grid[y];
+            collectLine(row);
         } else if (type === "discoball") {
             if (!typeToRemove) {
                 await tweenPromise(this, {
@@ -864,21 +808,20 @@ export class Game extends Scene {
                 });
                 sprite.setAngle(0);
                 await this.activateDiscoballWithRandomNeighbor(sprite);
-                return;
             } else {
                 await this.removeDiscoTiles(x, y, typeToRemove, sprite);
-                return;
             }
+            return;
         }
 
-        // Удаляем сам хелпер
         this.grid[y][x] = null;
         toRemove.push(sprite);
 
         await this.removeTiles(toRemove);
-        await this.dropTiles();
-        await this.fillEmptyTiles();
-        await this.processMatchesLoop();
+
+        for (const helper of helpersToActivate) {
+            await this._activateSingleHelper(helper, undefined, triggerChain);
+        }
     }
     async activateDiscoballWithRandomNeighbor(
         sprite: Phaser.GameObjects.Sprite
@@ -914,38 +857,22 @@ export class Game extends Scene {
             }
         }
 
-        if (neighbors.length === 0) {
-            this.isProcessing = false;
-            return;
+        if (neighbors.length > 0) {
+            const randomNeighbor = Phaser.Math.RND.pick(neighbors);
+            const finalTypeToRemove = randomNeighbor.getData("type");
+
+            await tweenPromise(this, {
+                targets: randomNeighbor,
+                duration: 300,
+                scale: 1.2,
+                yoyo: true,
+                ease: "Power1",
+            });
+
+            randomNeighbor.setScale(1);
+
+            await this.removeDiscoTiles(x, y, finalTypeToRemove, sprite);
         }
-
-        const randomNeighbor = Phaser.Math.RND.pick(neighbors);
-        const finalTypeToRemove = randomNeighbor.getData("type");
-
-        // ✨ Анимация выбранного соседа
-        await tweenPromise(this, {
-            targets: randomNeighbor,
-            duration: 300,
-            scale: 1.2,
-            ease: "Power1",
-            yoyo: true,
-            onComplete: () => {
-                randomNeighbor.setScale(1);
-            },
-        });
-
-        await delayPromise(this, 300);
-
-        await this.removeDiscoTiles(x, y, finalTypeToRemove, sprite);
-        await delayPromise(this, 400);
-
-        await this.dropTiles();
-        await delayPromise(this, 300);
-
-        await this.fillEmptyTiles();
-        await delayPromise(this, 350);
-
-        await this.processMatchesLoop();
     }
 
     async removeDiscoTiles(
@@ -1013,9 +940,7 @@ export class Game extends Scene {
 
         if (helpersToActivate.length > 0) {
             // Активируем хелперы (внутри них processMatchesLoop вызовется)
-            helpersToActivate.forEach((helper) => {
-                this.activateHelper(helper);
-            });
+            await this.activateHelperChain(helpersToActivate);
             return;
         }
 
