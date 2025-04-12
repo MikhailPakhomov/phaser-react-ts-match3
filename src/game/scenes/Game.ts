@@ -327,7 +327,7 @@ export class Game extends Scene {
             await this.fillEmptyTiles();
             await this.processMatchesLoop();
         } else {
-            this.undoSwap(tileA, tileB, oldCoords);
+            await this.undoSwap(tileA, tileB, oldCoords);
         }
     }
 
@@ -485,14 +485,14 @@ export class Game extends Scene {
         await Promise.all(tweens);
     }
 
-    undoSwap(
+    async undoSwap(
         tileA: Phaser.GameObjects.Sprite,
         tileB: Phaser.GameObjects.Sprite,
         coords: {
             tileA: { x: number; y: number };
             tileB: { x: number; y: number };
         }
-    ) {
+    ): Promise<void> {
         const { tileA: oldA, tileB: oldB } = coords;
 
         // 👇 возвращаем обратно в массив
@@ -516,21 +516,23 @@ export class Game extends Scene {
             y: this.offsetY + oldB.y * (cellSize + spacing),
         };
 
-        this.tweens.add({
-            targets: tileA,
-            x: posA.x,
-            y: posA.y,
-            duration: 300,
-            ease: "Power2",
-        });
-
-        this.tweens.add({
-            targets: tileB,
-            x: posB.x,
-            y: posB.y,
-            duration: 300,
-            ease: "Power2",
-        });
+        await Promise.all([
+            tweenPromise(this, {
+                targets: tileA,
+                x: posA.x,
+                y: posA.y,
+                duration: 250,
+                ease: "Power2",
+            }),
+            tweenPromise(this, {
+                targets: tileB,
+                x: posB.x,
+                y: posB.y,
+                duration: 250,
+                ease: "Power2",
+            }),
+        ]);
+        this.isProcessing = false;
     }
 
     async dropTiles(): Promise<void> {
