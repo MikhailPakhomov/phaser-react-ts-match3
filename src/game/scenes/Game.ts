@@ -49,7 +49,7 @@ const levelGrid: (string | null)[][] = [
         "telegram",
         "vk",
         "youtube",
-        "whatsapp",
+        "discoball",
         "youtube",
         "vk",
     ],
@@ -138,11 +138,15 @@ export class Game extends Scene {
         try {
             const isHelper = tile.getData("isHelper");
             if (isHelper) {
+                if (this.selectedTileTween) {
+                    this.tweens.remove(this.selectedTileTween);
+                    this.selectedTileTween = null;
+                }
+                if (this.selectedTile) {
+                    this.selectedTile.setScale(1);
+                    this.selectedTile = null;
+                }
                 await this.activateHelperChain([tile]);
-                this.tweens.remove(this.selectedTileTween);
-                this.selectedTile.setScale(1);
-                this.selectedTile = null;
-                this.selectedTileTween = null;
                 return;
             }
 
@@ -353,7 +357,7 @@ export class Game extends Scene {
             return;
         }
         if (isDiscoA && isDiscoB) {
-            await this.activateHelperChain([tileA]);
+            await this.activateHelperChain([tileA, tileB]);
             return;
         }
 
@@ -712,7 +716,11 @@ export class Game extends Scene {
             await this.removeMatches(matches);
 
             for (const helper of helpersToCreate) {
-                this.createHelperWithEffect(helper.x, helper.y, helper.type);
+                await this.createHelperWithEffect(
+                    helper.x,
+                    helper.y,
+                    helper.type
+                );
             }
 
             await delayPromise(this, 300); // немного ждём после хелперов
@@ -726,7 +734,11 @@ export class Game extends Scene {
             this.isProcessing = false;
         }
     }
-    createHelperWithEffect(x: number, y: number, type: string) {
+    async createHelperWithEffect(
+        x: number,
+        y: number,
+        type: string
+    ): Promise<void> {
         const cellSize = 74;
         const spacing = 8;
 
@@ -747,19 +759,20 @@ export class Game extends Scene {
         sprite.setData("helperType", type);
 
         this.setupPointerEvents(sprite);
+        this.grid[y][x] = sprite;
 
-        // 👇 Эффект появления
-        sprite.setAlpha(0);
-        sprite.setScale(0.5);
-        this.tweens.add({
+        // ✨ Ждём анимацию
+        await tweenPromise(this, {
             targets: sprite,
             alpha: 1,
             scale: 1,
-            duration: 1000,
+            duration: 500, // можно оставить 500, чтобы не тормозило сильно
             ease: "Back.easeOut",
+            onStart: () => {
+                sprite.setAlpha(0);
+                sprite.setScale(0.5);
+            },
         });
-
-        this.grid[y][x] = sprite;
     }
 
     isHorizontalMatch(match: Phaser.GameObjects.Sprite[]): boolean {
@@ -1055,7 +1068,11 @@ export class Game extends Scene {
                 sprite.setData("gridY", y);
                 sprite.setData("type", type);
 
-                if (type === "verticalHelper" || type === "horizontalHelper") {
+                if (
+                    type === "verticalHelper" ||
+                    type === "horizontalHelper" ||
+                    type === "discoball"
+                ) {
                     sprite.setData("isHelper", true);
                     sprite.setData("helperType", type);
                 }
