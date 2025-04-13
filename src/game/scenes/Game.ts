@@ -104,63 +104,94 @@ export class Game extends Scene {
     posForHelpersX = 0;
     posForHelpersY = 0;
 
+    isInputLocked = false;
     isProcessing = false;
     constructor() {
         super("Game");
     }
+    setupPointerEvents(sprite: Phaser.GameObjects.Sprite) {
+        sprite.on("pointerover", () => sprite.setAlpha(0.7));
+        sprite.on("pointerout", () => sprite.setAlpha(1));
+
+        sprite.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+            // 👉 Блокируем ранние клики
+            if (this.isInputLocked) return;
+
+            sprite.setData("pointerDown", {
+                x: pointer.x,
+                y: pointer.y,
+            });
+
+            this.selectedSprite = sprite;
+            this.pointerDownPos = {
+                x: pointer.x,
+                y: pointer.y,
+            };
+        });
+    }
 
     async handleTileClick(tile: Phaser.GameObjects.Sprite) {
-        if (this.isProcessing) return;
+        if (this.isProcessing || this.isInputLocked) return;
 
-        const isHelper = tile.getData("isHelper");
-        if (isHelper) {
-            await this.activateHelperChain([tile]);
-            return;
-        }
+        this.isInputLocked = true;
 
-        const selectedAnimation = {
-            targets: tile,
-            scale: { from: 1, to: 1.2, yoyo: true },
-            ease: "Sine.easeInOut",
-            duration: 300,
-            repeat: -1,
-        };
-
-        if (!this.selectedTile) {
-            this.selectedTile = tile;
-            if (this.selectedTileTween) {
+        try {
+            const isHelper = tile.getData("isHelper");
+            if (isHelper) {
+                await this.activateHelperChain([tile]);
                 this.tweens.remove(this.selectedTileTween);
+                this.selectedTile.setScale(1);
+                this.selectedTile = null;
+                this.selectedTileTween = null;
+                return;
             }
-            this.selectedTileTween = this.tweens.add(selectedAnimation);
-            return;
-        }
 
-        if (tile === this.selectedTile) {
-            this.tweens.remove(this.selectedTileTween);
-            this.selectedTile.setScale(1);
-            this.selectedTile = null;
-            this.selectedTileTween = null;
-            return;
-        }
+            const selectedAnimation = {
+                targets: tile,
+                scale: { from: 1, to: 1.2, yoyo: true },
+                ease: "Sine.easeInOut",
+                duration: 300,
+                repeat: -1,
+            };
 
-        const x1 = this.selectedTile.getData("gridX");
-        const y1 = this.selectedTile.getData("gridY");
-        const x2 = tile.getData("gridX");
-        const y2 = tile.getData("gridY");
+            if (!this.selectedTile) {
+                this.selectedTile = tile;
+                if (this.selectedTileTween) {
+                    this.tweens.remove(this.selectedTileTween);
+                }
+                this.selectedTileTween = this.tweens.add(selectedAnimation);
+                return;
+            }
 
-        const dx = Math.abs(x1 - x2);
-        const dy = Math.abs(y1 - y2);
+            if (tile === this.selectedTile) {
+                this.tweens.remove(this.selectedTileTween);
+                this.selectedTile.setScale(1);
+                this.selectedTile = null;
+                this.selectedTileTween = null;
+                return;
+            }
 
-        if ((dx === 1 && dy === 0) || (dx === 0 && dy === 1)) {
-            this.tweens.remove(this.selectedTileTween);
-            await this.swapTiles(this.selectedTile, tile);
-            this.selectedTile = null;
-            this.selectedTileTween = null;
-        } else {
-            this.tweens.remove(this.selectedTileTween);
-            this.selectedTile.setScale(1);
-            this.selectedTile = tile;
-            this.selectedTileTween = this.tweens.add(selectedAnimation);
+            const x1 = this.selectedTile.getData("gridX");
+            const y1 = this.selectedTile.getData("gridY");
+            const x2 = tile.getData("gridX");
+            const y2 = tile.getData("gridY");
+
+            const dx = Math.abs(x1 - x2);
+            const dy = Math.abs(y1 - y2);
+
+            if ((dx === 1 && dy === 0) || (dx === 0 && dy === 1)) {
+                this.tweens.remove(this.selectedTileTween);
+                await this.swapTiles(this.selectedTile, tile);
+                this.selectedTile = null;
+                this.selectedTileTween = null;
+            } else {
+                this.tweens.remove(this.selectedTileTween);
+                this.selectedTile.setScale(1);
+                this.selectedTile = tile;
+                this.selectedTileTween = this.tweens.add(selectedAnimation);
+            }
+        } finally {
+            this.isInputLocked = false;
         }
     }
 
@@ -169,83 +200,50 @@ export class Game extends Scene {
         pointer: Phaser.Input.Pointer,
         start: { x: number; y: number }
     ) {
-        if (this.isProcessing) return;
+        if (this.isProcessing || this.isInputLocked) return;
 
-        const dx = pointer.x - start.x;
-        const dy = pointer.y - start.y;
+        this.isInputLocked = true;
 
-        let dirX = 0;
-        let dirY = 0;
+        try {
+            const dx = pointer.x - start.x;
+            const dy = pointer.y - start.y;
 
-        const angle = Phaser.Math.RadToDeg(Math.atan2(dy, dx));
+            let dirX = 0;
+            let dirY = 0;
 
-        if (angle >= -45 && angle <= 45) dirX = 1;
-        else if (angle >= 135 || angle <= -135) dirX = -1;
-        else if (angle > 45 && angle < 135) dirY = 1;
-        else if (angle < -45 && angle > -135) dirY = -1;
+            const angle = Phaser.Math.RadToDeg(Math.atan2(dy, dx));
 
-        const gridX = tile.getData("gridX");
-        const gridY = tile.getData("gridY");
+            if (angle >= -45 && angle <= 45) dirX = 1;
+            else if (angle >= 135 || angle <= -135) dirX = -1;
+            else if (angle > 45 && angle < 135) dirY = 1;
+            else if (angle < -45 && angle > -135) dirY = -1;
 
-        const targetX = gridX + dirX;
-        const targetY = gridY + dirY;
+            const gridX = tile.getData("gridX");
+            const gridY = tile.getData("gridY");
 
-        if (
-            targetX >= 0 &&
-            targetX < this.cols &&
-            targetY >= 0 &&
-            targetY < this.rows
-        ) {
-            const neighbor = this.grid[targetY][targetX];
-            if (neighbor) {
-                await this.swapTiles(tile, neighbor);
+            const targetX = gridX + dirX;
+            const targetY = gridY + dirY;
+
+            if (
+                targetX >= 0 &&
+                targetX < this.cols &&
+                targetY >= 0 &&
+                targetY < this.rows
+            ) {
+                const neighbor = this.grid[targetY][targetX];
+                if (neighbor) {
+                    await this.swapTiles(tile, neighbor);
+                }
             }
+        } finally {
+            this.isInputLocked = false;
         }
     }
 
-    async swapTiles(
+    async basicSwap(
         tileA: Phaser.GameObjects.Sprite,
         tileB: Phaser.GameObjects.Sprite
     ) {
-        if (this.isProcessing) return;
-        this.isProcessing = true;
-
-        const isHelperA = tileA?.getData("isHelper");
-        const isHelperB = tileB?.getData("isHelper");
-        const typeA = tileA?.getData("type");
-        const typeB = tileB?.getData("type");
-
-        const isDiscoA = typeA === "discoball";
-        const isDiscoB = typeB === "discoball";
-
-        // 🎯 Обработка дискошара
-        if (isDiscoA && !isDiscoB) {
-            await this._activateSingleHelper(tileA, tileB, new Set());
-            return;
-        }
-        if (isDiscoB && !isDiscoA) {
-            await this._activateSingleHelper(tileB, tileA, new Set());
-            return;
-        }
-        if (isDiscoA && isDiscoB) {
-            await this.activateHelperChain([tileA]);
-            return;
-        }
-
-        // 💥 Обычные хелперы
-        if (isHelperA && isHelperB) {
-            await this.activateHelperChain([tileA, tileB]);
-            return;
-        }
-        if (isHelperA) {
-            await this.activateHelperChain([tileA]);
-            return;
-        }
-        if (isHelperB) {
-            await this.activateHelperChain([tileB]);
-            return;
-        }
-
         // 🧩 Обычный свап
         const xA = tileA.getData("gridX");
         const yA = tileA.getData("gridY");
@@ -329,6 +327,51 @@ export class Game extends Scene {
         } else {
             await this.undoSwap(tileA, tileB, oldCoords);
         }
+    }
+    async swapTiles(
+        tileA: Phaser.GameObjects.Sprite,
+        tileB: Phaser.GameObjects.Sprite
+    ) {
+        if (this.isProcessing) return;
+        this.isProcessing = true;
+
+        const isHelperA = tileA?.getData("isHelper");
+        const isHelperB = tileB?.getData("isHelper");
+        const typeA = tileA?.getData("type");
+        const typeB = tileB?.getData("type");
+
+        const isDiscoA = typeA === "discoball";
+        const isDiscoB = typeB === "discoball";
+
+        // 🎯 Обработка дискошара
+        if (isDiscoA && !isDiscoB) {
+            await this._activateSingleHelper(tileA, tileB, new Set());
+            return;
+        }
+        if (isDiscoB && !isDiscoA) {
+            await this._activateSingleHelper(tileB, tileA, new Set());
+            return;
+        }
+        if (isDiscoA && isDiscoB) {
+            await this.activateHelperChain([tileA]);
+            return;
+        }
+
+        // 💥 Обычные хелперы
+        if (isHelperA && isHelperB) {
+            await this.activateHelperChain([tileA, tileB]);
+            return;
+        }
+        if (isHelperA) {
+            await this.activateHelperChain([tileA]);
+            return;
+        }
+        if (isHelperB) {
+            await this.basicSwap(tileA, tileB);
+            // await this.activateHelperChain([tileB]);
+            return;
+        }
+        await this.basicSwap(tileA, tileB);
     }
 
     findMatches(): Phaser.GameObjects.Sprite[][] {
@@ -609,22 +652,7 @@ export class Game extends Scene {
                     sprite.setData("gridY", y);
                     sprite.setData("type", type);
 
-                    sprite.on("pointerover", () => sprite.setAlpha(0.7));
-                    sprite.on("pointerout", () => sprite.setAlpha(1));
-                    sprite.on(
-                        "pointerdown",
-                        (pointer: Phaser.Input.Pointer) => {
-                            sprite.setData("pointerDown", {
-                                x: pointer.x,
-                                y: pointer.y,
-                            });
-                            this.selectedSprite = sprite;
-                            this.pointerDownPos = {
-                                x: pointer.x,
-                                y: pointer.y,
-                            };
-                        }
-                    );
+                    this.setupPointerEvents(sprite);
 
                     this.grid[y][x] = sprite;
 
@@ -718,13 +746,7 @@ export class Game extends Scene {
         sprite.setData("isHelper", true);
         sprite.setData("helperType", type);
 
-        sprite.on("pointerover", () => sprite.setAlpha(0.7));
-        sprite.on("pointerout", () => sprite.setAlpha(1));
-        sprite.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-            sprite.setData("pointerDown", { x: pointer.x, y: pointer.y });
-            this.selectedSprite = sprite;
-            this.pointerDownPos = { x: pointer.x, y: pointer.y };
-        });
+        this.setupPointerEvents(sprite);
 
         // 👇 Эффект появления
         sprite.setAlpha(0);
@@ -733,7 +755,7 @@ export class Game extends Scene {
             targets: sprite,
             alpha: 1,
             scale: 1,
-            duration: 300,
+            duration: 1000,
             ease: "Back.easeOut",
         });
 
@@ -762,7 +784,7 @@ export class Game extends Scene {
     async _activateSingleHelper(
         sprite: Phaser.GameObjects.Sprite,
         tile?: Phaser.GameObjects.Sprite,
-        triggerChain: Set<Phaser.GameObjects.Sprite>
+        triggerChain?: Set<Phaser.GameObjects.Sprite>
     ): Promise<void> {
         const x = sprite.getData("gridX");
         const y = sprite.getData("gridY");
@@ -770,8 +792,8 @@ export class Game extends Scene {
         const typeToRemove = tile?.getData("type");
         const toRemove: Phaser.GameObjects.Sprite[] = [];
 
-        if (triggerChain.has(sprite)) return;
-        triggerChain.add(sprite);
+        if (triggerChain?.has(sprite)) return;
+        triggerChain?.add(sprite);
 
         const helpersToActivate: Phaser.GameObjects.Sprite[] = [];
 
@@ -1037,22 +1059,7 @@ export class Game extends Scene {
                     sprite.setData("isHelper", true);
                     sprite.setData("helperType", type);
                 }
-                sprite.on("pointerover", () => {
-                    sprite.setAlpha(0.7);
-                });
-
-                sprite.on("pointerout", () => {
-                    sprite.setAlpha(1);
-                });
-
-                sprite.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-                    sprite.setData("pointerDown", {
-                        x: pointer.x,
-                        y: pointer.y,
-                    });
-                    this.selectedSprite = sprite;
-                    this.pointerDownPos = { x: pointer.x, y: pointer.y };
-                });
+                this.setupPointerEvents(sprite);
                 this.grid[y][x] = sprite;
             });
         });
