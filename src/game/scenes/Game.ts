@@ -90,7 +90,6 @@ export class Game extends Scene {
     selectedTileTween: Phaser.Tweens.Tween | null = null;
     grid: (Phaser.GameObjects.Sprite | null)[][] = [];
     holePositions: Set<string> = new Set();
-    lastMovedCell: { row: number; col: number } | null = null;
 
     selectedSprite: Phaser.GameObjects.Sprite | null = null;
     pointerDownPos: { x: number; y: number } | null = null;
@@ -254,8 +253,6 @@ export class Game extends Scene {
         const xB = tileB.getData("gridX");
         const yB = tileB.getData("gridY");
 
-        this.lastMovedCell = { row: xB ?? 0, col: yB ?? 0 };
-
         const oldCoords = {
             tileA: { x: xA, y: yA },
             tileB: { x: xB, y: yB },
@@ -307,6 +304,10 @@ export class Game extends Scene {
             this.removeMatches(matches);
 
             let helperSpawned = false;
+
+            let spawnX = xB;
+            let spawnY = yB;
+
             for (const match of matches) {
                 if (match.length === 4 || match.length === 5) {
                     const isHorizontal = this.isHorizontalMatch(match);
@@ -316,10 +317,16 @@ export class Game extends Scene {
                             : isHorizontal
                             ? "verticalHelper"
                             : "horizontalHelper";
+                    // 👇 Найдём, какой из двух тайлов участвовал в совпадении
+                    const found = match.find((t) => t === tileA || t === tileB);
+                    if (found) {
+                        spawnX = found.getData("gridX");
+                        spawnY = found.getData("gridY");
+                    }
 
                     helperSpawned = true;
                     await delayPromise(this, 250);
-                    this.createHelperWithEffect(xB, yB, type);
+                    this.createHelperWithEffect(spawnX, spawnY, type);
                 }
             }
 
@@ -328,6 +335,7 @@ export class Game extends Scene {
             await delayPromise(this, 100);
             await this.fillEmptyTiles();
             await this.processMatchesLoop();
+            await this.reshuffleBoardIfNoMoves();
         } else {
             await this.undoSwap(tileA, tileB, oldCoords);
         }
@@ -367,6 +375,7 @@ export class Game extends Scene {
             return;
         }
         if (isHelperA) {
+            // await this.basicSwap(tileA, tileB);
             await this.activateHelperChain([tileA]);
             return;
         }
@@ -730,6 +739,7 @@ export class Game extends Scene {
             await delayPromise(this, 300); // чуть сократили
 
             await this.processMatchesLoop(); // рекурсивный запуск
+            await this.reshuffleBoardIfNoMoves();
         } else {
             this.isProcessing = false;
         }
@@ -793,6 +803,7 @@ export class Game extends Scene {
         await this.dropTiles();
         await this.fillEmptyTiles();
         await this.processMatchesLoop();
+        await this.reshuffleBoardIfNoMoves();
     }
     async _activateSingleHelper(
         sprite: Phaser.GameObjects.Sprite,
@@ -988,6 +999,7 @@ export class Game extends Scene {
         await this.fillEmptyTiles();
         await delayPromise(this, 450);
         await this.processMatchesLoop();
+        await this.reshuffleBoardIfNoMoves();
     }
     async removeTiles(tiles: Phaser.GameObjects.Sprite[]): Promise<void> {
         const tweenPromises: Promise<void>[] = [];
@@ -1008,6 +1020,83 @@ export class Game extends Scene {
         await Promise.all(tweenPromises);
     }
 
+    hasAvailableMoves(): boolean {
+        const rows = this.rows;
+        const cols = this.cols;
+
+        const isMatch = (
+            a: Phaser.GameObjects.Sprite,
+            b: Phaser.GameObjects.Sprite,
+            c: Phaser.GameObjects.Sprite
+        ): boolean => {
+            if (!a || !b || !c) return false;
+            const t1 = a.getData("type");
+            const t2 = b.getData("type");
+            const t3 = c.getData("type");
+            return t1 === t2 && t2 === t3;
+        };
+
+        for (let y = 0; y < rows; y++) {
+            for (let x = 0; x < cols; x++) {
+                const tile = this.grid[y][x];
+                if (!tile) continue;
+
+                const type = tile.getData("type");
+
+                // Попробуем свапнуть вправо
+                if (x < cols - 1) {
+                    const right = this.grid[y][x + 1];
+                    if (!right) continue;
+
+                    // Поменять местами
+                    this.grid[y][x] = right;
+                    this.grid[y][x + 1] = tile;
+
+                    const match = this.findMatches();
+
+                    // Вернуть обратно
+                    this.grid[y][x] = tile;
+                    this.grid[y][x + 1] = right;
+
+                    if (match.length > 0) return true;
+                }
+
+                // Попробуем свапнуть вниз
+                if (y < rows - 1) {
+                    const down = this.grid[y + 1][x];
+                    if (!down) continue;
+
+                    this.grid[y][x] = down;
+                    this.grid[y + 1][x] = tile;
+
+                    const match = this.findMatches();
+
+                    this.grid[y][x] = tile;
+                    this.grid[y + 1][x] = down;
+
+                    if (match.length > 0) return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    async reshuffleBoardIfNoMoves(): Promise<void> {
+        while (!this.hasAvailableMoves()) {
+            console.log("😶 Нет доступных ходов, перезаполняем поле");
+
+            for (let y = 0; y < this.rows; y++) {
+                for (let x = 0; x < this.cols; x++) {
+                    const tile = this.grid[y][x];
+                    if (tile) tile.destroy();
+                    this.grid[y][x] = null;
+                }
+            }
+
+            await this.fillEmptyTiles();
+        }
+    }
     create() {
         this.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {
             if (this.selectedSprite && this.pointerDownPos) {
