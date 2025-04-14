@@ -1056,11 +1056,11 @@ export class Game extends Scene {
         }
 
         // Если хелперов не было — продолжаем цепочку вручную
-        await delayPromise(this, 400);
+        // await delayPromise(this, 400);
         await this.dropTiles();
-        await delayPromise(this, 350);
+        // await delayPromise(this, 350);
         await this.fillEmptyTiles();
-        await delayPromise(this, 450);
+        // await delayPromise(this, 450);
         await this.processMatchesLoop();
         await this.reshuffleBoardIfNoMoves();
     }
