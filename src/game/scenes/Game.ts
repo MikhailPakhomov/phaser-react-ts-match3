@@ -363,7 +363,7 @@ export class Game extends Scene {
                 }
             }
 
-            await delayPromise(this, helperSpawned ? 450 : 350);
+            await delayPromise(this, helperSpawned ? 450 : 300);
             await this.dropTiles();
             await delayPromise(this, 100);
             await this.fillEmptyTiles();
@@ -712,7 +712,7 @@ export class Game extends Scene {
                             y: this.offsetY + y * (cellSize + gap),
                             duration: 200,
                             delay: x * 20,
-                            ease: "Cubic.easeInOut",
+                            ease: "Cubic.easeOut",
                             onComplete: () => resolve(),
                         });
                     });
@@ -778,9 +778,9 @@ export class Game extends Scene {
                 );
             }
 
-            await delayPromise(this, 200); // ждём после спавна хелперов
+            // await delayPromise(this, 200); // ждём после спавна хелперов
             await this.dropTiles();
-            await delayPromise(this, 125);
+            // await delayPromise(this, 125);
             await this.fillEmptyTiles();
             await delayPromise(this, 200);
 
@@ -845,6 +845,7 @@ export class Game extends Scene {
             await this._activateSingleHelper(helper, undefined, triggerChain);
         }
 
+        await delayPromise(this, 100);
         await this.dropTiles();
         await this.fillEmptyTiles();
         await this.processMatchesLoop();
