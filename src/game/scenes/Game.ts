@@ -49,7 +49,7 @@ const levelGrid: (string | null)[][] = [
         "telegram",
         "vk",
         "youtube",
-        "discoball",
+        "instagram",
         "youtube",
         "vk",
     ],
@@ -79,7 +79,7 @@ const levelGrid: (string | null)[][] = [
         "instagram",
         "youtube",
         "whatsapp",
-        "vk",
+        "instagram",
         "telegram",
         "instagram",
     ],
@@ -309,15 +309,16 @@ export class Game extends Scene {
             let spawnY = yB;
 
             for (const match of matches) {
-                if (match.length === 4 || match.length === 5) {
+                let type: string | null = null;
+
+                if (match.length >= 5) {
+                    type = "discoball";
+                } else if (match.length === 4) {
                     const isHorizontal = this.isHorizontalMatch(match);
-                    const type =
-                        match.length === 5
-                            ? "discoball"
-                            : isHorizontal
-                            ? "verticalHelper"
-                            : "horizontalHelper";
-                    // 👇 Найдём, какой из двух тайлов участвовал в совпадении
+                    type = isHorizontal ? "verticalHelper" : "horizontalHelper";
+                }
+
+                if (type) {
                     const found = match.find((t) => t === tileA || t === tileB);
                     if (found) {
                         spawnX = found.getData("gridX");
@@ -697,24 +698,33 @@ export class Game extends Scene {
                 [];
 
             for (const match of matches) {
-                // собираем хелперов
-                if (match.length === 4 || match.length === 5) {
-                    const isHorizontal = this.isHorizontalMatch(match);
-                    const type =
-                        match.length === 5
-                            ? "discoball"
-                            : isHorizontal
-                            ? "verticalHelper"
-                            : "horizontalHelper";
+                if (match.length >= 5) {
+                    // 🎯 Авто-диско: всегда по центру
+                    const centerIndex = Math.floor(match.length / 2);
+                    const centerTile = match[centerIndex];
+                    const spawnX = centerTile.getData("gridX");
+                    const spawnY = centerTile.getData("gridY");
 
-                    const spawnTile = match.find((tile) => tile.active);
-                    const spawnX = spawnTile?.getData("gridX") ?? 0;
-                    const spawnY = spawnTile?.getData("gridY") ?? 0;
+                    helpersToCreate.push({
+                        x: spawnX,
+                        y: spawnY,
+                        type: "discoball",
+                    });
+                } else if (match.length === 4) {
+                    const isHorizontal = this.isHorizontalMatch(match);
+                    const type = isHorizontal
+                        ? "verticalHelper"
+                        : "horizontalHelper";
+
+                    const centerIndex = Math.floor(match.length / 2);
+                    const centerTile = match[centerIndex];
+                    const spawnX = centerTile.getData("gridX");
+                    const spawnY = centerTile.getData("gridY");
 
                     helpersToCreate.push({ x: spawnX, y: spawnY, type });
                 }
 
-                // помечаем на удаление
+                // 🔥 Помечаем тайлы для удаления
                 for (const tile of match) {
                     const x = tile.getData("gridX");
                     const y = tile.getData("gridY");
@@ -732,11 +742,11 @@ export class Game extends Scene {
                 );
             }
 
-            await delayPromise(this, 300); // немного ждём после хелперов
+            await delayPromise(this, 300); // ждём после спавна хелперов
             await this.dropTiles();
-            await delayPromise(this, 250); // чуть сократили
+            await delayPromise(this, 250);
             await this.fillEmptyTiles();
-            await delayPromise(this, 300); // чуть сократили
+            await delayPromise(this, 300);
 
             await this.processMatchesLoop(); // рекурсивный запуск
             await this.reshuffleBoardIfNoMoves();
