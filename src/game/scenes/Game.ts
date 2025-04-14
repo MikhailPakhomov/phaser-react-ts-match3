@@ -144,16 +144,27 @@ export class Game extends Scene {
                     this.selectedTileTween = null;
                 }
                 if (this.selectedTile) {
-                    await this.basicSwap(this.selectedTile, tile);
-                    await this._activateSingleHelper(
-                        tile,
-                        this.selectedTile,
-                        new Set()
-                    );
+                    const x1 = this.selectedTile.getData("gridX");
+                    const y1 = this.selectedTile.getData("gridY");
+                    const x2 = tile.getData("gridX");
+                    const y2 = tile.getData("gridY");
 
-                    this.selectedTile.setScale(1);
-                    this.selectedTile = null;
-                    return;
+                    const dx = Math.abs(x1 - x2);
+                    const dy = Math.abs(y1 - y2);
+
+                    if ((dx === 1 && dy === 0) || (dx === 0 && dy === 1)) {
+                        this.selectedTile.setScale(1);
+                        await this.basicSwap(this.selectedTile, tile);
+                        await this.activateHelperChain([tile]);
+
+                        this.selectedTile = null;
+                        return;
+                    } else {
+                        this.selectedTile.setScale(1);
+                        await this.activateHelperChain([tile]);
+                        this.selectedTile = null;
+                        return;
+                    }
                 }
                 await this.activateHelperChain([tile]);
                 return;
@@ -347,12 +358,12 @@ export class Game extends Scene {
                     }
 
                     helperSpawned = true;
-                    await delayPromise(this, 250);
+                    await delayPromise(this, 150);
                     this.createHelperWithEffect(spawnX, spawnY, type);
                 }
             }
 
-            await delayPromise(this, helperSpawned ? 650 : 350);
+            await delayPromise(this, helperSpawned ? 450 : 350);
             await this.dropTiles();
             await delayPromise(this, 100);
             await this.fillEmptyTiles();
@@ -699,9 +710,9 @@ export class Game extends Scene {
                         this.tweens.add({
                             targets: sprite,
                             y: this.offsetY + y * (cellSize + gap),
-                            duration: 350,
-                            delay: x * 30,
-                            ease: "Bounce.easeOut",
+                            duration: 200,
+                            delay: x * 20,
+                            ease: "Cubic.easeInOut",
                             onComplete: () => resolve(),
                         });
                     });
@@ -767,11 +778,11 @@ export class Game extends Scene {
                 );
             }
 
-            await delayPromise(this, 300); // ждём после спавна хелперов
+            await delayPromise(this, 200); // ждём после спавна хелперов
             await this.dropTiles();
-            await delayPromise(this, 250);
+            await delayPromise(this, 125);
             await this.fillEmptyTiles();
-            await delayPromise(this, 300);
+            await delayPromise(this, 200);
 
             await this.processMatchesLoop(); // рекурсивный запуск
             await this.reshuffleBoardIfNoMoves();
@@ -811,7 +822,7 @@ export class Game extends Scene {
             targets: sprite,
             alpha: 1,
             scale: 1,
-            duration: 500, // можно оставить 500, чтобы не тормозило сильно
+            duration: 350, // можно оставить 500, чтобы не тормозило сильно
             ease: "Back.easeOut",
             onStart: () => {
                 sprite.setAlpha(0);
@@ -830,7 +841,6 @@ export class Game extends Scene {
         helpers: Phaser.GameObjects.Sprite[]
     ): Promise<void> {
         const triggerChain = new Set<Phaser.GameObjects.Sprite>();
-        console.log(triggerChain);
         for (const helper of helpers) {
             await this._activateSingleHelper(helper, undefined, triggerChain);
         }
@@ -903,7 +913,7 @@ export class Game extends Scene {
                 await tweenPromise(this, {
                     targets: sprite,
                     angle: 360,
-                    duration: 400,
+                    duration: 300,
                     ease: "Cubic.easeOut",
                 });
                 sprite.setAngle(0);
@@ -1062,7 +1072,7 @@ export class Game extends Scene {
                     targets: tile,
                     scale: 0,
                     alpha: 0,
-                    duration: 400,
+                    duration: 300,
                     ease: "Power1",
                     onComplete: () => tile.destroy(),
                 })
