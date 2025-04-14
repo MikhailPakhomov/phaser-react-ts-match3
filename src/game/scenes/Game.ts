@@ -55,10 +55,10 @@ const levelGrid: (string | null)[][] = [
     ],
     [
         "youtube",
-        "vk",
+        "horizontalHelper",
         "telegram",
-        "instagram",
-        "instagram",
+        "discoball",
+        "discoball",
         "telegram",
         "instagram",
         "instagram",
@@ -136,6 +136,8 @@ export class Game extends Scene {
 
         try {
             const isHelper = tile.getData("isHelper");
+            const helperType = tile.getData("helperType");
+
             if (isHelper) {
                 if (this.selectedTileTween) {
                     this.tweens.remove(this.selectedTileTween);
@@ -143,8 +145,15 @@ export class Game extends Scene {
                 }
                 if (this.selectedTile) {
                     await this.basicSwap(this.selectedTile, tile);
+                    await this._activateSingleHelper(
+                        tile,
+                        this.selectedTile,
+                        new Set()
+                    );
+
                     this.selectedTile.setScale(1);
                     this.selectedTile = null;
+                    return;
                 }
                 await this.activateHelperChain([tile]);
                 return;
@@ -380,7 +389,9 @@ export class Game extends Scene {
             return;
         }
         if (isDiscoA && isDiscoB) {
-            await this.activateHelperChain([tileA, tileB]);
+            await this.clearBoard();
+            await this.fillEmptyTiles();
+            await this.processMatchesLoop();
             return;
         }
 
@@ -819,7 +830,7 @@ export class Game extends Scene {
         helpers: Phaser.GameObjects.Sprite[]
     ): Promise<void> {
         const triggerChain = new Set<Phaser.GameObjects.Sprite>();
-
+        console.log(triggerChain);
         for (const helper of helpers) {
             await this._activateSingleHelper(helper, undefined, triggerChain);
         }
@@ -850,6 +861,23 @@ export class Game extends Scene {
         };
 
         const collectLine = (tiles: Phaser.GameObjects.Sprite[]) => {
+            let discoCount = 0;
+
+            for (const tile of tiles) {
+                if (!tile || tile === sprite) continue;
+
+                const tileType = tile.getData("type");
+                if (tileType === "discoball") discoCount++;
+            }
+
+            if (discoCount >= 2) {
+                // удалим все и выйдем
+                this.clearBoard().then(() => {
+                    // возможно тебе нужно сбросить цепочку хелперов — или можно вызвать drop+fill+loop вручную
+                });
+                return;
+            }
+
             for (const tile of tiles) {
                 if (!tile || tile === sprite) continue;
 
@@ -1120,6 +1148,32 @@ export class Game extends Scene {
 
             await this.fillEmptyTiles();
         }
+    }
+    async clearBoard(): Promise<void> {
+        const tweenPromises: Promise<void>[] = [];
+
+        for (let y = 0; y < this.grid.length; y++) {
+            for (let x = 0; x < this.grid[y].length; x++) {
+                const tile = this.grid[y][x];
+                if (!tile) continue;
+
+                this.grid[y][x] = null;
+
+                tweenPromises.push(
+                    tweenPromise(this, {
+                        targets: tile,
+                        scale: 0,
+                        alpha: 0,
+                        duration: 400,
+                        delay: Phaser.Math.Between(0, 300),
+                        ease: "Power2",
+                        onComplete: () => tile.destroy(),
+                    })
+                );
+            }
+        }
+
+        await Promise.all(tweenPromises);
     }
     create() {
         this.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {
