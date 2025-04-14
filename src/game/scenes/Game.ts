@@ -788,7 +788,7 @@ export class Game extends Scene {
                 );
             }
 
-            // await delayPromise(this, 200); // ждём после спавна хелперов
+            await delayPromise(this, helpersToCreate.length > 0 ? 200 : 0); // ждём после спавна хелперов
             await this.dropTiles();
             // await delayPromise(this, 125);
             await this.fillEmptyTiles();
@@ -828,16 +828,39 @@ export class Game extends Scene {
         this.grid[y][x] = sprite;
 
         // ✨ Ждём анимацию
+        // await tweenPromise(this, {
+        //     targets: sprite,
+        //     alpha: 1,
+        //     scale: 1,
+        //     duration: 350, // можно оставить 500, чтобы не тормозило сильно
+        //     ease: "Back.easeOut",
+        //     onStart: () => {
+        //         sprite.setAlpha(0);
+        //         sprite.setScale(0.5);
+        //     },
+        // });
         await tweenPromise(this, {
+            // targets: sprite,
+            // scale: 1.4,
+            // alpha: 1,
+            // duration: 200,
+            // ease: "Cubic.easeOut",
             targets: sprite,
+            scale: 1.2,
             alpha: 1,
+            duration: 200,
+            ease: "Power2",
+            yoyo: true,
+        });
+
+        await tweenPromise(this, {
+            // targets: sprite,
+            // scale: 1,
+            // duration: 100,
+            // ease: "Sine.easeOut",
+            targets: sprite,
             scale: 1,
-            duration: 350, // можно оставить 500, чтобы не тормозило сильно
-            ease: "Back.easeOut",
-            onStart: () => {
-                sprite.setAlpha(0);
-                sprite.setScale(0.5);
-            },
+            duration: 100,
         });
     }
 
