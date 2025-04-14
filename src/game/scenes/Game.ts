@@ -142,6 +142,7 @@ export class Game extends Scene {
                     this.selectedTileTween = null;
                 }
                 if (this.selectedTile) {
+                    await this.basicSwap(this.selectedTile, tile);
                     this.selectedTile.setScale(1);
                     this.selectedTile = null;
                 }
@@ -206,6 +207,15 @@ export class Game extends Scene {
         if (this.isProcessing || this.isInputLocked) return;
 
         this.isInputLocked = true;
+
+        if (this.selectedTileTween) {
+            this.tweens.remove(this.selectedTileTween);
+            this.selectedTileTween = null;
+        }
+        if (this.selectedTile) {
+            this.selectedTile.setScale(1);
+            this.selectedTile = null;
+        }
 
         try {
             const dx = pointer.x - start.x;
@@ -296,6 +306,8 @@ export class Game extends Scene {
             }),
         ]);
 
+        if (tileA.getData("isHelper") || tileB.getData("isHelper")) return;
+
         tileA.setScale(1);
         tileB.setScale(1);
 
@@ -358,10 +370,12 @@ export class Game extends Scene {
 
         // 🎯 Обработка дискошара
         if (isDiscoA && !isDiscoB) {
+            await this.basicSwap(tileA, tileB);
             await this._activateSingleHelper(tileA, tileB, new Set());
             return;
         }
         if (isDiscoB && !isDiscoA) {
+            await this.basicSwap(tileA, tileB);
             await this._activateSingleHelper(tileB, tileA, new Set());
             return;
         }
@@ -376,13 +390,13 @@ export class Game extends Scene {
             return;
         }
         if (isHelperA) {
-            // await this.basicSwap(tileA, tileB);
+            await this.basicSwap(tileA, tileB);
             await this.activateHelperChain([tileA]);
             return;
         }
         if (isHelperB) {
             await this.basicSwap(tileA, tileB);
-            // await this.activateHelperChain([tileB]);
+            await this.activateHelperChain([tileB]);
             return;
         }
         await this.basicSwap(tileA, tileB);
