@@ -155,6 +155,16 @@ export class Game extends Scene {
                     if ((dx === 1 && dy === 0) || (dx === 0 && dy === 1)) {
                         this.selectedTile.setScale(1);
                         await this.basicSwap(this.selectedTile, tile);
+                        if (helperType === "discoball") {
+                            console.log("привет");
+                            await this._activateSingleHelper(
+                                tile,
+                                this.selectedTile,
+                                new Set()
+                            );
+                            this.selectedTile = null;
+                            return;
+                        }
                         await this.activateHelperChain([tile]);
 
                         this.selectedTile = null;
