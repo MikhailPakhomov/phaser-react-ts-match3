@@ -26,11 +26,12 @@ export class Preloader extends Scene {
         //  Load the assets for the game - Replace with your own assets
         this.load.setPath("assets");
         this.load.image("background", "bg.png");
-        this.load.image("instagram", "instagram.png");
-        this.load.image("whatsapp", "whatsapp.png");
-        this.load.image("telegram", "telegram.png");
-        this.load.image("vk", "vk.png");
-        this.load.image("youtube", "youtube.png");
+        this.load.image("phone", "phone.png");
+        this.load.image("smartphone", "smartphone.png");
+        this.load.image("sim", "sim.png");
+        this.load.image("signal", "signal.png");
+        this.load.image("message", "message.png");
+        this.load.image("energy", "energy.png");
         this.load.image("horizontalHelper", "horizontalHelper.png");
         this.load.image("verticalHelper", "verticalHelper.png");
         this.load.image("discoball", "discoball.png");

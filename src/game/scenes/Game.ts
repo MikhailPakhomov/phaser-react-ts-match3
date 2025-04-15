@@ -2,88 +2,99 @@ import { EventBus } from "../EventBus";
 import { Scene } from "phaser";
 import { delayPromise, tweenPromise } from "../utils/tween-utils";
 
-const levelGrid: (string | null)[][] = [
+const levelGrid = [
     [
-        "youtube",
-        "whatsapp",
-        "youtube",
-        "telegram",
-        "youtube",
-        "whatsapp",
-        "whatsapp",
-        "vk",
+        { type: "phone" },
+        { type: "sim" },
+        { type: "phone" },
+        { type: "signal" },
+        { type: "energy" },
+        { type: "sim" },
+        { type: "sim" },
+        { type: "smartphone" },
     ],
     [
-        "youtube",
-        "youtube",
-        "vk",
-        "telegram",
-        "instagram",
-        "instagram",
-        "telegram",
-        "youtube",
+        { type: "phone" },
+        { type: "ice", content: { type: "smartphone" }, strength: 2 },
+        { type: "smartphone" },
+        { type: "signal" },
+        { type: "message" },
+        { type: "message" },
+        { type: "signal" },
+        { type: "phone" },
     ],
     [
-        "telegram",
-        "vk",
-        "youtube",
-        "whatsapp",
-        "telegram",
-        "whatsapp",
-        "vk",
-        "instagram",
+        { type: "signal" },
+        { type: "smartphone" },
+        { type: "phone" },
+        { type: "sim" },
+        { type: "energy" },
+        { type: "sim" },
+        { type: "smartphone" },
+        { type: "message" },
     ],
     [
-        "vk",
-        "verticalHelper",
-        "horizontalHelper",
-        "youtube",
-        "instagram",
-        "verticalHelper",
-        "vk",
-        "youtube",
+        { type: "smartphone" },
+        { type: "energy" },
+        {
+            type: "energy",
+        },
+        { type: "phone" },
+        { type: "energy" },
+        {
+            type: "verticalHelper",
+            isHelper: true,
+            helperType: "verticalHelper",
+        },
+        { type: "smartphone" },
+        { type: "phone" },
     ],
     [
-        "instagram",
-        "vk",
-        "telegram",
-        "vk",
-        "youtube",
-        "instagram",
-        "youtube",
-        "vk",
+        { type: "message" },
+        { type: "smartphone" },
+        { type: "signal" },
+        { type: "smartphone" },
+        { type: "phone" },
+        { type: "message" },
+        { type: "phone" },
+        { type: "smartphone" },
     ],
     [
-        "youtube",
-        "horizontalHelper",
-        "telegram",
-        "discoball",
-        "discoball",
-        "telegram",
-        "instagram",
-        "instagram",
+        { type: "phone" },
+        {
+            type: "horizontalHelper",
+            isHelper: true,
+            helperType: "horizontalHelper",
+        },
+        { type: "signal" },
+        { type: "message" },
+        { type: "message" },
+        { type: "signal" },
+        { type: "energy" },
+        { type: "message" },
     ],
     [
-        "whatsapp",
-        "telegram",
-        "youtube",
-        "telegram",
-        "vk",
-        "instagram",
-        "whatsapp",
-        "youtube",
+        { type: "sim" },
+        { type: "signal" },
+        { type: "phone" },
+        { type: "signal" },
+        { type: "smartphone" },
+        { type: "message" },
+        { type: "sim" },
+        { type: "phone" },
     ],
     [
-        "telegram",
-        "whatsapp",
-        "instagram",
-        "youtube",
-        "whatsapp",
-        "instagram",
-        "telegram",
-        "instagram",
+        { type: "signal" },
+        { type: "sim" },
+        { type: "message" },
+        { type: "phone" },
+        { type: "sim" },
+        { type: "message" },
+        { type: "energy" },
+        { type: "message" },
     ],
 ];
+
 export class Game extends Scene {
     background: Phaser.GameObjects.Image;
     selectedTile: Phaser.GameObjects.Sprite | null = null;
@@ -689,7 +700,14 @@ export class Game extends Scene {
     async fillEmptyTiles(): Promise<void> {
         const cellSize = 74;
         const gap = 8;
-        const types = ["youtube", "whatsapp", "telegram", "vk", "instagram"];
+        const types = [
+            "phone",
+            "smartphone",
+            "sim",
+            "signal",
+            "energy",
+            "message",
+        ];
 
         const tweenPromises: Promise<void>[] = [];
 
@@ -1227,10 +1245,8 @@ export class Game extends Scene {
                 const distance = Math.sqrt(dx * dx + dy * dy);
 
                 if (distance < 10) {
-                    // 👉 Это клик
                     this.handleTileClick(this.selectedSprite);
                 } else {
-                    // 👉 Это свайп
                     this.handleSwipe(
                         this.selectedSprite,
                         pointer,
@@ -1243,8 +1259,8 @@ export class Game extends Scene {
             }
         });
 
-        const cellSize: number = 74;
-        const gap: number = 8;
+        const cellSize = 74;
+        const gap = 8;
 
         const cols = levelGrid[0].length;
         const rows = levelGrid.length;
@@ -1260,16 +1276,30 @@ export class Game extends Scene {
         levelGrid.forEach((row, y) => {
             this.grid[y] = [];
 
-            row.forEach((type, x) => {
-                if (!type) {
+            row.forEach((cell, x) => {
+                if (!cell) {
                     this.grid[y][x] = null;
                     this.holePositions.add(`${x},${y}`);
                     return;
                 }
 
-                const posY = this.offsetY + y * (cellSize + gap);
+                let type = cell.type;
+                let data = cell;
+
+                // Если это лёд — вытаскиваем вложенный контент
+                if (cell.type === "ice") {
+                    type = cell.content.type;
+                    data = {
+                        ...cell.content,
+                        ice: {
+                            strength: cell.strength,
+                        },
+                    };
+                }
+
                 const posX = this.offsetX + x * (cellSize + gap);
-                // this.createSprite(x, y, type);
+                const posY = this.offsetY + y * (cellSize + gap);
+
                 const sprite = this.add.sprite(posX, posY, type);
                 sprite.setOrigin(0);
                 sprite.setDisplaySize(cellSize, cellSize);
@@ -1279,15 +1309,13 @@ export class Game extends Scene {
                 sprite.setData("gridY", y);
                 sprite.setData("type", type);
 
-                if (
-                    type === "verticalHelper" ||
-                    type === "horizontalHelper" ||
-                    type === "discoball"
-                ) {
-                    sprite.setData("isHelper", true);
-                    sprite.setData("helperType", type);
+                // Встраиваем всё содержимое data (isHelper, helperType, ice и т.п.)
+                for (const key in data) {
+                    sprite.setData(key, data[key]);
                 }
+
                 this.setupPointerEvents(sprite);
+
                 this.grid[y][x] = sprite;
             });
         });
