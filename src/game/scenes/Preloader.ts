@@ -44,6 +44,8 @@ export class Preloader extends Scene {
         this.load.image("horizontalHelper", "horizontalHelper.png");
         this.load.image("verticalHelper", "verticalHelper.png");
         this.load.image("discoball", "discoball.png");
+        this.load.image("ice_full", "ice_full.png");
+        this.load.image("ice_cracked", "ice_cracked.png");
     }
 
     create() {
