@@ -1277,6 +1277,8 @@ export class Game extends Scene {
         const typeToRemove = tile?.getData("type");
         const toRemove: Phaser.GameObjects.Sprite[] = [];
 
+        console.log(`🚀 Активация хелпера ${type} на (${x}, ${y})`);
+
         if (triggerChain?.has(sprite)) return;
         triggerChain?.add(sprite);
 
@@ -1298,19 +1300,14 @@ export class Game extends Scene {
 
             if (ice.strength > 1) {
                 ice.strength--;
-                if (iceSprite) {
-                    iceSprite.setTexture("ice_cracked");
-                }
+                if (iceSprite) iceSprite.setTexture("ice_cracked");
             } else {
-                if (iceSprite) iceSprite.destroy();
-                tile.setData("ice", null);
-                tile.setData("iceSprite", null);
-                tile.setDepth(5);
+                // 💥 Лёд разрушен, но не удаляем сразу
+                ice.destroyed = true;
             }
 
-            return true; // 💥 лед был и мы его повредили
+            return true;
         };
-
         const triggerHelper = (target: Phaser.GameObjects.Sprite) => {
             helpersToActivate.push(target);
         };
@@ -1343,6 +1340,16 @@ export class Game extends Scene {
                 if (tile.getData("isHelper")) {
                     triggerHelper(tile);
                 } else {
+                    // const hasIce = tile.data.has("ice");
+                    // const iceData = tile.getData("ice");
+                    // console.log("❌ Попытка удаления фишки", {
+                    //     x: tx,
+                    //     y: ty,
+                    //     type: tile.getData("type"),
+                    //     hasIce,
+                    //     iceData,
+                    // });
+
                     toRemove.push(tile);
                     this.grid[ty][tx] = null;
                 }
@@ -1396,15 +1403,20 @@ export class Game extends Scene {
 
         toRemove.push(sprite);
 
-        console.warn(
-            "💥 toRemove итоговый",
-            toRemove.map((t) => ({
-                x: t.getData("gridX"),
-                y: t.getData("gridY"),
-                type: t.getData("type"),
-                hasIce: t.getData("ice"),
-            }))
-        );
+        for (const key of damagedIce) {
+            const [x, y] = key.split(",").map(Number);
+            const tile = this.grid?.[y]?.[x];
+            const ice = tile?.getData("ice");
+            const iceSprite = tile?.getData("iceSprite");
+
+            if (ice?.destroyed) {
+                if (iceSprite) iceSprite.destroy();
+                tile?.setData("ice", null);
+                tile?.setData("iceSprite", null);
+                tile?.setDepth(5);
+            }
+        }
+
         await this.removeTiles(toRemove);
 
         for (const helper of helpersToActivate) {
@@ -1802,32 +1814,32 @@ export class Game extends Scene {
         sprite.setData("ice", { strength });
         sprite.setData("iceSprite", iceSprite);
     }
-    damageIceAt(x: number, y: number, damagedIce: Set<string>) {
-        const tile = this.grid?.[y]?.[x];
-        if (!tile) return;
+    // damageIceAt(x: number, y: number, damagedIce: Set<string>) {
+    //     const tile = this.grid?.[y]?.[x];
+    //     if (!tile) return;
 
-        const key = `${x},${y}`;
-        if (damagedIce.has(key)) return; // Уже нанесён урон
+    //     const key = `${x},${y}`;
+    //     if (damagedIce.has(key)) return; // Уже нанесён урон
 
-        const ice = tile.getData("ice");
-        const iceSprite = tile.getData("iceSprite");
+    //     const ice = tile.getData("ice");
+    //     const iceSprite = tile.getData("iceSprite");
 
-        if (!ice) return;
+    //     if (!ice) return;
 
-        damagedIce.add(key);
+    //     damagedIce.add(key);
 
-        if (ice.strength > 1) {
-            ice.strength--;
-            if (iceSprite) {
-                iceSprite.setTexture("ice_cracked");
-            }
-        } else {
-            if (iceSprite) iceSprite.destroy();
-            tile.setData("ice", null);
-            tile.setData("iceSprite", null);
-            tile.setDepth(5);
-        }
-    }
+    //     if (ice.strength > 1) {
+    //         ice.strength--;
+    //         if (iceSprite) {
+    //             iceSprite.setTexture("ice_cracked");
+    //         }
+    //     } else {
+    //         if (iceSprite) iceSprite.destroy();
+    //         tile.setData("ice", null);
+    //         tile.setData("iceSprite", null);
+    //         tile.setDepth(5);
+    //     }
+    // }
 
     create() {
         this.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {
