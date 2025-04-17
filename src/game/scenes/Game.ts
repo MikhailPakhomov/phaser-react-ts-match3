@@ -4,102 +4,77 @@ import { delayPromise, tweenPromise } from "../utils/tween-utils";
 
 const levelGrid = [
     [
-        { type: "signal" },
-        { type: "sim" },
         { type: "phone" },
-        { type: "signal" },
-        { type: "energy" },
-        { type: "sim" },
-        { type: "sim" },
-        { type: "smartphone" },
+        {
+            type: "phone",
+        },
+        { type: "message" },
+        { type: "phone" },
+        { type: "message" },
+        { type: "phone" },
+        { type: "phone" },
     ],
     [
-        { type: "phone" },
-        { type: "ice", content: { type: "phone" }, strength: 2 },
         { type: "box", strength: 2 },
-        { type: "signal" },
-        { type: "message" },
-        {
-            type: "horizontalHelper",
-            isHelper: true,
-            helperType: "horizontalHelper",
-        },
-        { type: "signal" },
-        { type: "phone" },
-    ],
-    [
-        { type: "signal" },
-        { type: "smartphone" },
-        { type: "phone" },
-        { type: "sim" },
-        { type: "energy" },
-        { type: "sim" },
-        { type: "smartphone" },
-        { type: "message" },
-    ],
-    [
-        { type: "smartphone" },
-        { type: "energy" },
-        {
-            type: "energy",
-        },
         { type: "phone" },
         { type: "energy" },
-        {
-            type: "verticalHelper",
-            isHelper: true,
-            helperType: "verticalHelper",
-        },
-        { type: "smartphone" },
-        { type: "phone" },
-    ],
-    [
-        { type: "message" },
-        { type: "smartphone" },
-        { type: "signal" },
-        { type: "smartphone" },
-        { type: "phone" },
-        { type: "message" },
-        { type: "phone" },
-        { type: "smartphone" },
-    ],
-    [
-        { type: "phone" },
-        {
-            type: "verticalHelper",
-            isHelper: true,
-            helperType: "verticalHelper",
-        },
-        { type: "signal" },
-        { type: "message" },
-        { type: "message" },
-        { type: "signal" },
-        { type: "energy" },
-        { type: "message" },
-    ],
-    [
-        { type: "sim" },
-        { type: "signal" },
-        { type: "phone" },
-        { type: "signal" },
-        { type: "smartphone" },
-        { type: "message" },
-        { type: "sim" },
-        { type: "phone" },
-    ],
-    [
-        { type: "signal" },
-        { type: "sim" },
-        {
-            type: "verticalHelper",
-            isHelper: true,
-            helperType: "verticalHelper",
-        },
-        { type: "phone" },
         { type: "discoball", isHelper: true, helperType: "discoball" },
-        { type: "message" },
+        { type: "smartphone" },
+        { type: "phone" },
+        { type: "box", strength: 2 },
+    ],
+    [
+        { type: "box", strength: 2 },
+        { type: "box", strength: 2 },
+        { type: "box", strength: 2 },
+        {
+            type: "ice",
+            content: {
+                type: "horizontalHelper",
+                isHelper: true,
+                helperType: "horizontalHelper",
+            },
+            strength: 2,
+        },
+        { type: "box", strength: 2 },
+        { type: "box", strength: 2 },
+        { type: "box", strength: 2 },
+    ],
+    [
+        { type: "box", strength: 2 },
+        { type: "box", strength: 2 },
+        { type: "box", strength: 2 },
+        { type: "box", strength: 2 },
+        { type: "box", strength: 2 },
+        { type: "box", strength: 2 },
+        { type: "box", strength: 2 },
+    ],
+    [
         { type: "energy" },
-        { type: "message" },
+        { type: "smartphone" },
+        { type: "energy" },
+        { type: "smartphone" },
+        { type: "energy" },
+        { type: "smartphone" },
+        { type: "energy" },
+    ],
+    [
+        { type: "smartphone" },
+        { type: "ice", content: { type: "energy" }, strength: 2 },
+        { type: "smartphone" },
+        { type: "energy" },
+        { type: "smartphone" },
+        { type: "ice", content: { type: "energy" }, strength: 2 },
+        { type: "smartphone" },
+    ],
+    [
+        { type: "energy" },
+        { type: "ice", content: { type: "smartphone" }, strength: 2 },
+        { type: "energy" },
+        { type: "smartphone" },
+        { type: "energy" },
+        { type: "ice", content: { type: "smartphone" }, strength: 2 },
+        { type: "energy" },
     ],
 ];
 export class Game extends Scene {
@@ -467,130 +442,78 @@ export class Game extends Scene {
         const height = this.grid.length;
         const width = this.grid[0].length;
 
-        // Горизонтальные матчи
+        const isMatchable = (
+            tile: Phaser.GameObjects.Sprite | null
+        ): boolean => {
+            if (!tile) return false;
+            if (tile.getData("box")) return false;
+            if (tile.getData("isHelper")) return false;
+            if (!tile.getData("type")) return false;
+            return true;
+        };
+
+        // Горизонтальные
         for (let y = 0; y < height; y++) {
             let streak: Phaser.GameObjects.Sprite[] = [];
-            let prevType = null;
+            let prevType: string | null = null;
 
             for (let x = 0; x < width; x++) {
                 const tile = this.grid[y][x];
-                const type = tile?.getData("type") || null;
 
-                if (type === prevType && tile) {
-                    streak.push(tile);
-                } else {
-                    if (streak.length >= 3) {
-                        matches.push([...streak]);
-                    }
-                    streak = tile ? [tile] : [];
+                if (!isMatchable(tile)) {
+                    if (streak.length >= 3) matches.push([...streak]);
+                    streak = [];
+                    prevType = null;
+                    continue;
                 }
-                prevType = type;
-            }
-
-            if (streak.length >= 3) {
-                matches.push([...streak]);
-            }
-        }
-
-        // Вертикальные матчи
-        for (let x = 0; x < width; x++) {
-            let streak: Phaser.GameObjects.Sprite[] = [];
-            let prevType = null;
-
-            for (let y = 0; y < height; y++) {
-                const tile = this.grid[y][x];
-                const type = tile?.getData("type") || null;
-
-                if (type === prevType && tile) {
-                    streak.push(tile);
-                } else {
-                    if (streak.length >= 3) {
-                        matches.push([...streak]);
-                    }
-                    streak = tile ? [tile] : [];
-                }
-                prevType = type;
-            }
-
-            if (streak.length >= 3) {
-                matches.push([...streak]);
-            }
-        }
-
-        // Угловые совпадения (проверяем только углы)
-        for (let y = 0; y < height; y++) {
-            for (let x = 0; x < width; x++) {
-                const tile = this.grid[y][x];
-                if (!tile) continue;
 
                 const type = tile.getData("type");
 
-                // Проверка угловых совпадений (смотрим, есть ли элементы по горизонтали и вертикали)
-                if (
-                    // Угловые проверки
-                    (x === 0 || x === width - 1) &&
-                    (y === 0 || y === height - 1)
-                ) {
-                    let streak: Phaser.GameObjects.Sprite[] = [tile];
-
-                    // Проверяем, если слева или справа есть совпадения
-                    if (
-                        x > 0 &&
-                        this.grid[y][x - 1]?.getData("type") === type
-                    ) {
-                        streak.push(this.grid[y][x - 1]);
-                    }
-                    if (
-                        x < width - 1 &&
-                        this.grid[y][x + 1]?.getData("type") === type
-                    ) {
-                        streak.push(this.grid[y][x + 1]);
-                    }
-
-                    // Проверяем, если сверху или снизу есть совпадения
-                    if (
-                        y > 0 &&
-                        this.grid[y - 1][x]?.getData("type") === type
-                    ) {
-                        streak.push(this.grid[y - 1][x]);
-                    }
-                    if (
-                        y < height - 1 &&
-                        this.grid[y + 1][x]?.getData("type") === type
-                    ) {
-                        streak.push(this.grid[y + 1][x]);
-                    }
-
-                    // Если находим комбинацию
-                    if (streak.length >= 3) {
-                        matches.push(streak);
-                    }
+                if (type === prevType) {
+                    streak.push(tile);
+                } else {
+                    if (streak.length >= 3) matches.push([...streak]);
+                    streak = [tile];
                 }
+
+                prevType = type;
             }
+
+            if (streak.length >= 3) matches.push([...streak]);
         }
 
-        // Объединяем совпадения, если они близки друг к другу (угловые)
-        const mergedMatches: Phaser.GameObjects.Sprite[][] = [];
-        matches.forEach((match) => {
-            let merged = false;
-            for (let i = 0; i < mergedMatches.length; i++) {
-                const existingMatch = mergedMatches[i];
-                if (match.some((tile) => existingMatch.includes(tile))) {
-                    mergedMatches[i] = [
-                        ...new Set([...existingMatch, ...match]),
-                    ]; // Объединяем совпадения
-                    merged = true;
-                    break;
+        // Вертикальные
+        for (let x = 0; x < width; x++) {
+            let streak: Phaser.GameObjects.Sprite[] = [];
+            let prevType: string | null = null;
+
+            for (let y = 0; y < height; y++) {
+                const tile = this.grid[y][x];
+
+                if (!isMatchable(tile)) {
+                    if (streak.length >= 3) matches.push([...streak]);
+                    streak = [];
+                    prevType = null;
+                    continue;
                 }
-            }
-            if (!merged) {
-                mergedMatches.push(match); // Добавляем как отдельное совпадение
-            }
-        });
 
-        return mergedMatches;
+                const type = tile.getData("type");
+
+                if (type === prevType) {
+                    streak.push(tile);
+                } else {
+                    if (streak.length >= 3) matches.push([...streak]);
+                    streak = [tile];
+                }
+
+                prevType = type;
+            }
+
+            if (streak.length >= 3) matches.push([...streak]);
+        }
+
+        return matches;
     }
-
     async removeMatches(matches: Phaser.GameObjects.Sprite[][]): Promise<void> {
         const tweens: Promise<void>[] = [];
         const damagedTiles = new Set<Phaser.GameObjects.Sprite>();
@@ -912,8 +835,8 @@ export class Game extends Scene {
         const types = [
             "phone",
             "smartphone",
-            "sim",
-            "signal",
+            // "sim",
+            // "signal",
             "energy",
             "message",
         ];
@@ -1303,38 +1226,76 @@ export class Game extends Scene {
         for (const { dx, dy } of directions) {
             const nx = x + dx;
             const ny = y + dy;
+
             if (
                 ny >= 0 &&
-                ny < this.rows &&
+                ny < this.grid.length &&
                 nx >= 0 &&
-                nx < this.cols &&
-                this.grid[ny][nx]
+                nx < this.grid[0].length
             ) {
                 const neighbor = this.grid[ny][nx];
-                const neighborType = neighbor.getData("type");
-                const isHelper = neighbor.getData("helperType");
 
+                if (!neighbor) continue;
+
+                const neighborType = neighbor.getData("type");
+                const isHelper = neighbor.getData("isHelper");
+
+                // Фильтрация только обычных фишек с типом
                 if (!isHelper && neighborType) {
                     neighbors.push(neighbor);
                 }
             }
         }
 
-        if (neighbors.length > 0) {
-            const randomNeighbor = Phaser.Math.RND.pick(neighbors);
-            const finalTypeToRemove = randomNeighbor.getData("type");
+        let selectedTile: Phaser.GameObjects.Sprite | undefined;
 
+        if (neighbors.length > 0) {
+            selectedTile = Phaser.Math.RND.pick(neighbors);
+        } else {
+            // fallback: на случайную подходящую фишку из всей сетки
+            const candidates: Phaser.GameObjects.Sprite[] = [];
+            for (let row of this.grid) {
+                for (let tile of row) {
+                    if (
+                        tile &&
+                        !tile.getData("isHelper") &&
+                        tile.getData("type")
+                    ) {
+                        candidates.push(tile);
+                    }
+                }
+            }
+
+            if (candidates.length > 0) {
+                selectedTile = Phaser.Math.RND.pick(candidates);
+            }
+        }
+
+        if (selectedTile) {
             await tweenPromise(this, {
-                targets: randomNeighbor,
+                targets: selectedTile,
                 duration: 300,
                 scale: 1.2,
                 yoyo: true,
                 ease: "Power1",
             });
 
-            randomNeighbor.setScale(1);
+            selectedTile.setScale(1);
 
-            await this.removeDiscoTiles(x, y, finalTypeToRemove, sprite);
+            const finalTypeToRemove = selectedTile.getData("type");
+            const centerX = sprite.getData("gridX");
+            const centerY = sprite.getData("gridY");
+
+            await this.removeDiscoTiles(
+                centerX,
+                centerY,
+                finalTypeToRemove,
+                sprite
+            );
+        } else {
+            console.warn(
+                "❗ Не удалось найти соседнюю или случайную фишку для дискошара"
+            );
         }
     }
 
