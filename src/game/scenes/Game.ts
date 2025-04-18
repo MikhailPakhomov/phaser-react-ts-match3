@@ -788,7 +788,7 @@ export class Game extends Scene {
                             new Promise<void>((resolve) => {
                                 this.tweens.add({
                                     targets: iceSprite,
-                                    y: targetY - 10,
+                                    y: targetY,
                                     duration: 250,
                                     ease: "Power2",
                                     onComplete: () => resolve(),

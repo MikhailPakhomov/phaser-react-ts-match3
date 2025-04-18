@@ -8,7 +8,7 @@ export class Preloader extends Scene {
     init() {
         const { width, height } = this.scale;
         //  We loaded this image in our Boot Scene, so we can display it here
-        this.add.image(width / 2, height / 2, "background");
+        // this.add.image(width / 2, height / 2, "background");
 
         //  A simple progress bar. This is the outline of the bar.
         this.add
