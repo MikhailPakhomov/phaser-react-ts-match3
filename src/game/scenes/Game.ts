@@ -1106,7 +1106,7 @@ export class Game extends Scene {
     }
 
     async _activateSingleHelper(
-        sprite: Phaser.GameObjects.Sprite,
+        sprite: Phaser.GameObjects.Sprite | Phaser.GameObjects.Container,
         tile?: Phaser.GameObjects.Sprite,
         triggerChain?: Set<Phaser.GameObjects.Sprite>
     ): Promise<void> {
@@ -1140,7 +1140,6 @@ export class Game extends Scene {
                 ice.strength--;
                 if (iceSprite) iceSprite.setTexture("ice_cracked");
             } else {
-                // 💥 Лёд разрушен, но не удаляем сразу
                 ice.destroyed = true;
             }
 
@@ -1184,47 +1183,26 @@ export class Game extends Scene {
             helpersToActivate.push(target);
         };
 
-        const collectLine = (tiles: Phaser.GameObjects.Sprite[]) => {
-            for (const tile of tiles) {
-                if (!tile || tile === sprite) continue;
-
-                const tx = tile.getData("gridX");
-                const ty = tile.getData("gridY");
-
-                const boxWasDamaged = damageBoxAt(tx, ty);
-                const iceWasDamaged = damageIceAt(tx, ty);
-
-                const stillHasBox = tile.getData("box");
-                const stillHasIce = tile.getData("ice");
-
-                const canRemove =
-                    !boxWasDamaged &&
-                    !iceWasDamaged &&
-                    !stillHasBox &&
-                    !stillHasIce;
-
-                if (canRemove) {
-                    if (tile.getData("isHelper")) {
-                        triggerHelper(tile);
-                    } else {
-                        console.log(
-                            `👉 Удаляем фишку в (${tx},${ty}), тип: ${tile.getData(
-                                "type"
-                            )}`
-                        );
-                        this.grid[ty][tx] = null;
-                        toRemove.push(tile);
-                    }
-                }
-            }
-        };
-
-        if (type === "verticalHelper") {
-            const column = this.grid.map((row) => row[x]);
-            collectLine(column);
-        } else if (type === "horizontalHelper") {
-            const row = this.grid[y];
-            collectLine(row);
+        if (type === "horizontalHelper") {
+            await this.launchHorizontalRocketWithDamage(
+                sprite,
+                x,
+                y,
+                triggerHelper,
+                toRemove,
+                damageIceAt,
+                damageBoxAt
+            );
+        } else if (type === "verticalHelper") {
+            await this.launchVerticalRocketWithDamage(
+                sprite,
+                x,
+                y,
+                triggerHelper,
+                toRemove,
+                damageIceAt,
+                damageBoxAt
+            );
         } else if (type === "discoball") {
             if (!typeToRemove) {
                 await tweenPromise(this, {
@@ -1245,20 +1223,20 @@ export class Game extends Scene {
         toRemove.push(sprite);
 
         for (const key of damagedIce) {
-            const [x, y] = key.split(",").map(Number);
-            const tile = this.grid?.[y]?.[x];
+            const [ix, iy] = key.split(",").map(Number);
+            const tile = this.grid?.[iy]?.[ix];
             const ice = tile?.getData("ice");
             const iceSprite = tile?.getData("iceSprite");
 
             if (ice?.destroyed) {
-                console.log(`💥 Лёд в (${x},${y}) разрушен`);
+                console.log(`💥 Лёд в (${ix},${iy}) разрушен`);
                 if (iceSprite) iceSprite.destroy();
                 tile?.setData("ice", null);
                 tile?.setData("iceSprite", null);
                 tile?.setDepth(5);
             } else {
                 console.log(
-                    `🧊 УРОН льду в (${x},${y}), осталось жизней: ${ice?.strength}`
+                    `🧊 УРОН льду в (${ix},${iy}), осталось жизней: ${ice?.strength}`
                 );
             }
         }
@@ -1276,6 +1254,299 @@ export class Game extends Scene {
         for (const helper of helpersToActivate) {
             await this._activateSingleHelper(helper, undefined, triggerChain);
         }
+    }
+    async launchDoubleRocket(
+        sprite: Phaser.GameObjects.Container
+    ): Promise<void> {
+        const rockets = sprite.getData("rockets");
+        const { x: containerX, y: containerY } = sprite;
+        const cellSize = 74;
+        const distance = 6 * (cellSize + 8);
+        const tweens: Promise<void>[] = [];
+
+        const moveOutAndLaunch = (
+            rocket: Phaser.GameObjects.Sprite,
+            angle: number,
+            dx: number,
+            dy: number
+        ) => {
+            // 🚀 Удаляем из контейнера, добавляем в сцену
+            sprite.remove(rocket);
+            this.children.add(rocket); // помещаем в root сцены
+
+            // Вычисляем глобальные координаты ракеты
+            const worldX = containerX + rocket.x;
+            const worldY = containerY + rocket.y;
+            rocket.setPosition(worldX, worldY);
+            rocket.setAngle(angle);
+            rocket.setDepth(100);
+
+            // 🔁 Анимация
+            const tween = tweenPromise(this, {
+                targets: rocket,
+                x: worldX + dx * distance,
+                y: worldY + dy * distance,
+                duration: 400,
+                ease: "Power2",
+                onComplete: () => rocket.destroy(),
+            });
+
+            tweens.push(tween);
+        };
+
+        if (rockets.left) moveOutAndLaunch(rockets.left, 0, -1, 0);
+        if (rockets.right) moveOutAndLaunch(rockets.right, 180, 1, 0);
+        if (rockets.up) moveOutAndLaunch(rockets.up, -90, 0, -1);
+        if (rockets.down) moveOutAndLaunch(rockets.down, 90, 0, 1);
+
+        await Promise.all(tweens);
+    }
+    async launchRocketWithHits(
+        x: number,
+        y: number,
+        type: string,
+        helpersToActivate: Phaser.GameObjects.Sprite[],
+        triggerChain?: Set<Phaser.GameObjects.Sprite>
+    ) {
+        const cellSize = 74;
+        const spacing = 8;
+        const durationPerCell = 80;
+
+        const isVertical = type === "verticalHelper";
+        const maxIndex = isVertical ? this.grid.length : this.grid[0].length;
+
+        const pos = (i: number) =>
+            isVertical
+                ? {
+                      x: this.offsetX + x * (cellSize + spacing) + cellSize / 2,
+                      y: this.offsetY + i * (cellSize + spacing) + cellSize / 2,
+                  }
+                : {
+                      x: this.offsetX + i * (cellSize + spacing) + cellSize / 2,
+                      y: this.offsetY + y * (cellSize + spacing) + cellSize / 2,
+                  };
+
+        const direction1 = 1;
+        const direction2 = -1;
+
+        const launchInDirection = async (dir: number) => {
+            const indices =
+                dir > 0
+                    ? Phaser.Utils.Array.NumberArray(
+                          isVertical ? y + 1 : x + 1,
+                          maxIndex - 1
+                      )
+                    : Phaser.Utils.Array.NumberArray(
+                          isVertical ? y - 1 : x - 1,
+                          0
+                      ).reverse();
+
+            const rocket = this.add.sprite(
+                this.offsetX + x * (cellSize + spacing) + cellSize / 2,
+                this.offsetY + y * (cellSize + spacing) + cellSize / 2,
+                "rocket"
+            );
+            rocket.setDepth(20);
+            rocket.setAngle(
+                isVertical ? (dir > 0 ? 180 : 0) : dir > 0 ? 90 : -90
+            );
+            rocket.setOrigin(0.5);
+
+            for (const i of indices) {
+                const { x: tx, y: ty } = pos(i);
+
+                await tweenPromise(this, {
+                    targets: rocket,
+                    x: isVertical ? tx : tx,
+                    y: isVertical ? ty : ty,
+                    duration: durationPerCell,
+                    ease: "Power1",
+                    onUpdate: () => {
+                        const gridX = isVertical ? x : i;
+                        const gridY = isVertical ? i : y;
+                        const tile = this.grid?.[gridY]?.[gridX];
+                        if (!tile || tile.getData("__hitByRocket")) return;
+
+                        tile.setData("__hitByRocket", true);
+
+                        const box = tile.getData("box");
+                        const ice = tile.getData("ice");
+
+                        if (box) {
+                            const strength = box.strength;
+                            if (strength > 1) {
+                                box.strength--;
+                                tile.setTexture("box_cracked");
+                            } else {
+                                this.grid[gridY][gridX] = null;
+                                tile.destroy();
+                            }
+                        } else if (ice) {
+                            if (ice.strength > 1) {
+                                ice.strength--;
+                                const iceSprite = tile.getData("iceSprite");
+                                if (iceSprite)
+                                    iceSprite.setTexture("ice_cracked");
+                            } else {
+                                const iceSprite = tile.getData("iceSprite");
+                                if (iceSprite) iceSprite.destroy();
+                                tile.setData("ice", null);
+                                tile.setData("iceSprite", null);
+                                tile.setDepth(5);
+                            }
+                        } else {
+                            if (tile.getData("isHelper")) {
+                                helpersToActivate.push(tile);
+                            } else {
+                                this.grid[gridY][gridX] = null;
+                                tile.destroy();
+                            }
+                        }
+                    },
+                });
+            }
+
+            rocket.destroy();
+        };
+
+        await Promise.all([
+            launchInDirection(direction1),
+            launchInDirection(direction2),
+        ]);
+
+        for (const helper of helpersToActivate) {
+            await this._activateSingleHelper(helper, undefined, triggerChain);
+        }
+    }
+
+    async launchHorizontalRocketWithDamage(
+        origin: Phaser.GameObjects.Container,
+        col: number,
+        row: number,
+        triggerHelper: Function,
+        toRemove: Phaser.GameObjects.Sprite[],
+        damageIceAt: Function,
+        damageBoxAt: Function
+    ): Promise<void> {
+        const baseY = this.offsetY + row * 82 + 37;
+
+        const launchRocket = async (startX: number, direction: number) => {
+            const rocket = this.add.sprite(startX, baseY, "rocket");
+            rocket.setOrigin(0.5);
+            rocket.setAngle(direction < 0 ? 0 : 180);
+            rocket.setDepth(999);
+
+            let x = col;
+            while (x >= 0 && x < this.grid[0].length) {
+                const targetX = this.offsetX + x * 82 + 37;
+                await tweenPromise(this, {
+                    targets: rocket,
+                    x: targetX,
+                    duration: 80,
+                    ease: "Linear",
+                });
+
+                const tile = this.grid[row][x];
+                if (tile && tile !== origin) {
+                    const tx = tile.getData("gridX");
+                    const ty = tile.getData("gridY");
+
+                    const boxWasDamaged = damageBoxAt(tx, ty);
+                    const iceWasDamaged = damageIceAt(tx, ty);
+                    const stillHasBox = tile.getData("box");
+                    const stillHasIce = tile.getData("ice");
+
+                    const canRemove =
+                        !boxWasDamaged &&
+                        !iceWasDamaged &&
+                        !stillHasBox &&
+                        !stillHasIce;
+
+                    if (canRemove) {
+                        if (tile.getData("isHelper")) {
+                            triggerHelper(tile);
+                        } else {
+                            this.grid[ty][tx] = null;
+                            toRemove.push(tile);
+                        }
+                    }
+                }
+
+                x += direction;
+            }
+
+            rocket.destroy();
+        };
+
+        await Promise.all([
+            launchRocket(this.offsetX + col * 82 + 37, -1),
+            launchRocket(this.offsetX + col * 82 + 37, 1),
+        ]);
+    }
+    async launchVerticalRocketWithDamage(
+        origin: Phaser.GameObjects.Container,
+        col: number,
+        row: number,
+        triggerHelper: Function,
+        toRemove: Phaser.GameObjects.Sprite[],
+        damageIceAt: Function,
+        damageBoxAt: Function
+    ): Promise<void> {
+        const baseX = this.offsetX + col * 82 + 37;
+
+        const launchRocket = async (startY: number, direction: number) => {
+            const rocket = this.add.sprite(baseX, startY, "rocket");
+            rocket.setOrigin(0.5);
+            rocket.setAngle(direction < 0 ? -90 : 90);
+            rocket.setDepth(999);
+
+            let y = row;
+            while (y >= 0 && y < this.grid.length) {
+                const targetY = this.offsetY + y * 82 + 37;
+
+                await tweenPromise(this, {
+                    targets: rocket,
+                    y: targetY,
+                    duration: 80,
+                    ease: "Linear",
+                });
+
+                const tile = this.grid[y][col];
+                if (tile && tile !== origin) {
+                    const tx = tile.getData("gridX");
+                    const ty = tile.getData("gridY");
+
+                    const boxWasDamaged = damageBoxAt(tx, ty);
+                    const iceWasDamaged = damageIceAt(tx, ty);
+                    const stillHasBox = tile.getData("box");
+                    const stillHasIce = tile.getData("ice");
+
+                    const canRemove =
+                        !boxWasDamaged &&
+                        !iceWasDamaged &&
+                        !stillHasBox &&
+                        !stillHasIce;
+
+                    if (canRemove) {
+                        if (tile.getData("isHelper")) {
+                            triggerHelper(tile);
+                        } else {
+                            this.grid[ty][tx] = null;
+                            toRemove.push(tile);
+                        }
+                    }
+                }
+
+                y += direction;
+            }
+
+            rocket.destroy();
+        };
+
+        await Promise.all([
+            launchRocket(this.offsetY + row * 82 + 37, -1), // вверх
+            launchRocket(this.offsetY + row * 82 + 37, 1), // вниз
+        ]);
     }
     async activateDiscoballWithRandomNeighbor(
         sprite: Phaser.GameObjects.Sprite
@@ -1693,6 +1964,11 @@ export class Game extends Scene {
             Phaser.Geom.Rectangle.Contains
         );
 
+        container.setData("rockets", {
+            up: rocketUp,
+            down: rocketDown,
+        });
+
         container.setData("type", "verticalHelper");
         container.setData("isHelper", true);
         container.setData("helperType", "verticalHelper");
@@ -1719,6 +1995,11 @@ export class Game extends Scene {
             new Phaser.Geom.Rectangle(37, 40, 74, 74),
             Phaser.Geom.Rectangle.Contains
         );
+
+        container.setData("rockets", {
+            left: rocketLeft,
+            right: rocketRight,
+        });
 
         container.setData("type", "horizontalHelper");
         container.setData("isHelper", true);
