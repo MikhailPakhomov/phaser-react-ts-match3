@@ -34,6 +34,7 @@ export class Preloader extends Scene {
     preload() {
         //  Load the assets for the game - Replace with your own assets
         this.load.setPath("assets");
+        this.load.image("tile_bg", "tile_bg.png");
         this.load.image("background", "bg.png");
         this.load.image("phone", "phone.png");
         this.load.image("smartphone", "smartphone.png");

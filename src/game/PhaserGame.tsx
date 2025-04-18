@@ -68,7 +68,7 @@ export const PhaserGame = forwardRef<IRefPhaserGame, IProps>(
                 style={{
                     width: "100%",
                     height: "100%",
-                    backgroundColor: "#43a1e7",
+                    backgroundColor: "#00adef",
                 }}
             ></div>
         );

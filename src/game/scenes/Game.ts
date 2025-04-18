@@ -27,20 +27,20 @@ const levelGrid = [
         { type: "box", strength: 2 },
         { type: "box", strength: 2 },
         { type: "box", strength: 2 },
-        {
-            type: "horizontalHelper",
-            isHelper: true,
-            helperType: "horizontalHelper",
-        },
         // {
-        //     type: "ice",
-        //     content: {
-        //         type: "horizontalHelper",
-        //         isHelper: true,
-        //         helperType: "horizontalHelper",
-        //     },
-        //     strength: 2,
+        //     type: "horizontalHelper",
+        //     isHelper: true,
+        //     helperType: "horizontalHelper",
         // },
+        {
+            type: "ice",
+            content: {
+                type: "horizontalHelper",
+                isHelper: true,
+                helperType: "horizontalHelper",
+            },
+            strength: 2,
+        },
         { type: "box", strength: 2 },
         { type: "box", strength: 2 },
         { type: "box", strength: 2 },
@@ -93,10 +93,10 @@ export class Game extends Scene {
     pointerDownPos: { x: number; y: number } | null = null;
 
     cellSize = 48;
-    gap = 6;
+    gap = 2;
 
-    rows = 8;
-    cols = 8;
+    rows = 7;
+    cols = 7;
 
     offsetX = 0;
     offsetY = 0;
@@ -328,12 +328,12 @@ export class Game extends Scene {
         const cellSize = this.cellSize;
 
         const newPosA = {
-            x: this.offsetX + xB * (cellSize + spacing),
-            y: this.offsetY + yB * (cellSize + spacing),
+            x: this.offsetX + xB * (cellSize + spacing) + cellSize / 2,
+            y: this.offsetY + yB * (cellSize + spacing) + cellSize / 2,
         };
         const newPosB = {
-            x: this.offsetX + xA * (cellSize + spacing),
-            y: this.offsetY + yA * (cellSize + spacing),
+            x: this.offsetX + xA * (cellSize + spacing) + cellSize / 2,
+            y: this.offsetY + yA * (cellSize + spacing) + cellSize / 2,
         };
 
         await Promise.all([
@@ -553,7 +553,10 @@ export class Game extends Scene {
                         tile.setDepth(5);
                         tile.alpha = 1;
                         tile.scale = 1;
-                        tile.y = this.offsetY + gridY * (48 + 6);
+                        tile.y =
+                            this.offsetY +
+                            gridY * (this.cellSize + this.gap) +
+                            this.cellSize / 2;
 
                         damagedTiles.add(tile);
                         continue;
@@ -570,7 +573,10 @@ export class Game extends Scene {
                     const gridX = tile.getData("gridX");
                     const gridY = tile.getData("gridY");
                     this.grid[gridY][gridX] = tile;
-                    tile.y = this.offsetY + gridY * (48 + 6);
+                    tile.y =
+                        this.offsetY +
+                        gridY * (this.cellSize + this.gap) +
+                        this.cellSize / 2;
 
                     damagedTiles.add(tile);
                     continue;
@@ -638,7 +644,10 @@ export class Game extends Scene {
                                 neighbor.setDepth(5);
                                 neighbor.alpha = 1;
                                 neighbor.scale = 1;
-                                neighbor.y = this.offsetY + gridY * (48 + 6);
+                                neighbor.y =
+                                    this.offsetY +
+                                    gridY * (this.cellSize + this.gap) +
+                                    this.cellSize / 2;
                             } else {
                                 if (iceSprite) iceSprite.destroy();
                                 neighbor.setData("ice", null);
@@ -707,12 +716,12 @@ export class Game extends Scene {
         const cellSize = this.cellSize;
 
         const posA = {
-            x: this.offsetX + oldA.x * (cellSize + spacing),
-            y: this.offsetY + oldA.y * (cellSize + spacing),
+            x: this.offsetX + oldA.x * (cellSize + spacing) + cellSize / 2,
+            y: this.offsetY + oldA.y * (cellSize + spacing) + cellSize / 2,
         };
         const posB = {
-            x: this.offsetX + oldB.x * (cellSize + spacing),
-            y: this.offsetY + oldB.y * (cellSize + spacing),
+            x: this.offsetX + oldB.x * (cellSize + spacing) + cellSize / 2,
+            y: this.offsetY + oldB.y * (cellSize + spacing) + cellSize / 2,
         };
 
         await Promise.all([
@@ -733,7 +742,6 @@ export class Game extends Scene {
         ]);
         this.isProcessing = false;
     }
-
 
     async dropTiles(): Promise<void> {
         const gap = this.gap;
@@ -759,7 +767,8 @@ export class Game extends Scene {
 
                     tile.setData("gridY", newY);
 
-                    const targetY = this.offsetY + newY * (cellSize + gap);
+                    const targetY =
+                        this.offsetY + newY * (cellSize + gap) + cellSize / 2;
 
                     tweenPromises.push(
                         new Promise<void>((resolve) => {
@@ -813,15 +822,14 @@ export class Game extends Scene {
                     const type = Phaser.Utils.Array.GetRandom(types);
 
                     const sprite = this.add.sprite(
-                        this.offsetX + x * (cellSize + gap),
+                        this.offsetX + x * (cellSize + gap) + cellSize / 2,
                         -cellSize, // старт выше экрана
                         type
                     );
 
-                    sprite.setOrigin(0);
+                    sprite.setOrigin(0.5);
                     sprite.setDisplaySize(cellSize, cellSize);
                     sprite.setInteractive();
-                    sprite.setDisplaySize(cellSize, cellSize);
                     sprite.setData("gridX", x);
                     sprite.setData("gridY", y);
                     sprite.setData("type", type);
@@ -835,7 +843,10 @@ export class Game extends Scene {
                     const tweenPromise = new Promise<void>((resolve) => {
                         this.tweens.add({
                             targets: sprite,
-                            y: this.offsetY + y * (cellSize + gap),
+                            y:
+                                this.offsetY +
+                                y * (cellSize + gap) +
+                                cellSize / 2,
                             duration: 200,
                             delay: x * 20,
                             ease: "Cubic.easeOut",
@@ -932,8 +943,8 @@ export class Game extends Scene {
         const spacing = this.gap;
         const cellSize = this.cellSize;
 
-        const posX = this.offsetX + x * (cellSize + spacing);
-        const posY = this.offsetY + y * (cellSize + spacing);
+        const posX = this.offsetX + x * (cellSize + spacing) + cellSize / 2;
+        const posY = this.offsetY + y * (cellSize + spacing) + cellSize / 2;
 
         let sprite: Phaser.GameObjects.Sprite | Phaser.GameObjects.Container;
 
@@ -941,9 +952,15 @@ export class Game extends Scene {
             sprite = this.createDoubleRocketVertical(posX, posY); // 👈 без +cellSize/2
         } else if (type === "horizontalHelper") {
             sprite = this.createDoubleRocketHorizontal(posX, posY); // 👈 без +cellSize/2
+        } else if (type === "discoball") {
+            sprite = this.add.sprite(posX, posY, type);
+            sprite.setOrigin(0.5);
+            sprite.setDisplaySize(cellSize, cellSize);
+            sprite.setInteractive();
+            sprite.setDepth(5);
         } else {
             sprite = this.add.sprite(posX, posY, type);
-            sprite.setOrigin(0);
+            sprite.setOrigin(0.5);
             sprite.setDisplaySize(cellSize, cellSize);
             sprite.setInteractive();
         }
@@ -1126,10 +1143,6 @@ export class Game extends Scene {
                 tile?.setData("ice", null);
                 tile?.setData("iceSprite", null);
                 tile?.setDepth(5);
-            } else {
-                console.log(
-                    `🧊 УРОН льду в (${ix},${iy}), осталось жизней: ${ice?.strength}`
-                );
             }
         }
 
@@ -1148,7 +1161,6 @@ export class Game extends Scene {
         }
     }
 
-
     async launchHorizontalRocketWithDamage(
         origin: Phaser.GameObjects.Container,
         col: number,
@@ -1158,60 +1170,61 @@ export class Game extends Scene {
         damageIceAt: Function,
         damageBoxAt: Function
     ): Promise<void> {
-        const cellSize = 48;
-        const spacing = 6;
+        const cellSize = this.cellSize;
+        const spacing = this.gap;
         const baseY = this.offsetY + row * (cellSize + spacing) + cellSize / 2;
-    
+
         await tweenPromise(this, {
             targets: origin,
             scale: 1.2,
-            duration: 100,
+            duration: 200,
             ease: "Power1",
             yoyo: true,
         });
-    
+
         this.tweens.add({
             targets: origin,
             scale: 0,
             alpha: 0,
-            duration: 200,
+            duration: 100,
             ease: "Power2",
         });
-    
+
         const launchRocket = async (startX: number, direction: number) => {
             const rocket = this.add.sprite(startX, baseY, "rocket");
             rocket.setOrigin(0.5);
             rocket.setAngle(direction < 0 ? 0 : 180);
             rocket.setDepth(999);
-    
+
             let x = col;
-    
+
             while (x >= 0 && x < this.grid[0].length) {
-                const targetX = this.offsetX + x * (cellSize + spacing) + cellSize / 2;
-    
+                const targetX =
+                    this.offsetX + x * (cellSize + spacing) + cellSize / 2;
+
                 await tweenPromise(this, {
                     targets: rocket,
                     x: targetX,
                     duration: 80,
                     ease: "Linear",
                 });
-    
+
                 const tile = this.grid[row][x];
                 if (tile && tile !== origin) {
                     const tx = tile.getData("gridX");
                     const ty = tile.getData("gridY");
-    
+
                     const boxWasDamaged = damageBoxAt(tx, ty);
                     const iceWasDamaged = damageIceAt(tx, ty);
                     const stillHasBox = tile.getData("box");
                     const stillHasIce = tile.getData("ice");
-    
+
                     const canRemove =
                         !boxWasDamaged &&
                         !iceWasDamaged &&
                         !stillHasBox &&
                         !stillHasIce;
-    
+
                     if (canRemove) {
                         if (tile.getData("isHelper")) {
                             triggerHelper(tile);
@@ -1228,19 +1241,25 @@ export class Game extends Scene {
                         }
                     }
                 }
-    
+
                 x += direction;
             }
-    
+
             rocket.destroy();
         };
-    
+
         await Promise.all([
-            launchRocket(this.offsetX + col * (cellSize + spacing) + cellSize / 2, -1),
-            launchRocket(this.offsetX + col * (cellSize + spacing) + cellSize / 2, 1),
+            launchRocket(
+                this.offsetX + col * (cellSize + spacing) + cellSize / 2,
+                -1
+            ),
+            launchRocket(
+                this.offsetX + col * (cellSize + spacing) + cellSize / 2,
+                1
+            ),
         ]);
     }
-    
+
     async launchVerticalRocketWithDamage(
         origin: Phaser.GameObjects.Container,
         col: number,
@@ -1250,10 +1269,10 @@ export class Game extends Scene {
         damageIceAt: Function,
         damageBoxAt: Function
     ): Promise<void> {
-        const cellSize = 48;
-        const spacing = 6;
+        const cellSize = this.cellSize;
+        const spacing = this.gap;
         const baseX = this.offsetX + col * (cellSize + spacing) + cellSize / 2;
-    
+
         await tweenPromise(this, {
             targets: origin,
             scale: 1.2,
@@ -1261,7 +1280,7 @@ export class Game extends Scene {
             ease: "Power1",
             yoyo: true,
         });
-    
+
         this.tweens.add({
             targets: origin,
             scale: 0,
@@ -1269,42 +1288,43 @@ export class Game extends Scene {
             duration: 200,
             ease: "Power2",
         });
-    
+
         const launchRocket = async (startY: number, direction: number) => {
             const rocket = this.add.sprite(baseX, startY, "rocket");
             rocket.setOrigin(0.5);
             rocket.setAngle(direction < 0 ? -90 : 90);
             rocket.setScale(-1, 1); // если спрайт смотрит влево
             rocket.setDepth(999);
-    
+
             let y = row;
-    
+
             while (y >= 0 && y < this.grid.length) {
-                const targetY = this.offsetY + y * (cellSize + spacing) + cellSize / 2;
-    
+                const targetY =
+                    this.offsetY + y * (cellSize + spacing) + cellSize / 2;
+
                 await tweenPromise(this, {
                     targets: rocket,
                     y: targetY,
                     duration: 80,
                     ease: "Linear",
                 });
-    
+
                 const tile = this.grid[y][col];
                 if (tile && tile !== origin) {
                     const tx = tile.getData("gridX");
                     const ty = tile.getData("gridY");
-    
+
                     const boxWasDamaged = damageBoxAt(tx, ty);
                     const iceWasDamaged = damageIceAt(tx, ty);
                     const stillHasBox = tile.getData("box");
                     const stillHasIce = tile.getData("ice");
-    
+
                     const canRemove =
                         !boxWasDamaged &&
                         !iceWasDamaged &&
                         !stillHasBox &&
                         !stillHasIce;
-    
+
                     if (canRemove) {
                         if (tile.getData("isHelper")) {
                             triggerHelper(tile);
@@ -1321,16 +1341,22 @@ export class Game extends Scene {
                         }
                     }
                 }
-    
+
                 y += direction;
             }
-    
+
             rocket.destroy();
         };
-    
+
         await Promise.all([
-            launchRocket(this.offsetY + row * (cellSize + spacing) + cellSize / 2, -1),
-            launchRocket(this.offsetY + row * (cellSize + spacing) + cellSize / 2, 1),
+            launchRocket(
+                this.offsetY + row * (cellSize + spacing) + cellSize / 2,
+                -1
+            ),
+            launchRocket(
+                this.offsetY + row * (cellSize + spacing) + cellSize / 2,
+                1
+            ),
         ]);
     }
     async activateDiscoballWithRandomNeighbor(
@@ -1698,12 +1724,8 @@ export class Game extends Scene {
     attachIceToSprite(sprite: Phaser.GameObjects.GameObject, strength: number) {
         const textureKey = strength === 2 ? "ice_full" : "ice_cracked";
 
-        const iceSprite = this.add.sprite(
-            sprite.x - 10,
-            sprite.y - 10,
-            textureKey
-        );
-        iceSprite.setOrigin(0);
+        const iceSprite = this.add.sprite(sprite.x, sprite.y, textureKey);
+        iceSprite.setOrigin(0.5);
         iceSprite.setDisplaySize(65, 65);
         iceSprite.setDepth(10);
         iceSprite.setAlpha(0.7);
@@ -1712,65 +1734,67 @@ export class Game extends Scene {
         sprite.setData("ice", { strength });
         sprite.setData("iceSprite", iceSprite);
     }
-    createDoubleRocketVertical(x: number, y: number): Phaser.GameObjects.Container {
-        const offset = 6;
-    
+    createDoubleRocketVertical(
+        x: number,
+        y: number
+    ): Phaser.GameObjects.Container {
         // Левая ракета — вверх (угол -90)
-        const rocketLeft = this.add.sprite(10 + offset, 24, "rocket");
+        const rocketLeft = this.add.sprite(-10, 0, "rocket");
         rocketLeft.setAngle(-90);
         rocketLeft.setOrigin(0.5);
-    
+
         // Правая ракета — вниз (угол +90)
-        const rocketRight = this.add.sprite(38 - offset, 24, "rocket");
+        const rocketRight = this.add.sprite(10, 0, "rocket");
         rocketRight.setAngle(90);
         rocketRight.setOrigin(0.5);
-    
+
         const container = this.add.container(x, y, [rocketLeft, rocketRight]);
-        container.setSize(48, 48);
+        container.setSize(this.cellSize, this.cellSize);
         container.setDepth(5);
-    
+
         container.setInteractive(
-            new Phaser.Geom.Rectangle(24, 24, 48, 48),
+            new Phaser.Geom.Rectangle(0, 0, this.cellSize, this.cellSize),
             Phaser.Geom.Rectangle.Contains
         );
-    
+
         container.setData("type", "verticalHelper");
         container.setData("isHelper", true);
         container.setData("helperType", "verticalHelper");
-    
+
         return container;
     }
-    
 
-    createDoubleRocketHorizontal(x: number, y: number): Phaser.GameObjects.Container {
-        const offset = 6;
-    
+    createDoubleRocketHorizontal(
+        x: number,
+        y: number
+    ): Phaser.GameObjects.Container {
+        const offset = this.gap;
+
         // Верхняя ракета — смотрит влево (по дефолту)
-        const rocketTop = this.add.sprite(24, 10 + offset, "rocket");
+        const rocketTop = this.add.sprite(0, 10, "rocket");
         rocketTop.setAngle(0);
         rocketTop.setOrigin(0.5);
-    
+
         // Нижняя ракета — поворот на 180°, чтобы смотреть вправо
-        const rocketBottom = this.add.sprite(24, 38 - offset, "rocket");
+        const rocketBottom = this.add.sprite(0, -10, "rocket");
         rocketBottom.setAngle(180);
         rocketBottom.setOrigin(0.5);
-    
+
         const container = this.add.container(x, y, [rocketTop, rocketBottom]);
-        container.setSize(48, 48);
+        container.setSize(this.cellSize, this.cellSize);
         container.setDepth(5);
-    
+
         container.setInteractive(
-            new Phaser.Geom.Rectangle(24, 24, 48, 48),
+            new Phaser.Geom.Rectangle(0, 0, this.cellSize, this.cellSize),
             Phaser.Geom.Rectangle.Contains
         );
-    
+
         container.setData("type", "horizontalHelper");
         container.setData("isHelper", true);
         container.setData("helperType", "horizontalHelper");
-    
+
         return container;
     }
-    
 
     create() {
         this.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {
@@ -1818,15 +1842,21 @@ export class Game extends Scene {
                     return;
                 }
 
-                const posX = this.offsetX + x * (cellSize + gap);
-                const posY = this.offsetY + y * (cellSize + gap);
+                const posX = this.offsetX + x * (cellSize + gap) + cellSize / 2;
+                const posY = this.offsetY + y * (cellSize + gap) + cellSize / 2;
+
+                const bg = this.add.image(posX, posY, "tile_bg");
+                bg.setOrigin(0.5);
+                bg.setDisplaySize(cellSize, cellSize);
+                bg.setAlpha(0.8);
+                bg.setDepth(1);
 
                 if (cell.type === "box") {
                     const strength = cell.strength ?? 2;
                     const texture = strength === 1 ? "box_cracked" : "box_full";
 
                     const box = this.add.sprite(posX, posY, texture);
-                    box.setOrigin(0);
+                    box.setOrigin(0.5);
                     box.setDisplaySize(cellSize, cellSize);
                     box.setInteractive();
                     box.setDepth(8);
@@ -1862,9 +1892,15 @@ export class Game extends Scene {
                     data.helperType === "horizontalHelper"
                 ) {
                     sprite = this.createDoubleRocketHorizontal(posX, posY);
+                } else if (data.isHelper && data.helperType === "discoball") {
+                    sprite = this.add.sprite(posX, posY, type);
+                    sprite.setOrigin(0.5);
+                    sprite.setDisplaySize(cellSize, cellSize);
+                    sprite.setInteractive();
+                    sprite.setDepth(5);
                 } else {
                     sprite = this.add.sprite(posX, posY, type);
-                    sprite.setOrigin(0);
+                    sprite.setOrigin(0.5);
                     sprite.setDisplaySize(cellSize, cellSize);
                     sprite.setInteractive();
                     sprite.setDepth(5);
