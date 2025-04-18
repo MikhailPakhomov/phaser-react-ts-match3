@@ -27,6 +27,7 @@ const levelGrid = [
         { type: "box", strength: 2 },
         { type: "box", strength: 2 },
         { type: "box", strength: 2 },
+
         {
             type: "ice",
             content: {
@@ -101,14 +102,21 @@ export class Game extends Scene {
     constructor() {
         super("Game");
     }
-    setupPointerEvents(sprite: Phaser.GameObjects.Sprite) {
-        sprite.on("pointerover", () => sprite.setAlpha(0.7));
-        sprite.on("pointerout", () => sprite.setAlpha(1));
+    setupPointerEvents(
+        sprite: Phaser.GameObjects.Sprite | Phaser.GameObjects.Container
+    ) {
+        sprite.on("pointerover", () => {
+            sprite.setAlpha(0.7);
+        });
+
+        sprite.on("pointerout", () => {
+            sprite.setAlpha(1);
+        });
 
         sprite.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-            // 👉 Блокируем ранние клики
             if (this.isInputLocked) return;
 
+            // ❄️ Проверка льда (если есть)
             const iceData = sprite.getData("ice");
             if (iceData && iceData.strength > 0) return;
 
@@ -731,39 +739,50 @@ export class Game extends Scene {
     //         let emptySpots = 0;
 
     //         for (let y = height - 1; y >= 0; y--) {
-    //             if (
-    //                 this.grid[y][x] === null &&
-    //                 !this.holePositions.has(`${x},${y}`)
-    //             ) {
+    //             const tile = this.grid[y][x];
+
+    //             if (tile === null && !this.holePositions.has(`${x},${y}`)) {
     //                 emptySpots++;
-    //             } else if (emptySpots > 0) {
-    //                 const tile = this.grid[y][x];
-    //                 if (tile) {
-    //                     this.grid[y + emptySpots][x] = tile;
-    //                     this.grid[y][x] = null;
+    //             } else if (emptySpots > 0 && tile) {
+    //                 const newY = y + emptySpots;
+    //                 const newYPos = this.offsetY + newY * (cellSize + gap);
 
-    //                     tile.setData("gridY", y + emptySpots);
+    //                 // Обновляем координаты в данных
+    //                 this.grid[newY][x] = tile;
+    //                 this.grid[y][x] = null;
 
-    //                     const newY =
-    //                         this.offsetY + (y + emptySpots) * (cellSize + gap);
+    //                 tile.setData("gridY", newY);
 
-    //                     const tweenPromise = new Promise<void>((resolve) => {
+    //                 // 🟦 Основной твинап
+    //                 const moveTile = new Promise<void>((resolve) => {
+    //                     this.tweens.add({
+    //                         targets: tile,
+    //                         y: newYPos,
+    //                         duration: 250,
+    //                         ease: "Power2",
+    //                         onComplete: () => resolve(),
+    //                     });
+    //                 });
+    //                 tweenPromises.push(moveTile);
+
+    //                 // ❄️ Двигаем лёд, если есть
+    //                 const iceSprite = tile.getData("iceSprite");
+    //                 if (iceSprite) {
+    //                     const moveIce = new Promise<void>((resolve) => {
     //                         this.tweens.add({
-    //                             targets: tile,
-    //                             y: newY,
+    //                             targets: iceSprite,
+    //                             y: newYPos - 10,
     //                             duration: 250,
     //                             ease: "Power2",
     //                             onComplete: () => resolve(),
     //                         });
     //                     });
-
-    //                     tweenPromises.push(tweenPromise);
+    //                     tweenPromises.push(moveIce);
     //                 }
     //             }
     //         }
     //     }
 
-    //     // Ждём окончания всех твинов
     //     await Promise.all(tweenPromises);
     // }
     async dropTiles(): Promise<void> {
@@ -778,49 +797,45 @@ export class Game extends Scene {
             let emptySpots = 0;
 
             for (let y = height - 1; y >= 0; y--) {
-                if (
-                    this.grid[y][x] === null &&
-                    !this.holePositions.has(`${x},${y}`)
-                ) {
+                const tile = this.grid[y][x];
+                const posKey = `${x},${y}`;
+
+                if (tile === null && !this.holePositions.has(posKey)) {
                     emptySpots++;
-                } else if (emptySpots > 0) {
-                    const tile = this.grid[y][x];
-                    if (tile) {
-                        this.grid[y + emptySpots][x] = tile;
-                        this.grid[y][x] = null;
+                } else if (emptySpots > 0 && tile) {
+                    const newY = y + emptySpots;
+                    this.grid[newY][x] = tile;
+                    this.grid[y][x] = null;
 
-                        tile.setData("gridY", y + emptySpots);
+                    tile.setData("gridY", newY);
 
-                        const newY =
-                            this.offsetY + (y + emptySpots) * (cellSize + gap);
+                    const targetY = this.offsetY + newY * (cellSize + gap);
 
-                        const moveTile = new Promise<void>((resolve) => {
+                    tweenPromises.push(
+                        new Promise<void>((resolve) => {
                             this.tweens.add({
                                 targets: tile,
-                                y: newY,
+                                y: targetY,
                                 duration: 250,
                                 ease: "Power2",
                                 onComplete: () => resolve(),
                             });
-                        });
+                        })
+                    );
 
-                        tweenPromises.push(moveTile);
-
-                        // 👇 Если у фишки есть лёд — тоже двигаем
-                        const iceSprite = tile.getData("iceSprite");
-                        if (iceSprite) {
-                            const moveIce = new Promise<void>((resolve) => {
+                    const iceSprite = tile.getData("iceSprite");
+                    if (iceSprite) {
+                        tweenPromises.push(
+                            new Promise<void>((resolve) => {
                                 this.tweens.add({
                                     targets: iceSprite,
-                                    y: newY - 10, // учёт смещения (если у тебя -10 в create)
+                                    y: targetY - 10,
                                     duration: 250,
                                     ease: "Power2",
                                     onComplete: () => resolve(),
                                 });
-                            });
-
-                            tweenPromises.push(moveIce);
-                        }
+                            })
+                        );
                     }
                 }
             }
@@ -828,7 +843,6 @@ export class Game extends Scene {
 
         await Promise.all(tweenPromises);
     }
-
     async fillEmptyTiles(): Promise<void> {
         const cellSize = 74;
         const gap = 8;
@@ -919,7 +933,14 @@ export class Game extends Scene {
                     const spawnX = centerTile.getData("gridX");
                     const spawnY = centerTile.getData("gridY");
 
-                    helpersToCreate.push({ x: spawnX, y: spawnY, type });
+                    // 🚀 Маркируем как ракета-хелпер
+                    helpersToCreate.push({
+                        x: spawnX,
+                        y: spawnY,
+                        type,
+                        isHelper: true,
+                        helperType: type,
+                    });
                 }
 
                 // 🔥 Помечаем тайлы для удаления
@@ -952,6 +973,69 @@ export class Game extends Scene {
             this.isProcessing = false;
         }
     }
+    // async createHelperWithEffect(
+    //     x: number,
+    //     y: number,
+    //     type: string
+    // ): Promise<void> {
+    //     const cellSize = 74;
+    //     const spacing = 8;
+
+    //     const sprite = this.add.sprite(
+    //         this.offsetX + x * (cellSize + spacing),
+    //         this.offsetY + y * (cellSize + spacing),
+    //         type
+    //     );
+
+    //     sprite.setOrigin(0);
+    //     sprite.setDisplaySize(cellSize, cellSize);
+    //     sprite.setInteractive();
+
+    //     sprite.setData("gridX", x);
+    //     sprite.setData("gridY", y);
+    //     sprite.setData("type", type);
+    //     sprite.setData("isHelper", true);
+    //     sprite.setData("helperType", type);
+
+    //     this.setupPointerEvents(sprite);
+    //     this.grid[y][x] = sprite;
+
+    //     // ✨ Ждём анимацию
+    //     // await tweenPromise(this, {
+    //     //     targets: sprite,
+    //     //     alpha: 1,
+    //     //     scale: 1,
+    //     //     duration: 350, // можно оставить 500, чтобы не тормозило сильно
+    //     //     ease: "Back.easeOut",
+    //     //     onStart: () => {
+    //     //         sprite.setAlpha(0);
+    //     //         sprite.setScale(0.5);
+    //     //     },
+    //     // });
+    //     await tweenPromise(this, {
+    //         // targets: sprite,
+    //         // scale: 1.4,
+    //         // alpha: 1,
+    //         // duration: 200,
+    //         // ease: "Cubic.easeOut",
+    //         targets: sprite,
+    //         scale: 1.2,
+    //         alpha: 1,
+    //         duration: 200,
+    //         ease: "Power2",
+    //         yoyo: true,
+    //     });
+
+    //     await tweenPromise(this, {
+    //         // targets: sprite,
+    //         // scale: 1,
+    //         // duration: 100,
+    //         // ease: "Sine.easeOut",
+    //         targets: sprite,
+    //         scale: 1,
+    //         duration: 100,
+    //     });
+    // }
     async createHelperWithEffect(
         x: number,
         y: number,
@@ -960,15 +1044,27 @@ export class Game extends Scene {
         const cellSize = 74;
         const spacing = 8;
 
-        const sprite = this.add.sprite(
-            this.offsetX + x * (cellSize + spacing),
-            this.offsetY + y * (cellSize + spacing),
-            type
-        );
+        const posX = this.offsetX + x * (cellSize + spacing);
+        const posY = this.offsetY + y * (cellSize + spacing);
 
-        sprite.setOrigin(0);
-        sprite.setDisplaySize(cellSize, cellSize);
-        sprite.setInteractive();
+        let sprite: Phaser.GameObjects.Sprite | Phaser.GameObjects.Container;
+
+        if (type === "verticalHelper") {
+            sprite = this.createDoubleRocketVertical(
+                posX + cellSize / 2,
+                posY + cellSize / 2
+            );
+        } else if (type === "horizontalHelper") {
+            sprite = this.createDoubleRocketHorizontal(
+                posX + cellSize / 2,
+                posY + cellSize / 2
+            );
+        } else {
+            sprite = this.add.sprite(posX, posY, type);
+            sprite.setOrigin(0);
+            sprite.setDisplaySize(cellSize, cellSize);
+            sprite.setInteractive();
+        }
 
         sprite.setData("gridX", x);
         sprite.setData("gridY", y);
@@ -979,24 +1075,7 @@ export class Game extends Scene {
         this.setupPointerEvents(sprite);
         this.grid[y][x] = sprite;
 
-        // ✨ Ждём анимацию
-        // await tweenPromise(this, {
-        //     targets: sprite,
-        //     alpha: 1,
-        //     scale: 1,
-        //     duration: 350, // можно оставить 500, чтобы не тормозило сильно
-        //     ease: "Back.easeOut",
-        //     onStart: () => {
-        //         sprite.setAlpha(0);
-        //         sprite.setScale(0.5);
-        //     },
-        // });
         await tweenPromise(this, {
-            // targets: sprite,
-            // scale: 1.4,
-            // alpha: 1,
-            // duration: 200,
-            // ease: "Cubic.easeOut",
             targets: sprite,
             scale: 1.2,
             alpha: 1,
@@ -1006,16 +1085,11 @@ export class Game extends Scene {
         });
 
         await tweenPromise(this, {
-            // targets: sprite,
-            // scale: 1,
-            // duration: 100,
-            // ease: "Sine.easeOut",
             targets: sprite,
             scale: 1,
             duration: 100,
         });
     }
-
     isHorizontalMatch(match: Phaser.GameObjects.Sprite[]): boolean {
         if (match.length < 2) return false;
         const y = match[0].getData("gridY");
@@ -1422,20 +1496,64 @@ export class Game extends Scene {
         await this.processMatchesLoop();
         await this.reshuffleBoardIfNoMoves();
     }
-    async removeTiles(tiles: Phaser.GameObjects.Sprite[]): Promise<void> {
+    // async removeTiles(tiles: Phaser.GameObjects.Sprite[]): Promise<void> {
+    //     const tweenPromises: Promise<void>[] = [];
+
+    //     for (const tile of tiles) {
+    //         tweenPromises.push(
+    //             tweenPromise(this, {
+    //                 targets: tile,
+    //                 scale: 0,
+    //                 alpha: 0,
+    //                 duration: 300,
+    //                 ease: "Power1",
+    //                 onComplete: () => tile.destroy(),
+    //             })
+    //         );
+    //     }
+
+    //     await Promise.all(tweenPromises);
+    // }
+    async removeTiles(
+        tiles: (Phaser.GameObjects.Sprite | Phaser.GameObjects.Container)[]
+    ): Promise<void> {
         const tweenPromises: Promise<void>[] = [];
 
         for (const tile of tiles) {
             tweenPromises.push(
-                tweenPromise(this, {
-                    targets: tile,
-                    scale: 0,
-                    alpha: 0,
-                    duration: 300,
-                    ease: "Power1",
-                    onComplete: () => tile.destroy(),
+                new Promise<void>((resolve) => {
+                    this.tweens.add({
+                        targets: tile,
+                        scale: 0,
+                        alpha: 0,
+                        duration: 300,
+                        ease: "Power1",
+                        onComplete: () => {
+                            tile.destroy();
+                            resolve();
+                        },
+                    });
                 })
             );
+
+            const iceSprite = tile.getData("iceSprite");
+            if (iceSprite) {
+                tweenPromises.push(
+                    new Promise<void>((resolve) => {
+                        this.tweens.add({
+                            targets: iceSprite,
+                            scale: 0,
+                            alpha: 0,
+                            duration: 300,
+                            ease: "Power1",
+                            onComplete: () => {
+                                iceSprite.destroy();
+                                resolve();
+                            },
+                        });
+                    })
+                );
+            }
         }
 
         await Promise.all(tweenPromises);
@@ -1539,56 +1657,73 @@ export class Game extends Scene {
 
         await Promise.all(tweenPromises);
     }
-    attachIceToSprite(sprite: Phaser.GameObjects.Sprite, strength: number) {
-        const cellSize = 74;
-        const posX = sprite.x;
-        const posY = sprite.y;
+    attachIceToSprite(sprite: Phaser.GameObjects.GameObject, strength: number) {
         const textureKey = strength === 2 ? "ice_full" : "ice_cracked";
 
-        const iceSprite = this.add.sprite(posX - 10, posY - 10, textureKey);
+        const iceSprite = this.add.sprite(
+            sprite.x - 10,
+            sprite.y - 10,
+            textureKey
+        );
         iceSprite.setOrigin(0);
-
         iceSprite.setDisplaySize(94, 94);
         iceSprite.setDepth(10);
         iceSprite.setAlpha(0.7);
-
         iceSprite.disableInteractive();
 
         sprite.setData("ice", { strength });
         sprite.setData("iceSprite", iceSprite);
     }
-
     createDoubleRocketVertical(
         x: number,
         y: number
     ): Phaser.GameObjects.Container {
-        const rocketUp = this.add.sprite(0, -20, "rocket");
-        rocketUp.setAngle(0); // вверх, без поворота
+        const rocketUp = this.add.sprite(22, 37, "rocket");
+        rocketUp.setAngle(-90);
+        rocketUp.setOrigin(0.5);
 
-        const rocketDown = this.add.sprite(0, 20, "rocket");
-        rocketDown.setAngle(180); // вниз
+        const rocketDown = this.add.sprite(52, 37, "rocket");
+        rocketDown.setAngle(90);
+        rocketDown.setOrigin(0.5);
 
         const container = this.add.container(x, y, [rocketUp, rocketDown]);
-        container.setSize(50, 100); // размер для интерактива, если нужно
+        container.setSize(74, 74);
+        container.setDepth(5);
+        container.setInteractive(
+            new Phaser.Geom.Rectangle(37, 37, 74, 74),
+            Phaser.Geom.Rectangle.Contains
+        );
+
         container.setData("type", "verticalHelper");
-        container.setData("rockets", { up: rocketUp, down: rocketDown });
+        container.setData("isHelper", true);
+        container.setData("helperType", "verticalHelper");
 
         return container;
     }
+
     createDoubleRocketHorizontal(
         x: number,
         y: number
     ): Phaser.GameObjects.Container {
-        const rocketLeft = this.add.sprite(-20, 0, "rocket");
-        rocketLeft.setAngle(-90);
+        const rocketLeft = this.add.sprite(37, 22, "rocket");
+        rocketLeft.setAngle(0);
+        rocketLeft.setOrigin(0.5);
 
-        const rocketRight = this.add.sprite(20, 0, "rocket");
-        rocketRight.setAngle(90);
+        const rocketRight = this.add.sprite(37, 52, "rocket");
+        rocketRight.setAngle(180);
+        rocketRight.setOrigin(0.5);
 
         const container = this.add.container(x, y, [rocketLeft, rocketRight]);
-        container.setSize(100, 50);
+        container.setSize(74, 74);
+        container.setDepth(5);
+        container.setInteractive(
+            new Phaser.Geom.Rectangle(37, 40, 74, 74),
+            Phaser.Geom.Rectangle.Contains
+        );
+
         container.setData("type", "horizontalHelper");
-        container.setData("rockets", { left: rocketLeft, right: rocketRight });
+        container.setData("isHelper", true);
+        container.setData("helperType", "horizontalHelper");
 
         return container;
     }
@@ -1639,12 +1774,10 @@ export class Game extends Scene {
                     return;
                 }
 
-                let type = cell.type;
-                let data = cell;
-                if (cell.type === "box") {
-                    const posX = this.offsetX + x * (cellSize + gap);
-                    const posY = this.offsetY + y * (cellSize + gap);
+                const posX = this.offsetX + x * (cellSize + gap);
+                const posY = this.offsetY + y * (cellSize + gap);
 
+                if (cell.type === "box") {
                     const strength = cell.strength ?? 2;
                     const texture = strength === 1 ? "box_cracked" : "box_full";
 
@@ -1662,27 +1795,36 @@ export class Game extends Scene {
                     this.grid[y][x] = box;
                     return;
                 }
+
+                let type = cell.type;
+                let data = cell;
+
                 if (cell.type === "ice") {
                     type = cell.content.type;
                     data = {
-                        type: cell.content.type,
-                        isHelper: cell.content.isHelper,
-                        helperType: cell.content.helperType,
-                        ice: {
-                            strength: cell.strength,
-                        },
+                        ...cell.content,
+                        ice: { strength: cell.strength },
                     };
                 }
 
-                const posX = this.offsetX + x * (cellSize + gap);
-                const posY = this.offsetY + y * (cellSize + gap);
+                let sprite:
+                    | Phaser.GameObjects.Sprite
+                    | Phaser.GameObjects.Container;
 
-                // 👉 Базовая фишка (под льдом)
-                const sprite = this.add.sprite(posX, posY, type);
-                sprite.setOrigin(0);
-                sprite.setDisplaySize(cellSize, cellSize);
-                sprite.setInteractive();
-                sprite.setDepth(5); // 👈 Фишка подо льдом
+                if (data.isHelper && data.helperType === "verticalHelper") {
+                    sprite = this.createDoubleRocketVertical(posX, posY);
+                } else if (
+                    data.isHelper &&
+                    data.helperType === "horizontalHelper"
+                ) {
+                    sprite = this.createDoubleRocketHorizontal(posX, posY);
+                } else {
+                    sprite = this.add.sprite(posX, posY, type);
+                    sprite.setOrigin(0);
+                    sprite.setDisplaySize(cellSize, cellSize);
+                    sprite.setInteractive();
+                    sprite.setDepth(5);
+                }
 
                 sprite.setData("gridX", x);
                 sprite.setData("gridY", y);
@@ -1693,10 +1835,8 @@ export class Game extends Scene {
                 }
 
                 this.setupPointerEvents(sprite);
-
                 this.grid[y][x] = sprite;
 
-                // 👇 Если лёд — создаём поверх ледяной спрайт
                 if (cell.type === "ice") {
                     this.attachIceToSprite(sprite, cell.strength);
                 }
