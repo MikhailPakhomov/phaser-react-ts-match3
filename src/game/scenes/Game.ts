@@ -1434,6 +1434,22 @@ export class Game extends Scene {
     ): Promise<void> {
         const baseY = this.offsetY + row * 82 + 37;
 
+        await tweenPromise(this, {
+            targets: origin,
+            scale: 1.2,
+            duration: 100,
+            ease: "Power1",
+            yoyo: true,
+        });
+
+        // 👇 Не ждем — запускается параллельно, исчезает "в фоне"
+        this.tweens.add({
+            targets: origin,
+            scale: 0,
+            alpha: 0,
+            duration: 200,
+            ease: "Power2",
+        });
         const launchRocket = async (startX: number, direction: number) => {
             const rocket = this.add.sprite(startX, baseY, "rocket");
             rocket.setOrigin(0.5);
@@ -1441,8 +1457,10 @@ export class Game extends Scene {
             rocket.setDepth(999);
 
             let x = col;
+
             while (x >= 0 && x < this.grid[0].length) {
                 const targetX = this.offsetX + x * 82 + 37;
+
                 await tweenPromise(this, {
                     targets: rocket,
                     x: targetX,
@@ -1505,6 +1523,23 @@ export class Game extends Scene {
     ): Promise<void> {
         const baseX = this.offsetX + col * 82 + 37;
 
+        // 👇 Лёгкая пульсация перед исчезновением
+        await tweenPromise(this, {
+            targets: origin,
+            scale: 1.2,
+            duration: 100,
+            ease: "Power1",
+            yoyo: true,
+        });
+
+        // 👇 Не ждем — запускается параллельно, исчезает "в фоне"
+        this.tweens.add({
+            targets: origin,
+            scale: 0,
+            alpha: 0,
+            duration: 200,
+            ease: "Power2",
+        });
         const launchRocket = async (startY: number, direction: number) => {
             const rocket = this.add.sprite(baseX, startY, "rocket");
             rocket.setOrigin(0.5);
@@ -1513,6 +1548,7 @@ export class Game extends Scene {
             rocket.setDepth(999);
 
             let y = row;
+
             while (y >= 0 && y < this.grid.length) {
                 const targetY = this.offsetY + y * 82 + 37;
 
@@ -1805,24 +1841,7 @@ export class Game extends Scene {
         await this.processMatchesLoop();
         await this.reshuffleBoardIfNoMoves();
     }
-    // async removeTiles(tiles: Phaser.GameObjects.Sprite[]): Promise<void> {
-    //     const tweenPromises: Promise<void>[] = [];
 
-    //     for (const tile of tiles) {
-    //         tweenPromises.push(
-    //             tweenPromise(this, {
-    //                 targets: tile,
-    //                 scale: 0,
-    //                 alpha: 0,
-    //                 duration: 300,
-    //                 ease: "Power1",
-    //                 onComplete: () => tile.destroy(),
-    //             })
-    //         );
-    //     }
-
-    //     await Promise.all(tweenPromises);
-    // }
     async removeTiles(
         tiles: (Phaser.GameObjects.Sprite | Phaser.GameObjects.Container)[]
     ): Promise<void> {
