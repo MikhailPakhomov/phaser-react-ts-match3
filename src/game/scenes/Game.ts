@@ -1183,6 +1183,10 @@ export class Game extends Scene {
             helpersToActivate.push(target);
         };
 
+        if (sprite instanceof Phaser.GameObjects.Container) {
+            sprite.destroy(); // Удаляем спрайт ракеты сразу
+        }
+
         if (type === "horizontalHelper") {
             await this.launchHorizontalRocketWithDamage(
                 sprite,
@@ -1466,8 +1470,15 @@ export class Game extends Scene {
                         if (tile.getData("isHelper")) {
                             triggerHelper(tile);
                         } else {
-                            this.grid[ty][tx] = null;
+                            this.tweens.add({
+                                targets: tile,
+                                alpha: 0,
+                                scale: 0,
+                                duration: 150,
+                                ease: "Power2",
+                            });
                             toRemove.push(tile);
+                            this.grid[ty][tx] = null;
                         }
                     }
                 }
@@ -1498,6 +1509,7 @@ export class Game extends Scene {
             const rocket = this.add.sprite(baseX, startY, "rocket");
             rocket.setOrigin(0.5);
             rocket.setAngle(direction < 0 ? -90 : 90);
+            rocket.setScale(-1, 1); // ракета смотрит влево — флипим по X
             rocket.setDepth(999);
 
             let y = row;
@@ -1531,8 +1543,15 @@ export class Game extends Scene {
                         if (tile.getData("isHelper")) {
                             triggerHelper(tile);
                         } else {
-                            this.grid[ty][tx] = null;
+                            this.tweens.add({
+                                targets: tile,
+                                alpha: 0,
+                                scale: 0,
+                                duration: 150,
+                                ease: "Power2",
+                            });
                             toRemove.push(tile);
+                            this.grid[ty][tx] = null;
                         }
                     }
                 }
@@ -1643,6 +1662,26 @@ export class Game extends Scene {
         }
     }
 
+    softRemoveTile(x: number, y: number): Promise<void> {
+        const tile = this.grid?.[y]?.[x];
+        if (!tile) return Promise.resolve();
+
+        this.grid[y][x] = null;
+
+        return new Promise<void>((resolve) => {
+            this.tweens.add({
+                targets: tile,
+                alpha: 0,
+                scale: 0,
+                duration: 250,
+                ease: "Power2",
+                onComplete: () => {
+                    tile.destroy();
+                    resolve();
+                },
+            });
+        });
+    }
     async removeDiscoTiles(
         centerX: number,
         centerY: number,
