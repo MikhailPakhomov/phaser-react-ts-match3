@@ -1050,15 +1050,9 @@ export class Game extends Scene {
         let sprite: Phaser.GameObjects.Sprite | Phaser.GameObjects.Container;
 
         if (type === "verticalHelper") {
-            sprite = this.createDoubleRocketVertical(
-                posX + cellSize / 2,
-                posY + cellSize / 2
-            );
+            sprite = this.createDoubleRocketVertical(posX, posY); // 👈 без +cellSize/2
         } else if (type === "horizontalHelper") {
-            sprite = this.createDoubleRocketHorizontal(
-                posX + cellSize / 2,
-                posY + cellSize / 2
-            );
+            sprite = this.createDoubleRocketHorizontal(posX, posY); // 👈 без +cellSize/2
         } else {
             sprite = this.add.sprite(posX, posY, type);
             sprite.setOrigin(0);
