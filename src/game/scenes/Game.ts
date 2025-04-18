@@ -1309,7 +1309,12 @@ export class Game extends Scene {
                 const isHelper = neighbor.getData("isHelper");
 
                 // Фильтрация только обычных фишек с типом
-                if (!isHelper && neighborType) {
+                if (
+                    !isHelper &&
+                    neighborType &&
+                    neighborType !== "box" &&
+                    neighborType !== "ice"
+                ) {
                     neighbors.push(neighbor);
                 }
             }
