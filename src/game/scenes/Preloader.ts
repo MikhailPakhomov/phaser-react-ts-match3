@@ -38,11 +38,8 @@ export class Preloader extends Scene {
         this.load.image("phone", "phone.png");
         this.load.image("smartphone", "smartphone.png");
         this.load.image("sim", "sim.png");
-        this.load.image("signal", "signal.png");
         this.load.image("message", "message.png");
         this.load.image("energy", "energy.png");
-        this.load.image("horizontalHelper", "horizontalHelper.png");
-        this.load.image("verticalHelper", "verticalHelper.png");
         this.load.image("discoball", "discoball.png");
         this.load.image("ice_full", "ice_full.png");
         this.load.image("ice_cracked", "ice_cracked.png");
