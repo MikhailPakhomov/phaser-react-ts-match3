@@ -546,51 +546,53 @@ export class Game extends Scene {
     async removeMatches(matches: Phaser.GameObjects.Sprite[][]): Promise<void> {
         const tweens: Promise<void>[] = [];
         const damagedTiles = new Set<Phaser.GameObjects.Sprite>();
-    
+
         const size = this.cellSize * this.scaleFactor;
-    
+
         for (const group of matches) {
             for (const tile of group) {
                 const ice = tile.getData("ice");
                 const iceSprite = tile.getData("iceSprite");
-    
+
                 if (ice) {
                     if (ice.strength > 1) {
                         ice.strength--;
                         if (iceSprite) iceSprite.setTexture("ice_cracked");
-    
+
                         const gridX = tile.getData("gridX");
                         const gridY = tile.getData("gridY");
-    
+
                         this.grid[gridY][gridX] = tile;
                         tile.setDepth(5);
                         tile.alpha = 1;
                         tile.setDisplaySize(size, size);
-                        tile.y = this.offsetY + gridY * (size + this.gap) + size / 2;
-    
+                        tile.y =
+                            this.offsetY + gridY * (size + this.gap) + size / 2;
+
                         damagedTiles.add(tile);
                         continue;
                     }
-    
+
                     if (iceSprite) iceSprite.destroy();
                     tile.setData("ice", null);
                     tile.setData("iceSprite", null);
                     tile.setDepth(5);
-    
+
                     const gridX = tile.getData("gridX");
                     const gridY = tile.getData("gridY");
-    
+
                     this.grid[gridY][gridX] = tile;
-                    tile.y = this.offsetY + gridY * (size + this.gap) + size / 2;
-    
+                    tile.y =
+                        this.offsetY + gridY * (size + this.gap) + size / 2;
+
                     damagedTiles.add(tile);
                     continue;
                 }
-    
+
                 const x = tile.getData("gridX");
                 const y = tile.getData("gridY");
                 this.grid[y][x] = null;
-    
+
                 tweens.push(
                     tweenPromise(this, {
                         targets: tile,
@@ -599,30 +601,33 @@ export class Game extends Scene {
                         ease: "Power1",
                         onUpdate: (tween) => {
                             const progress = 1 - tween.progress;
-                            tile.setDisplaySize(size * progress, size * progress);
+                            tile.setDisplaySize(
+                                size * progress,
+                                size * progress
+                            );
                         },
                         onComplete: () => tile.destroy(),
                     })
                 );
             }
         }
-    
+
         const directions = [
             { dx: -1, dy: 0 },
             { dx: 1, dy: 0 },
             { dx: 0, dy: -1 },
             { dx: 0, dy: 1 },
         ];
-    
+
         for (const group of matches) {
             for (const tile of group) {
                 const x = tile.getData("gridX");
                 const y = tile.getData("gridY");
-    
+
                 for (const { dx, dy } of directions) {
                     const nx = x + dx;
                     const ny = y + dy;
-    
+
                     if (
                         ny >= 0 &&
                         ny < this.grid.length &&
@@ -637,42 +642,47 @@ export class Game extends Scene {
                         ) {
                             const ice = neighbor.getData("ice");
                             const iceSprite = neighbor.getData("iceSprite");
-    
+
                             if (ice.strength > 1) {
                                 ice.strength--;
-                                if (iceSprite) iceSprite.setTexture("ice_cracked");
-    
+                                if (iceSprite)
+                                    iceSprite.setTexture("ice_cracked");
+
                                 const gridX = neighbor.getData("gridX");
                                 const gridY = neighbor.getData("gridY");
-    
+
                                 this.grid[gridY][gridX] = neighbor;
                                 neighbor.setDepth(5);
                                 neighbor.alpha = 1;
                                 neighbor.setDisplaySize(size, size);
-                                neighbor.y = this.offsetY + gridY * (size + this.gap) + size / 2;
+                                neighbor.y =
+                                    this.offsetY +
+                                    gridY * (size + this.gap) +
+                                    size / 2;
                             } else {
                                 if (iceSprite) iceSprite.destroy();
                                 neighbor.setData("ice", null);
                                 neighbor.setData("iceSprite", null);
                                 neighbor.setDepth(5);
                             }
-    
+
                             damagedTiles.add(neighbor);
                         }
-    
+
                         if (neighbor?.getData("box")) {
                             const box = neighbor.getData("box");
-                            const sprite = neighbor.getData("boxSprite") || neighbor;
-    
+                            const sprite =
+                                neighbor.getData("boxSprite") || neighbor;
+
                             if (box.strength > 1) {
                                 box.strength--;
                                 if (sprite) sprite.setTexture("box_cracked");
                             } else {
                                 const gx = neighbor.getData("gridX");
                                 const gy = neighbor.getData("gridY");
-    
+
                                 this.grid[gy][gx] = null;
-    
+
                                 tweens.push(
                                     tweenPromise(this, {
                                         targets: sprite,
@@ -681,23 +691,25 @@ export class Game extends Scene {
                                         ease: "Power2",
                                         onUpdate: (tween) => {
                                             const progress = 1 - tween.progress;
-                                            sprite.setDisplaySize(size * progress, size * progress);
+                                            sprite.setDisplaySize(
+                                                size * progress,
+                                                size * progress
+                                            );
                                         },
                                         onComplete: () => sprite.destroy(),
                                     })
                                 );
                             }
-    
+
                             damagedTiles.add(neighbor);
                         }
                     }
                 }
             }
         }
-    
+
         await Promise.all(tweens);
     }
-    
 
     async undoSwap(
         tileA: Phaser.GameObjects.Sprite,
@@ -834,7 +846,10 @@ export class Game extends Scene {
                     );
 
                     sprite.setOrigin(0.5);
-                    sprite.setDisplaySize(cellSize * this.scaleFactor, cellSize * this.scaleFactor);
+                    sprite.setDisplaySize(
+                        cellSize * this.scaleFactor,
+                        cellSize * this.scaleFactor
+                    );
                     sprite.setInteractive();
                     sprite.setData("gridX", x);
                     sprite.setData("gridY", y);
@@ -869,12 +884,13 @@ export class Game extends Scene {
     }
     async processMatchesLoop(): Promise<void> {
         this.isProcessing = true;
-    
+
         const matches = this.findMatches();
-    
+
         if (matches.length > 0) {
-            const helpersToCreate: { x: number; y: number; type: string }[] = [];
-    
+            const helpersToCreate: { x: number; y: number; type: string }[] =
+                [];
+
             for (const match of matches) {
                 if (match.length >= 5) {
                     const centerTile = match[Math.floor(match.length / 2)];
@@ -888,27 +904,31 @@ export class Game extends Scene {
                         ? "verticalHelper"
                         : "horizontalHelper";
                     const centerTile = match[Math.floor(match.length / 2)];
-    
+
                     helpersToCreate.push({
                         x: centerTile.getData("gridX"),
                         y: centerTile.getData("gridY"),
                         type,
                     });
                 }
-    
+
                 for (const tile of match) {
                     const x = tile.getData("gridX");
                     const y = tile.getData("gridY");
                     this.grid[y][x] = null;
                 }
             }
-    
+
             await this.removeMatches(matches);
-    
+
             for (const helper of helpersToCreate) {
-                await this.createHelperWithEffect(helper.x, helper.y, helper.type);
+                await this.createHelperWithEffect(
+                    helper.x,
+                    helper.y,
+                    helper.type
+                );
             }
-    
+
             await delayPromise(this, helpersToCreate.length > 0 ? 200 : 0);
             await this.dropTiles();
             await this.fillEmptyTiles();
@@ -919,57 +939,86 @@ export class Game extends Scene {
             this.isProcessing = false;
         }
     }
-    
 
-    async createHelperWithEffect(x: number, y: number, type: string): Promise<void> {
+    async createHelperWithEffect(
+        x: number,
+        y: number,
+        type: string
+    ): Promise<void> {
         const spacing = this.gap;
         const cellSize = this.cellSize;
+
         const posX = this.offsetX + x * (cellSize + spacing) + cellSize / 2;
         const posY = this.offsetY + y * (cellSize + spacing) + cellSize / 2;
-    
+
         let sprite: Phaser.GameObjects.Sprite | Phaser.GameObjects.Container;
-    
+
         if (type === "verticalHelper") {
-            sprite = this.createDoubleRocketVertical(posX, posY);
+            sprite = this.createDoubleRocketVertical(posX, posY, 10);
         } else if (type === "horizontalHelper") {
-            sprite = this.createDoubleRocketHorizontal(posX, posY);
+            sprite = this.createDoubleRocketHorizontal(posX, posY, 10);
         } else {
             sprite = this.add.sprite(posX, posY, type);
             sprite.setOrigin(0.5);
-            sprite.setDisplaySize(cellSize, cellSize);
+            sprite.setDisplaySize(cellSize * 0.6, cellSize * 0.6); // начальный размер
             sprite.setInteractive();
             sprite.setDepth(5);
         }
-    
+
         sprite.setData("gridX", x);
         sprite.setData("gridY", y);
         sprite.setData("type", type);
         sprite.setData("isHelper", true);
         sprite.setData("helperType", type);
+
         this.setupPointerEvents(sprite);
         this.grid[y][x] = sprite;
-    
-        const from = cellSize * 0.6;
-        const to = cellSize * 1.2;
-    
-        await tweenPromise(this, {
-            targets: sprite,
-            duration: 200,
-            ease: "Back.Out",
-            onUpdate: (tween) => {
-                const t = tween.progress;
-                const size = Phaser.Math.Linear(from, to, t);
-                if ("setDisplaySize" in sprite) {
-                    sprite.setDisplaySize(size, size);
-                }
-            },
-        });
-    
-        if ("setDisplaySize" in sprite) {
-            sprite.setDisplaySize(cellSize, cellSize);
+
+        // 🎯 Анимация
+        if (sprite instanceof Phaser.GameObjects.Container) {
+            // Анимируем детей контейнера
+            const targets = sprite.list.filter(
+                (child) => "setDisplaySize" in child
+            ) as Phaser.GameObjects.Sprite[];
+
+            const toW = 34;
+            const toH = 15;
+
+            for (const rocket of targets) {
+                this.tweens.add({
+                    targets: rocket,
+                    displayWidth: toW,
+                    displayHeight: toH,
+                    duration: 200,
+                    ease: "Back.Out",
+                });
+            }
+
+            await delayPromise(this, 200);
+        } else {
+            const from = cellSize * 0.6;
+            const to = cellSize;
+
+            await tweenPromise(this, {
+                targets: sprite,
+                duration: 200,
+                ease: "Back.Out",
+                onUpdate: (tween) => {
+                    const t = tween.progress;
+                    const size = Phaser.Math.Linear(from, to, t);
+                    (sprite as Phaser.GameObjects.Sprite).setDisplaySize(
+                        size,
+                        size
+                    );
+                },
+            });
+
+            (sprite as Phaser.GameObjects.Sprite).setDisplaySize(
+                cellSize,
+                cellSize
+            );
         }
     }
-    
 
     isHorizontalMatch(match: Phaser.GameObjects.Sprite[]): boolean {
         if (match.length < 2) return false;
@@ -1775,17 +1824,18 @@ export class Game extends Scene {
     }
     createDoubleRocketVertical(
         x: number,
-        y: number
+        y: number,
+        initialSize = 34
     ): Phaser.GameObjects.Container {
-        // Левая ракета — вверх (угол -90)
+        const height = initialSize * (15 / 34); // сохраняем соотношение
+
         const rocketLeft = this.add.sprite(-8, 0, "rocket");
-        rocketLeft.setDisplaySize(34, 15);
+        rocketLeft.setDisplaySize(initialSize, height);
         rocketLeft.setAngle(-90);
         rocketLeft.setOrigin(0.5);
 
-        // Правая ракета — вниз (угол +90)
         const rocketRight = this.add.sprite(8, 0, "rocket");
-        rocketRight.setDisplaySize(34, 15);
+        rocketRight.setDisplaySize(initialSize, height);
         rocketRight.setAngle(90);
         rocketRight.setOrigin(0.5);
 
@@ -1807,19 +1857,18 @@ export class Game extends Scene {
 
     createDoubleRocketHorizontal(
         x: number,
-        y: number
+        y: number,
+        initialSize = 34
     ): Phaser.GameObjects.Container {
-        const offset = this.gap;
+        const height = initialSize * (15 / 34); // сохраняем пропорции
 
-        // Верхняя ракета — смотрит влево (по дефолту)
         const rocketTop = this.add.sprite(0, 8, "rocket");
-        rocketTop.setDisplaySize(34, 15);
+        rocketTop.setDisplaySize(initialSize, height);
         rocketTop.setAngle(0);
         rocketTop.setOrigin(0.5);
 
-        // Нижняя ракета — поворот на 180°, чтобы смотреть вправо
         const rocketBottom = this.add.sprite(0, -8, "rocket");
-        rocketBottom.setDisplaySize(34, 15);
+        rocketBottom.setDisplaySize(initialSize, height);
         rocketBottom.setAngle(180);
         rocketBottom.setOrigin(0.5);
 
@@ -1851,7 +1900,6 @@ export class Game extends Scene {
         return Math.min(1, availableWidth / fieldWidth); // scale не больше 1
     }
     // create() {
-
 
     //     this.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {
     //         if (this.selectedSprite && this.pointerDownPos) {
@@ -1987,83 +2035,88 @@ export class Game extends Scene {
                 const dx = pointer.x - this.pointerDownPos.x;
                 const dy = pointer.y - this.pointerDownPos.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
-    
+
                 if (distance < 10) {
                     this.handleTileClick(this.selectedSprite);
                 } else {
-                    this.handleSwipe(this.selectedSprite, pointer, this.pointerDownPos);
+                    this.handleSwipe(
+                        this.selectedSprite,
+                        pointer,
+                        this.pointerDownPos
+                    );
                 }
-    
+
                 this.selectedSprite = null;
                 this.pointerDownPos = null;
             }
         });
-    
+
         const gap = this.gap;
         const cellSize = this.cellSize;
-    
+
         const cols = levelGrid[0].length;
         const rows = levelGrid.length;
-    
+
         const fieldWidth = cols * (cellSize + gap) - gap;
         const fieldHeight = rows * (cellSize + gap) - gap;
-    
+
         // 📏 1. Рассчитываем масштаб под ширину экрана
         const padding = 20; // по 10px слева и справа
         const availableWidth = this.cameras.main.width - padding;
         const scaleFactor = Math.min(1, availableWidth / fieldWidth);
         this.scaleFactor = scaleFactor;
-    
+
         // 🔍 2. Применяем масштаб через камеру
         this.cameras.main.setZoom(scaleFactor);
-    
+
         // 🎯 3. Центрируем поле
         this.offsetX = (this.cameras.main.width / scaleFactor - fieldWidth) / 2;
-        this.offsetY = (this.cameras.main.height / scaleFactor - fieldHeight) / 2;
-    
+        this.offsetY =
+            (this.cameras.main.height / scaleFactor - fieldHeight) / 2;
+
         this.grid = [];
-    
+
         levelGrid.forEach((row, y) => {
             this.grid[y] = [];
-    
+
             row.forEach((cell, x) => {
                 if (!cell) {
                     this.grid[y][x] = null;
                     this.holePositions.add(`${x},${y}`);
                     return;
                 }
-    
+
                 const posX = this.offsetX + x * (cellSize + gap) + cellSize / 2;
                 const posY = this.offsetY + y * (cellSize + gap) + cellSize / 2;
-    
+
                 const bg = this.add.image(posX, posY, "tile_bg");
                 bg.setOrigin(0.5);
                 bg.setDisplaySize(cellSize, cellSize);
                 bg.setAlpha(0.8);
                 bg.setDepth(1);
-    
+
                 if (cell.type === "box") {
                     const strength = cell.strength ?? 2;
                     const texture = strength === 1 ? "box_cracked" : "box_full";
-    
+
                     const box = this.add.sprite(posX, posY, texture);
                     box.setOrigin(0.5);
                     box.setDisplaySize(cellSize, cellSize);
                     box.setInteractive();
                     box.setDepth(8);
-    
+
                     box.setData("gridX", x);
                     box.setData("gridY", y);
                     box.setData("type", "box");
                     box.setData("box", { strength });
-    
+
                     this.grid[y][x] = box;
                     return;
                 }
-    
+
                 let type = cell.type;
                 let data = cell;
-    
+
                 if (cell.type === "ice") {
                     type = cell.content.type;
                     data = {
@@ -2071,12 +2124,17 @@ export class Game extends Scene {
                         ice: { strength: cell.strength },
                     };
                 }
-    
-                let sprite: Phaser.GameObjects.Sprite | Phaser.GameObjects.Container;
-    
+
+                let sprite:
+                    | Phaser.GameObjects.Sprite
+                    | Phaser.GameObjects.Container;
+
                 if (data.isHelper && data.helperType === "verticalHelper") {
                     sprite = this.createDoubleRocketVertical(posX, posY);
-                } else if (data.isHelper && data.helperType === "horizontalHelper") {
+                } else if (
+                    data.isHelper &&
+                    data.helperType === "horizontalHelper"
+                ) {
                     sprite = this.createDoubleRocketHorizontal(posX, posY);
                 } else if (data.isHelper && data.helperType === "discoball") {
                     sprite = this.add.sprite(posX, posY, type);
@@ -2091,27 +2149,26 @@ export class Game extends Scene {
                     sprite.setInteractive();
                     sprite.setDepth(5);
                 }
-    
+
                 sprite.setData("gridX", x);
                 sprite.setData("gridY", y);
                 sprite.setData("type", type);
-    
+
                 for (const key in data) {
                     sprite.setData(key, data[key]);
                 }
-    
+
                 this.setupPointerEvents(sprite);
                 this.grid[y][x] = sprite;
-    
+
                 if (cell.type === "ice") {
                     this.attachIceToSprite(sprite, cell.strength);
                 }
             });
         });
-    
+
         EventBus.emit("current-scene-ready", this);
     }
-    
 
     changeScene() {
         this.scene.start("GameOver");
