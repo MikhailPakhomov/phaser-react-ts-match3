@@ -4,7 +4,7 @@ export class Preloader extends Scene {
     constructor() {
         super("Preloader");
     }
-
+    
     init() {
         const { width, height } = this.scale;
         //  We loaded this image in our Boot Scene, so we can display it here
@@ -32,6 +32,7 @@ export class Preloader extends Scene {
     }
 
     preload() {
+        (this.textures as any).setFilter?.('nearest');
         //  Load the assets for the game - Replace with your own assets
         this.load.setPath("assets");
         this.load.image("tile_bg", "tile_bg.png");

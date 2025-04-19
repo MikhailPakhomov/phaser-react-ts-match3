@@ -9,17 +9,16 @@ import { Preloader } from "./scenes/Preloader";
 //  https://newdocs.phaser.io/docs/3.70.0/Phaser.Types.Core.GameConfig
 const config: Phaser.Types.Core.GameConfig = {
     type: AUTO,
-    // pixelArt: true,
+    pixelArt: true,
     parent: "game-container",
     backgroundColor: "#00adef",
     scene: [Boot, Preloader, MainMenu, MainGame, GameOver],
     scale: {
         mode: Phaser.Scale.FIT, // Масштабировать по размеру экрана
         autoCenter: Phaser.Scale.CENTER_BOTH, // Центрировать по горизонтали и вертикали
-        // width: 392,
-        // height: 640,
-        width: window.innerWidth,
-        height: window.innerHeight,
+        width: 392,
+        height: 640,
+
     },
 };
 
