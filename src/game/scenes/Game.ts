@@ -432,6 +432,13 @@ export class Game extends Scene {
         // 🎯 Обработка дискошара
         if (isDiscoA && !isDiscoB) {
             await this.basicSwap(tileA, tileB);
+            await tweenPromise(this, {
+                targets: tileA,
+                angle: 360,
+                duration: 400,
+                ease: "Cubic.easeOut",
+            });
+            tileA.setAngle(0);
             await this._activateSingleHelper(tileA, tileB, new Set());
             return;
         }
@@ -957,6 +964,29 @@ export class Game extends Scene {
             sprite = this.createDoubleRocketVertical(posX, posY, 10);
         } else if (type === "horizontalHelper") {
             sprite = this.createDoubleRocketHorizontal(posX, posY, 10);
+        } else if (type === "discoball") {
+            sprite = this.add.sprite(posX, posY, type);
+            sprite.setOrigin(0.5);
+            sprite.setDisplaySize(cellSize, cellSize);
+            sprite.setInteractive();
+            sprite.setDepth(5);
+
+            // Начальный масштаб
+            sprite.setScale(0);
+
+            this.tweens.add({
+                targets: sprite,
+                scale: 1.2,
+                angle: 360, // 🌀 Добавляем вращение
+                duration: 300,
+                ease: "Back.Out",
+                onComplete: () => {
+                    sprite.setAngle(0); // Сброс угла
+                    sprite.setDisplaySize(cellSize, cellSize); // гарантируем размер
+                },
+            });
+
+            await delayPromise(this, 300);
         } else {
             sprite = this.add.sprite(posX, posY, type);
             sprite.setOrigin(0.5);
