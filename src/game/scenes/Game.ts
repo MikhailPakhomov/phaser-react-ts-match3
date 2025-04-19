@@ -1,88 +1,16 @@
 import { EventBus } from "../EventBus";
 import { Scene } from "phaser";
 import { delayPromise, tweenPromise } from "../utils/tween-utils";
+import { LevelConfig, LevelGoal } from "../levels/levelConfig";
 
-const levelGrid = [
-    [
-        { type: "phone" },
-        {
-            type: "phone",
-        },
-        { type: "message" },
-        { type: "phone" },
-        { type: "message" },
-        { type: "phone" },
-        { type: "phone" },
-    ],
-    [
-        { type: "box", strength: 2 },
-        { type: "phone" },
-        { type: "energy" },
-        { type: "discoball", isHelper: true, helperType: "discoball" },
-        { type: "smartphone" },
-        { type: "phone" },
-        { type: "box", strength: 2 },
-    ],
-    [
-        { type: "box", strength: 2 },
-        { type: "box", strength: 2 },
-        { type: "box", strength: 2 },
-        // {
-        //     type: "horizontalHelper",
-        //     isHelper: true,
-        //     helperType: "horizontalHelper",
-        // },
-        {
-            type: "ice",
-            content: {
-                type: "horizontalHelper",
-                isHelper: true,
-                helperType: "horizontalHelper",
-            },
-            strength: 2,
-        },
-        { type: "box", strength: 2 },
-        { type: "box", strength: 2 },
-        { type: "box", strength: 2 },
-    ],
-    [
-        { type: "box", strength: 2 },
-        { type: "box", strength: 2 },
-        { type: "box", strength: 2 },
-        { type: "box", strength: 2 },
-        { type: "box", strength: 2 },
-        { type: "box", strength: 2 },
-        { type: "box", strength: 2 },
-    ],
-    [
-        { type: "energy" },
-        { type: "smartphone" },
-        { type: "energy" },
-        { type: "smartphone" },
-        { type: "energy" },
-        { type: "smartphone" },
-        { type: "energy" },
-    ],
-    [
-        { type: "smartphone" },
-        { type: "ice", content: { type: "energy" }, strength: 2 },
-        { type: "smartphone" },
-        { type: "energy" },
-        { type: "smartphone" },
-        { type: "ice", content: { type: "energy" }, strength: 2 },
-        { type: "smartphone" },
-    ],
-    [
-        { type: "energy" },
-        { type: "ice", content: { type: "smartphone" }, strength: 2 },
-        { type: "energy" },
-        { type: "smartphone" },
-        { type: "energy" },
-        { type: "ice", content: { type: "smartphone" }, strength: 2 },
-        { type: "energy" },
-    ],
-];
 export class Game extends Scene {
+    levelConfig!: LevelConfig;
+    remainingMoves!: number;
+
+    movesText!: Phaser.GameObjects.Text;
+    movesBg!: Phaser.GameObjects.Image;
+    pauseButton!: Phaser.GameObjects.Image;
+
     background: Phaser.GameObjects.Image;
     selectedTile: Phaser.GameObjects.Sprite | null = null;
     selectedTileTween: Phaser.Tweens.Tween | null = null;
@@ -91,6 +19,18 @@ export class Game extends Scene {
 
     selectedSprite: Phaser.GameObjects.Sprite | null = null;
     pointerDownPos: { x: number; y: number } | null = null;
+
+    goalIcons: {
+        [type: string]: {
+            icon: Phaser.GameObjects.Sprite;
+            text: Phaser.GameObjects.Text;
+            circle: Phaser.GameObjects.Image;
+            target: number;
+            current: number;
+        };
+    } = {};
+
+    levelCompleted = false;
 
     cellSize = 48;
     gap = 2;
@@ -374,6 +314,11 @@ export class Game extends Scene {
 
         const matches = this.findMatches?.();
         if (matches && matches.length > 0) {
+            // Отнимаем ход
+            this.remainingMoves--;
+            this.updateMovesUI();
+            this.checkWin();
+
             this.removeMatches(matches);
 
             let helperSpawned = false;
@@ -552,72 +497,10 @@ export class Game extends Scene {
     }
     async removeMatches(matches: Phaser.GameObjects.Sprite[][]): Promise<void> {
         const tweens: Promise<void>[] = [];
+        const tilesToDestroyLater: Phaser.GameObjects.Sprite[] = [];
         const damagedTiles = new Set<Phaser.GameObjects.Sprite>();
-
+        const handled = new Set<Phaser.GameObjects.Sprite>();
         const size = this.cellSize * this.scaleFactor;
-
-        for (const group of matches) {
-            for (const tile of group) {
-                const ice = tile.getData("ice");
-                const iceSprite = tile.getData("iceSprite");
-
-                if (ice) {
-                    if (ice.strength > 1) {
-                        ice.strength--;
-                        if (iceSprite) iceSprite.setTexture("ice_cracked");
-
-                        const gridX = tile.getData("gridX");
-                        const gridY = tile.getData("gridY");
-
-                        this.grid[gridY][gridX] = tile;
-                        tile.setDepth(5);
-                        tile.alpha = 1;
-                        tile.setDisplaySize(size, size);
-                        tile.y =
-                            this.offsetY + gridY * (size + this.gap) + size / 2;
-
-                        damagedTiles.add(tile);
-                        continue;
-                    }
-
-                    if (iceSprite) iceSprite.destroy();
-                    tile.setData("ice", null);
-                    tile.setData("iceSprite", null);
-                    tile.setDepth(5);
-
-                    const gridX = tile.getData("gridX");
-                    const gridY = tile.getData("gridY");
-
-                    this.grid[gridY][gridX] = tile;
-                    tile.y =
-                        this.offsetY + gridY * (size + this.gap) + size / 2;
-
-                    damagedTiles.add(tile);
-                    continue;
-                }
-
-                const x = tile.getData("gridX");
-                const y = tile.getData("gridY");
-                this.grid[y][x] = null;
-
-                tweens.push(
-                    tweenPromise(this, {
-                        targets: tile,
-                        alpha: 0,
-                        duration: 150,
-                        ease: "Power1",
-                        onUpdate: (tween) => {
-                            const progress = 1 - tween.progress;
-                            tile.setDisplaySize(
-                                size * progress,
-                                size * progress
-                            );
-                        },
-                        onComplete: () => tile.destroy(),
-                    })
-                );
-            }
-        }
 
         const directions = [
             { dx: -1, dy: 0 },
@@ -642,11 +525,9 @@ export class Game extends Scene {
                         nx < this.grid[0].length
                     ) {
                         const neighbor = this.grid[ny][nx];
-                        if (
-                            neighbor &&
-                            !damagedTiles.has(neighbor) &&
-                            neighbor.getData("ice")
-                        ) {
+                        if (!neighbor || damagedTiles.has(neighbor)) continue;
+
+                        if (neighbor.getData("ice")) {
                             const ice = neighbor.getData("ice");
                             const iceSprite = neighbor.getData("iceSprite");
 
@@ -654,29 +535,16 @@ export class Game extends Scene {
                                 ice.strength--;
                                 if (iceSprite)
                                     iceSprite.setTexture("ice_cracked");
-
-                                const gridX = neighbor.getData("gridX");
-                                const gridY = neighbor.getData("gridY");
-
-                                this.grid[gridY][gridX] = neighbor;
-                                neighbor.setDepth(5);
-                                neighbor.alpha = 1;
-                                neighbor.setDisplaySize(size, size);
-                                neighbor.y =
-                                    this.offsetY +
-                                    gridY * (size + this.gap) +
-                                    size / 2;
                             } else {
                                 if (iceSprite) iceSprite.destroy();
                                 neighbor.setData("ice", null);
                                 neighbor.setData("iceSprite", null);
-                                neighbor.setDepth(5);
                             }
 
                             damagedTiles.add(neighbor);
                         }
 
-                        if (neighbor?.getData("box")) {
+                        if (neighbor.getData("box")) {
                             const box = neighbor.getData("box");
                             const sprite =
                                 neighbor.getData("boxSprite") || neighbor;
@@ -703,7 +571,13 @@ export class Game extends Scene {
                                                 size * progress
                                             );
                                         },
-                                        onComplete: () => sprite.destroy(),
+                                        onComplete: () => {
+                                            this.updateGoalProgress(
+                                                sprite.getData("type") + "_full"
+                                            );
+                                            this.checkWin();
+                                            sprite.destroy();
+                                        },
                                     })
                                 );
                             }
@@ -715,7 +589,142 @@ export class Game extends Scene {
             }
         }
 
+        for (const group of matches) {
+            for (const tile of group) {
+                if (handled.has(tile)) continue;
+                handled.add(tile);
+
+                const x = tile.getData("gridX");
+                const y = tile.getData("gridY");
+
+                const ice = tile.getData("ice");
+                const iceSprite = tile.getData("iceSprite");
+
+                if (ice) {
+                    if (ice.strength > 1) {
+                        ice.strength--;
+                        if (iceSprite) iceSprite.setTexture("ice_cracked");
+                        tile.setDepth(5);
+                        tile.alpha = 1;
+                        tile.setDisplaySize(size, size);
+                        tile.y =
+                            this.offsetY + y * (size + this.gap) + size / 2;
+                        damagedTiles.add(tile);
+                        continue;
+                    }
+
+                    if (iceSprite) iceSprite.destroy();
+                    tile.setData("ice", null);
+                    tile.setData("iceSprite", null);
+                    tile.setDepth(5);
+                    tile.y = this.offsetY + y * (size + this.gap) + size / 2;
+                    damagedTiles.add(tile);
+                    continue;
+                }
+
+                await this.animateAndRemoveMatchesGoals(
+                    tile,
+                    size,
+                    tweens,
+                    tilesToDestroyLater
+                );
+            }
+        }
+
         await Promise.all(tweens);
+
+        tilesToDestroyLater.forEach((tile) => {
+            const x = tile.getData("gridX");
+            const y = tile.getData("gridY");
+
+            if (this.grid?.[y]?.[x] === tile) {
+                console.warn(
+                    "🚫 Удаляем, но всё ещё в grid — чистим вручную!",
+                    x,
+                    y
+                );
+                this.grid[y][x] = null;
+            }
+
+            tile.destroy();
+        });
+    }
+
+    async animateAndRemoveMatchesGoals(
+        tile: Phaser.GameObjects.Sprite,
+        size?: number,
+        tweens?: Promise<void>[],
+        tilesToDestroyLater?: Phaser.GameObjects.Sprite[]
+    ): Promise<void> {
+        if (tile.getData("removing")) return;
+        tile.setData("removing", true);
+
+        const type = tile.getData("type");
+        const goal = this.goalIcons?.[type];
+
+        const x = tile.getData("gridX");
+        const y = tile.getData("gridY");
+
+        if (goal) {
+            // 🎯 Целевой — полёт к цели
+            tile.setVisible(false);
+
+            const clone = this.add.sprite(tile.x, tile.y, type);
+            clone.setDisplaySize(size, size);
+            clone.setDepth(1000);
+
+            const targetX = goal.icon.x;
+            const targetY = goal.icon.y;
+
+            tweens?.push(
+                tweenPromise(this, {
+                    targets: clone,
+                    x: targetX,
+                    y: targetY,
+                    scale: 0,
+                    alpha: 0.7,
+                    duration: 550,
+                    ease: "Cubic.easeIn",
+                    onComplete: () => {
+                        this.updateGoalProgress(type);
+                        this.checkWin();
+                        clone.destroy();
+
+                        if (this.grid?.[y]?.[x] === tile) {
+                            this.grid[y][x] = null;
+                        }
+
+                        tilesToDestroyLater?.push(tile);
+                    },
+                })
+            );
+        } else {
+            // 🧱 Обычный — исчезновение
+            tile.setVisible(true);
+            tile.setAlpha(1);
+            tile.setDisplaySize(size, size); // ✅ размер выставляем вручную, без scale
+
+            tweens?.push(
+                tweenPromise(this, {
+                    targets: tile,
+                    alpha: 0,
+                    displayWidth: 0,
+                    displayHeight: 0,
+                    duration: 300,
+                    ease: "Power1",
+                    onComplete: () => {
+                        this.updateGoalProgress(type);
+                        this.checkWin();
+
+                        if (this.grid?.[y]?.[x] === tile) {
+                            this.grid[y][x] = null;
+                        }
+
+                        tilesToDestroyLater?.push(tile);
+                    },
+                })
+            );
+        }
     }
 
     async undoSwap(
@@ -827,41 +836,45 @@ export class Game extends Scene {
 
         await Promise.all(tweenPromises);
     }
+    getRandomTile() {
+        const types = this.levelConfig.elements;
+        return Phaser.Utils.Array.GetRandom(types);
+    }
+
     async fillEmptyTiles(): Promise<void> {
         const gap = this.gap;
         const cellSize = this.cellSize;
-        const types = [
-            "phone",
-            "smartphone",
-            // "sim",
-            // "signal",
-            "energy",
-            "message",
-        ];
-
         const tweenPromises: Promise<void>[] = [];
 
         for (let y = 0; y < this.grid.length; y++) {
             for (let x = 0; x < this.grid[0].length; x++) {
-                if (!this.grid[y][x] && !this.holePositions.has(`${x},${y}`)) {
-                    const type = Phaser.Utils.Array.GetRandom(types);
+                const tile = this.grid[y][x];
+                const posKey = `${x},${y}`;
+
+                const isBlocked =
+                    tile &&
+                    (tile.getData("box") ||
+                        tile.getData("ice") ||
+                        tile.getData("isHelper"));
+
+                if (!tile && !this.holePositions.has(posKey)) {
+                    const type = this.getRandomTile();
 
                     const sprite = this.add.sprite(
                         this.offsetX + x * (cellSize + gap) + cellSize / 2,
-                        -cellSize, // старт выше экрана
+                        -cellSize,
                         type
                     );
 
                     sprite.setOrigin(0.5);
                     sprite.setDisplaySize(
-                        cellSize * this.scaleFactor,
-                        cellSize * this.scaleFactor
+                        cellSize * this.scaleFactor - 5,
+                        cellSize * this.scaleFactor - 5
                     );
                     sprite.setInteractive();
                     sprite.setData("gridX", x);
                     sprite.setData("gridY", y);
                     sprite.setData("type", type);
-
                     sprite.setDepth(5);
 
                     this.setupPointerEvents(sprite);
@@ -889,6 +902,7 @@ export class Game extends Scene {
 
         await Promise.all(tweenPromises);
     }
+
     async processMatchesLoop(): Promise<void> {
         this.isProcessing = true;
 
@@ -918,12 +932,6 @@ export class Game extends Scene {
                         type,
                     });
                 }
-
-                for (const tile of match) {
-                    const x = tile.getData("gridX");
-                    const y = tile.getData("gridY");
-                    this.grid[y][x] = null;
-                }
             }
 
             await this.removeMatches(matches);
@@ -936,7 +944,7 @@ export class Game extends Scene {
                 );
             }
 
-            await delayPromise(this, helpersToCreate.length > 0 ? 200 : 0);
+            await delayPromise(this, helpersToCreate.length > 0 ? 200 : 200);
             await this.dropTiles();
             await this.fillEmptyTiles();
             await delayPromise(this, 200);
@@ -965,29 +973,34 @@ export class Game extends Scene {
         } else if (type === "horizontalHelper") {
             sprite = this.createDoubleRocketHorizontal(posX, posY, 10);
         } else if (type === "discoball") {
+            // 🎱 Дискошар с анимацией появления
+            const from = this.cellSize;
+            const to = this.cellSize - 10;
+
             sprite = this.add.sprite(posX, posY, type);
             sprite.setOrigin(0.5);
-            sprite.setDisplaySize(cellSize, cellSize);
+            sprite.setDisplaySize(from, from); // старт с большого размера
             sprite.setInteractive();
             sprite.setDepth(5);
 
-            // Начальный масштаб
-            sprite.setScale(0);
-
-            this.tweens.add({
+            // Анимация "сдувания"
+            await tweenPromise(this, {
                 targets: sprite,
-                scale: 1.2,
-                angle: 360, // 🌀 Добавляем вращение
                 duration: 300,
+                angle: 360,
                 ease: "Back.Out",
+                onUpdate: (tween) => {
+                    const t = tween.progress;
+                    const size = Phaser.Math.Linear(from, to, t);
+                    sprite.setDisplaySize(size, size);
+                },
                 onComplete: () => {
-                    sprite.setAngle(0); // Сброс угла
-                    sprite.setDisplaySize(cellSize, cellSize); // гарантируем размер
+                    sprite.setAngle(0);
+                    sprite.setDisplaySize(to, to); // финальный размер
                 },
             });
-
-            await delayPromise(this, 300);
         } else {
+            // Обычный помощник
             sprite = this.add.sprite(posX, posY, type);
             sprite.setOrigin(0.5);
             sprite.setDisplaySize(cellSize * 0.6, cellSize * 0.6); // начальный размер
@@ -995,6 +1008,7 @@ export class Game extends Scene {
             sprite.setDepth(5);
         }
 
+        // 👇 Обязательные данные
         sprite.setData("gridX", x);
         sprite.setData("gridY", y);
         sprite.setData("type", type);
@@ -1004,9 +1018,8 @@ export class Game extends Scene {
         this.setupPointerEvents(sprite);
         this.grid[y][x] = sprite;
 
-        // 🎯 Анимация
+        // 🎯 Анимация для ракет (контейнеров)
         if (sprite instanceof Phaser.GameObjects.Container) {
-            // Анимируем детей контейнера
             const targets = sprite.list.filter(
                 (child) => "setDisplaySize" in child
             ) as Phaser.GameObjects.Sprite[];
@@ -1025,7 +1038,8 @@ export class Game extends Scene {
             }
 
             await delayPromise(this, 200);
-        } else {
+        } else if (type !== "discoball") {
+            // Обычная плавная анимация появления (кроме дискошара — он уже анимирован выше)
             const from = cellSize * 0.6;
             const to = cellSize;
 
@@ -1041,12 +1055,13 @@ export class Game extends Scene {
                         size
                     );
                 },
+                onComplete: () => {
+                    (sprite as Phaser.GameObjects.Sprite).setDisplaySize(
+                        to,
+                        to
+                    );
+                },
             });
-
-            (sprite as Phaser.GameObjects.Sprite).setDisplaySize(
-                cellSize,
-                cellSize
-            );
         }
     }
 
@@ -1076,6 +1091,11 @@ export class Game extends Scene {
         tile?: Phaser.GameObjects.Sprite,
         triggerChain?: Set<Phaser.GameObjects.Sprite>
     ): Promise<void> {
+        // отнимаем ход, проверяем победу
+        this.remainingMoves--;
+        this.updateMovesUI();
+        this.checkWin();
+
         const x = sprite.getData("gridX");
         const y = sprite.getData("gridY");
         const type = sprite.getData("helperType");
@@ -1148,7 +1168,13 @@ export class Game extends Scene {
                             );
                             tile.setDisplaySize(size, size);
                         },
-                        onComplete: () => tile.destroy(),
+                        onComplete: () => {
+                            this.updateGoalProgress(
+                                tile.getData("type") + "_full"
+                            );
+                            this.checkWin(); // ✅ Вставка
+                            tile.destroy();
+                        },
                     });
                 }
             }
@@ -1556,11 +1582,10 @@ export class Game extends Scene {
         typeToRemove: string,
         discoSprite: Phaser.GameObjects.Sprite
     ): Promise<void> {
-        const toRemove: Phaser.GameObjects.Sprite[] = [];
-        const helpersToActivate: Phaser.GameObjects.Sprite[] = [];
         const tweenPromises: Promise<void>[] = [];
+        const helpersToActivate: Phaser.GameObjects.Sprite[] = [];
         const damagedIce = new Set<string>();
-        const cellSize = this.cellSize;
+        const damagedBoxes = new Set<string>();
 
         const damageIceAt = (x: number, y: number) => {
             const tile = this.grid?.[y]?.[x];
@@ -1577,9 +1602,7 @@ export class Game extends Scene {
 
             if (ice.strength > 1) {
                 ice.strength--;
-                if (iceSprite) {
-                    iceSprite.setTexture("ice_cracked");
-                }
+                if (iceSprite) iceSprite.setTexture("ice_cracked");
             } else {
                 if (iceSprite) iceSprite.destroy();
                 tile.setData("ice", null);
@@ -1588,6 +1611,59 @@ export class Game extends Scene {
                 this.grid[y][x] = tile;
             }
         };
+
+        const damageBoxAt = (x: number, y: number) => {
+            const tile = this.grid?.[y]?.[x];
+            if (!tile) return;
+
+            const key = `${x},${y}`;
+            if (damagedBoxes.has(key)) return;
+
+            const box = tile.getData("box");
+            if (!box) return;
+
+            damagedBoxes.add(key);
+
+            const sprite = tile.getData("boxSprite") || tile;
+
+            if (box.strength > 1) {
+                box.strength--;
+                sprite.setTexture("box_cracked");
+            } else {
+                const gx = tile.getData("gridX");
+                const gy = tile.getData("gridY");
+
+                this.grid[gy][gx] = null;
+
+                tweenPromises.push(
+                    tweenPromise(this, {
+                        targets: sprite,
+                        alpha: 0,
+                        duration: 200,
+                        ease: "Power2",
+                        onUpdate: (tween) => {
+                            const progress = 1 - tween.progress;
+                            sprite.setDisplaySize(
+                                cellSize * progress,
+                                cellSize * progress
+                            );
+                        },
+                        onComplete: () => {
+                            this.updateGoalProgress(
+                                sprite.getData("type") + "_full"
+                            );
+                            this.checkWin();
+                            sprite.destroy();
+                        },
+                    })
+                );
+            }
+        };
+
+        // Удаляем подходящие фишки
+        // Шаг 1: Собираем все совпадающие обычные фишки
+        // Шаг 1: Собираем все совпадающие обычные фишки
+        const matchedTiles: Phaser.GameObjects.Sprite[] = [];
 
         for (let y = 0; y < this.grid.length; y++) {
             for (let x = 0; x < this.grid[y].length; x++) {
@@ -1612,40 +1688,48 @@ export class Game extends Scene {
                     ];
                     for (const { dx, dy } of directions) {
                         damageIceAt(x + dx, y + dy);
+                        damageBoxAt(x + dx, y + dy);
                     }
 
                     if (isHelper) {
                         helpersToActivate.push(tile);
                     } else {
-                        if (!tile.getData("ice")) {
-                            this.grid[y][x] = null;
-                            toRemove.push(tile);
-
-                            tweenPromises.push(
-                                tweenPromise(this, {
-                                    targets: tile,
-                                    duration: 300,
-                                    displayWidth: cellSize * 1.2,
-                                    displayHeight: cellSize * 1.2,
-                                    yoyo: true,
-                                    ease: "Power1",
-                                    onStart: () => tile.setTint(0xffff00),
-                                    onComplete: () => {
-                                        tile.setDisplaySize(cellSize, cellSize);
-                                        tile.clearTint();
-                                        tile.destroy();
-                                    },
-                                })
-                            );
-                        }
+                        matchedTiles.push(tile);
                     }
                 }
             }
         }
 
+        const cellSize = this.cellSize;
+        const targetSize = cellSize * this.scaleFactor - 5;
+        const highlightSize = targetSize * 1.2;
+
+        // Шаг 2: Подсветка — увеличиваем displaySize (и возвращаем обратно)
+        await Promise.all(
+            matchedTiles.map((tile) =>
+                tweenPromise(this, {
+                    targets: tile,
+                    duration: 200,
+                    displayWidth: highlightSize,
+                    displayHeight: highlightSize,
+                    yoyo: true,
+                    ease: "Power1",
+                    onStart: () => tile.setTint(0xffff00),
+                    onComplete: () => {
+                        tile.clearTint();
+                        tile.setDisplaySize(targetSize, targetSize);
+                    },
+                })
+            )
+        );
+
+        // Шаг 3: Полёт к целям — все одновременно
+        matchedTiles.forEach((tile) => {
+            this.animateAndRemoveMatchesGoals(tile, targetSize, tweenPromises);
+        });
+
         // Удаляем сам дискошар
         this.grid[centerY][centerX] = null;
-        toRemove.push(discoSprite);
 
         tweenPromises.push(
             tweenPromise(this, {
@@ -1659,8 +1743,10 @@ export class Game extends Scene {
             })
         );
 
+        // Шаг 4: Дожидаемся завершения всех анимаций
         await Promise.all(tweenPromises);
 
+        // Шаг 5: Продолжаем
         if (helpersToActivate.length > 0) {
             await this.activateHelperChain(helpersToActivate);
             return;
@@ -1688,6 +1774,8 @@ export class Game extends Scene {
                         duration: 300,
                         ease: "Power1",
                         onComplete: () => {
+                            this.updateGoalProgress(tile.getData("type"));
+                            this.checkWin();
                             tile.destroy();
                             resolve();
                         },
@@ -1783,7 +1871,7 @@ export class Game extends Scene {
                     // Пропускаем фишки во льду — заменяем только внутреннюю фишку
                     const iceData = tile.getData("ice");
                     if (iceData) {
-                        const newType = this.getRandomTileType();
+                        const newType = this.getRandomTile();
                         tile.setTexture(newType);
                         tile.setData("type", newType);
                         tile.setDisplaySize(this.cellSize, this.cellSize);
@@ -1929,137 +2017,175 @@ export class Game extends Scene {
 
         return Math.min(1, availableWidth / fieldWidth); // scale не больше 1
     }
-    // create() {
+    updateMovesUI() {
+        this.movesText.setText(
+            `${this.remainingMoves}/${this.levelConfig.moves}`
+        );
+    }
+    createGoalsPanel(goals: LevelGoal[]) {
+        const panelY = this.offsetY - 40;
+        const centerX = this.cameras.main.centerX;
 
-    //     this.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {
-    //         if (this.selectedSprite && this.pointerDownPos) {
-    //             const dx = pointer.x - this.pointerDownPos.x;
-    //             const dy = pointer.y - this.pointerDownPos.y;
-    //             const distance = Math.sqrt(dx * dx + dy * dy);
+        const panelWidth =
+            this.cellSize * goals.length + this.gap + this.cellSize / 2;
+        const panelHeight = 50;
+        const cornerRadius = 16;
 
-    //             if (distance < 10) {
-    //                 this.handleTileClick(this.selectedSprite);
-    //             } else {
-    //                 this.handleSwipe(
-    //                     this.selectedSprite,
-    //                     pointer,
-    //                     this.pointerDownPos
-    //                 );
-    //             }
+        // 🎨 Создаём динамическую текстуру фона панели
+        const graphics = this.add.graphics();
+        graphics.fillStyle(0x2ac5fc, 0.85);
+        graphics.fillRoundedRect(0, 0, panelWidth, panelHeight, cornerRadius);
+        // graphics.lineStyle(2, 0x000000, 0.2);
 
-    //             this.selectedSprite = null;
-    //             this.pointerDownPos = null;
-    //         }
-    //     });
+        graphics.strokeRoundedRect(0, 0, panelWidth, panelHeight, cornerRadius);
+        graphics.generateTexture("goalsPanelBg", panelWidth, panelHeight);
+        graphics.destroy();
 
-    //     const gap = this.gap;
-    //     const cellSize = this.cellSize;
+        const background = this.add.image(centerX, panelY, "goalsPanelBg");
+        background.setOrigin(0.5);
+        background.setDepth(10);
 
-    //     const cols = levelGrid[0].length;
-    //     const rows = levelGrid.length;
+        const iconSpacing = 50;
+        const totalWidth = (goals.length - 1) * iconSpacing;
+        const startX = centerX - totalWidth / 2;
 
-    //     const fieldWidth = cols * (cellSize + gap);
-    //     const fieldHeight = rows * (cellSize + gap);
+        this.goalIcons = {};
 
-    //     this.offsetX = (this.cameras.main.width - fieldWidth) / 2;
-    //     this.offsetY = (this.cameras.main.height - fieldHeight) / 2;
+        goals.forEach((goal, index) => {
+            const iconX = startX + index * iconSpacing;
 
-    //     this.grid = [];
+            // Иконка
+            const icon = this.add.sprite(iconX, panelY, goal.type);
+            icon.setDisplaySize(42, 42);
+            icon.setOrigin(0.5);
+            icon.setDepth(11);
 
-    //     levelGrid.forEach((row, y) => {
-    //         this.grid[y] = [];
+            // 🎯 Кружок под счётчиком — отрисовываем через Graphics
+            const circle = this.add.graphics();
+            const radius = 12;
+            const circleX = iconX + 12;
+            const circleY = panelY + 10;
 
-    //         row.forEach((cell, x) => {
-    //             if (!cell) {
-    //                 this.grid[y][x] = null;
-    //                 this.holePositions.add(`${x},${y}`);
-    //                 return;
-    //             }
+            circle.fillStyle(0x000000, 1); // чёрный
+            circle.fillCircle(radius, radius, radius);
+            circle.setPosition(circleX - radius, circleY - radius);
+            circle.setDepth(12);
 
-    //             const posX = this.offsetX + x * (cellSize + gap) + cellSize / 2;
-    //             const posY = this.offsetY + y * (cellSize + gap) + cellSize / 2;
+            // Текст
+            const text = this.add.text(
+                circleX,
+                circleY,
+                goal.count.toString(),
+                {
+                    fontFamily: "Nunito",
+                    fontSize: "14px",
+                    color: "#ffffff",
+                    fontStyle: "bold",
+                }
+            );
+            text.setOrigin(0.5);
+            text.setDepth(13);
 
-    //             const bg = this.add.image(posX, posY, "tile_bg");
-    //             bg.setOrigin(0.5);
-    //             bg.setDisplaySize(cellSize, cellSize);
-    //             bg.setAlpha(0.8);
-    //             bg.setDepth(1);
+            this.goalIcons[goal.type] = {
+                icon,
+                circle,
+                text,
+                target: goal.count,
+                current: 0,
+            };
+        });
+    }
+    updateGoalProgress(type: string) {
+        const goal = this.goalIcons?.[type];
+        if (!goal) return;
 
-    //             if (cell.type === "box") {
-    //                 const strength = cell.strength ?? 2;
-    //                 const texture = strength === 1 ? "box_cracked" : "box_full";
+        goal.current++;
 
-    //                 const box = this.add.sprite(posX, posY, texture);
-    //                 box.setOrigin(0.5);
-    //                 box.setDisplaySize(cellSize, cellSize);
-    //                 box.setInteractive();
-    //                 box.setDepth(8);
+        const remaining = Math.max(0, goal.target - goal.current);
+        goal.text.setText(remaining.toString());
 
-    //                 box.setData("gridX", x);
-    //                 box.setData("gridY", y);
-    //                 box.setData("type", "box");
-    //                 box.setData("box", { strength });
+        // 🎯 Простая анимация пульсации кружка
+        this.tweens.add({
+            targets: goal.circle,
+            scale: 1.2,
+            duration: 100,
+            yoyo: true,
+            ease: "Quad.easeInOut",
+        });
 
-    //                 this.grid[y][x] = box;
-    //                 return;
-    //             }
+        this.tweens.add({
+            targets: goal.text,
+            scale: 1.2,
+            duration: 100,
+            yoyo: true,
+            ease: "Quad.easeInOut",
+        });
+    }
+    checkGoalsCompleted(): boolean {
+        return Object.values(this.goalIcons).every(
+            (goal) => goal.current >= goal.target
+        );
+    }
+    handleLevelWin() {
+        if (this.levelCompleted) return; // не срабатываем дважды
+        this.levelCompleted = true;
 
-    //             let type = cell.type;
-    //             let data = cell;
+        this.isInputLocked = true;
+        this.isInputLocked = true;
+        this.add
+            .text(
+                this.cameras.main.centerX,
+                this.cameras.main.centerY,
+                "🎉 Победа!",
+                {
+                    fontSize: "32px",
+                    color: "#ffffff",
+                    backgroundColor: "#28a745",
+                    padding: { x: 20, y: 10 },
+                }
+            )
+            .setOrigin(0.5)
+            .setDepth(100);
 
-    //             if (cell.type === "ice") {
-    //                 type = cell.content.type;
-    //                 data = {
-    //                     ...cell.content,
-    //                     ice: { strength: cell.strength },
-    //                 };
-    //             }
+        // Или перейти на сцену победы
+        // this.scene.start("VictoryScene");
+    }
+    handleLevelLose() {
+        this.isInputLocked = true;
+        this.add
+            .text(
+                this.cameras.main.centerX,
+                this.cameras.main.centerY,
+                "💀 Поражение",
+                {
+                    fontSize: "32px",
+                    color: "#ffffff",
+                    backgroundColor: "#dc3545",
+                    padding: { x: 20, y: 10 },
+                }
+            )
+            .setOrigin(0.5)
+            .setDepth(100);
 
-    //             let sprite:
-    //                 | Phaser.GameObjects.Sprite
-    //                 | Phaser.GameObjects.Container;
+        // this.scene.start("GameOverScene");
+    }
+    checkWin() {
+        if (this.remainingMoves <= 0) {
+            if (this.checkGoalsCompleted()) {
+                this.handleLevelWin();
+            } else {
+                this.handleLevelLose();
+            }
+        } else {
+            if (this.checkGoalsCompleted()) {
+                this.handleLevelWin();
+            }
+        }
+    }
 
-    //             if (data.isHelper && data.helperType === "verticalHelper") {
-    //                 sprite = this.createDoubleRocketVertical(posX, posY);
-    //             } else if (
-    //                 data.isHelper &&
-    //                 data.helperType === "horizontalHelper"
-    //             ) {
-    //                 sprite = this.createDoubleRocketHorizontal(posX, posY);
-    //             } else if (data.isHelper && data.helperType === "discoball") {
-    //                 sprite = this.add.sprite(posX, posY, type);
-    //                 sprite.setOrigin(0.5);
-    //                 sprite.setDisplaySize(cellSize, cellSize);
-    //                 sprite.setInteractive();
-    //                 sprite.setDepth(5);
-    //             } else {
-    //                 sprite = this.add.sprite(posX, posY, type);
-    //                 sprite.setOrigin(0.5);
-    //                 sprite.setDisplaySize(cellSize, cellSize);
-    //                 sprite.setInteractive();
-    //                 sprite.setDepth(5);
-    //             }
-
-    //             sprite.setData("gridX", x);
-    //             sprite.setData("gridY", y);
-    //             sprite.setData("type", type);
-
-    //             for (const key in data) {
-    //                 sprite.setData(key, data[key]);
-    //             }
-
-    //             this.setupPointerEvents(sprite);
-    //             this.grid[y][x] = sprite;
-
-    //             if (cell.type === "ice") {
-    //                 this.attachIceToSprite(sprite, cell.strength);
-    //             }
-    //         });
-    //     });
-
-    //     EventBus.emit("current-scene-ready", this);
-    // }
     create() {
+        this.cameras.main.fadeIn(1000, 0, 0, 0);
+        this.levelCompleted = false;
         this.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {
             if (this.selectedSprite && this.pointerDownPos) {
                 const dx = pointer.x - this.pointerDownPos.x;
@@ -2080,6 +2206,8 @@ export class Game extends Scene {
                 this.pointerDownPos = null;
             }
         });
+
+        const levelGrid = this.levelConfig.grid;
 
         const gap = this.gap;
         const cellSize = this.cellSize;
@@ -2169,13 +2297,13 @@ export class Game extends Scene {
                 } else if (data.isHelper && data.helperType === "discoball") {
                     sprite = this.add.sprite(posX, posY, type);
                     sprite.setOrigin(0.5);
-                    sprite.setDisplaySize(cellSize, cellSize);
+                    sprite.setDisplaySize(cellSize - 10, cellSize - 10);
                     sprite.setInteractive();
                     sprite.setDepth(5);
                 } else {
                     sprite = this.add.sprite(posX, posY, type);
                     sprite.setOrigin(0.5);
-                    sprite.setDisplaySize(cellSize, cellSize);
+                    sprite.setDisplaySize(cellSize - 5, cellSize - 5);
                     sprite.setInteractive();
                     sprite.setDepth(5);
                 }
@@ -2197,7 +2325,43 @@ export class Game extends Scene {
             });
         });
 
+        const cam = this.cameras.main;
+        this.movesBg = this.add.image(
+            this.offsetX + 50,
+            this.offsetY - 104,
+            "moves_bg"
+        );
+        this.movesBg.setOrigin(0.5);
+        this.movesBg.setDepth(100); // выше поля
+
+        this.movesText = this.add.text(this.movesBg.x, this.movesBg.y, "", {
+            fontFamily: "Nunito",
+            fontSize: "20px",
+            color: "#0095ff",
+            fontStyle: "bold",
+        });
+        this.movesText.setOrigin(0.5);
+        this.movesText.setDepth(101);
+
+        this.updateMovesUI();
+
+        this.pauseButton = this.add.image(
+            this.offsetX + cellSize * cols - 10,
+            this.offsetY - 104,
+            "pause"
+        );
+        this.pauseButton.setOrigin(0.5);
+        this.pauseButton.setInteractive();
+        this.pauseButton.setDepth(100);
+        this.pauseButton.setDisplaySize(this.cellSize, this.cellSize);
+
+        this.createGoalsPanel(this.levelConfig.goals);
+
         EventBus.emit("current-scene-ready", this);
+    }
+    init(data: { config: LevelConfig }) {
+        this.levelConfig = data.config;
+        this.remainingMoves = this.levelConfig.moves;
     }
 
     changeScene() {
