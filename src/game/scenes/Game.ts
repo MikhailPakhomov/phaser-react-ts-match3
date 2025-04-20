@@ -655,7 +655,7 @@ export class Game extends Scene {
             type === "box"
                 ? this.goalIcons?.[type + "_full"]
                 : this.goalIcons?.[type];
-     
+
         const x = tile.getData("gridX");
         const y = tile.getData("gridY");
 
@@ -666,7 +666,7 @@ export class Game extends Scene {
             const clone = this.add.sprite(
                 tile.x,
                 tile.y,
-                type === "box" ? "box_full" : type
+                type === "box" ? "box_cracked" : type
             );
             clone.setDisplaySize(size, size);
             clone.setDepth(1000);
@@ -783,26 +783,43 @@ export class Game extends Scene {
         const width = this.grid[0].length;
 
         for (let x = 0; x < width; x++) {
-            let col: (Phaser.GameObjects.Sprite | null)[] = [];
-            for (let y = 0; y < height; y++) col.push(this.grid[y][x]);
+            // Собираем текущую колонку
+            const col: (Phaser.GameObjects.Sprite | null)[] = [];
+            for (let y = 0; y < height; y++) {
+                col.push(this.grid[y][x]);
+            }
 
+            // Готовим новую колонку
             const newCol = Array(height).fill(null);
+
+            // Позиция куда вставлять (снизу вверх)
             let insertY = height - 1;
 
             for (let y = height - 1; y >= 0; y--) {
                 const tile = col[y];
-                const key = `${x},${y}`;
-                if (tile && !this.holePositions.has(key)) {
-                    newCol[insertY] = tile;
-                    const newY = insertY;
+                const currentKey = `${x},${y}`;
 
-                    if (y !== newY) {
-                        tile.setData("gridY", newY);
-                        this.grid[newY][x] = tile;
+                if (tile && !this.holePositions.has(currentKey)) {
+                    // 🔁 Ищем ближайшую не дырявую позицию сверху вниз
+                    while (
+                        insertY >= 0 &&
+                        this.holePositions.has(`${x},${insertY}`)
+                    ) {
+                        insertY--;
+                    }
+
+                    if (insertY < 0) break;
+
+                    newCol[insertY] = tile;
+
+                    if (y !== insertY) {
+                        tile.setData("gridY", insertY);
+                        this.grid[insertY][x] = tile;
                         this.grid[y][x] = null;
 
                         const targetY =
-                            this.offsetY + newY * (size + gap) + size / 2;
+                            this.offsetY + insertY * (size + gap) + size / 2;
+
                         tweens.push(
                             new Promise((resolve) => {
                                 this.tweens.add({
@@ -1356,7 +1373,7 @@ export class Game extends Scene {
                                           type + "_full"
                                       )
                                     : this.levelConfig.goals.includes(type);
-                            console.log(isTarget, type);
+
                             if (isTarget) {
                                 await this.animateAndRemoveMatchesGoals(
                                     tile,
@@ -2169,7 +2186,7 @@ export class Game extends Scene {
 
         this.isInputLocked = true;
         this.isInputLocked = true;
-        this.add
+        const text = this.add
             .text(
                 this.cameras.main.centerX,
                 this.cameras.main.centerY,
@@ -2183,13 +2200,14 @@ export class Game extends Scene {
             )
             .setOrigin(0.5)
             .setDepth(100);
-
+        text.on("pointerdown", () => this.scene.start("MainMenu"));
+        setTimeout(() => this.scene.start("MainMenu"), 3000);
         // Или перейти на сцену победы
         // this.scene.start("VictoryScene");
     }
     handleLevelLose() {
         this.isInputLocked = true;
-        this.add
+        const text = this.add
             .text(
                 this.cameras.main.centerX,
                 this.cameras.main.centerY,
@@ -2203,7 +2221,8 @@ export class Game extends Scene {
             )
             .setOrigin(0.5)
             .setDepth(100);
-
+            text.on("pointerdown", () => this.scene.start("MainMenu"));
+            setTimeout(() => this.scene.start("MainMenu"), 3000);
         // this.scene.start("GameOverScene");
     }
     checkWin() {
@@ -2391,6 +2410,9 @@ export class Game extends Scene {
         this.pauseButton.setInteractive();
         this.pauseButton.setDepth(100);
         this.pauseButton.setDisplaySize(this.cellSize, this.cellSize);
+        this.pauseButton.on("pointerdown", () => {
+            this.scene.start("MainMenu", {});
+        });
 
         this.createGoalsPanel(this.levelConfig.goals);
 
