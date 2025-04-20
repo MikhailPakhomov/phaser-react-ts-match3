@@ -2200,8 +2200,14 @@ export class Game extends Scene {
             )
             .setOrigin(0.5)
             .setDepth(100);
-        text.on("pointerdown", () => this.scene.start("MainMenu"));
-        setTimeout(() => this.scene.start("MainMenu"), 3000);
+        text.on("pointerdown", () => {
+            this.scene.stop("Game");
+            this.scene.start("MainMenu");
+        });
+        setTimeout(() => {
+            this.scene.stop("Game");
+            this.scene.start("MainMenu");
+        }, 3000);
         // Или перейти на сцену победы
         // this.scene.start("VictoryScene");
     }
@@ -2221,8 +2227,14 @@ export class Game extends Scene {
             )
             .setOrigin(0.5)
             .setDepth(100);
-            text.on("pointerdown", () => this.scene.start("MainMenu"));
-            setTimeout(() => this.scene.start("MainMenu"), 3000);
+        text.on("pointerdown", () => {
+            this.scene.stop("Game");
+            this.scene.start("MainMenu");
+        });
+        setTimeout(() => {
+            this.scene.stop("Game");
+            this.scene.start("MainMenu");
+        }, 3000);
         // this.scene.start("GameOverScene");
     }
     checkWin() {
@@ -2240,6 +2252,8 @@ export class Game extends Scene {
     }
 
     create() {
+        this.cameras.main.setScroll(0, 0);
+        this.cameras.main.setZoom(1);
         this.cameras.main.fadeIn(1000, 0, 0, 0);
         this.levelCompleted = false;
         this.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {
@@ -2416,11 +2430,20 @@ export class Game extends Scene {
 
         this.createGoalsPanel(this.levelConfig.goals);
 
+
+        const logo = this.add.image(this.cameras.main.centerX, this.cameras.main.height - 40, "logo");
+        logo.setOrigin(0.5);
+       
+        logo.setDepth(10);
         EventBus.emit("current-scene-ready", this);
     }
     init(data: { config: LevelConfig }) {
         this.levelConfig = data.config;
         this.remainingMoves = this.levelConfig.moves;
+        this.scaleFactor = 1;
+        this.offsetX = 0;
+        this.offsetY = 0;
+    
     }
 
     changeScene() {

@@ -53,6 +53,7 @@ export class Preloader extends Scene {
         this.load.image("easy", "easy_level_bg.png");
         this.load.image("medium", "medium_level_bg.png");
         this.load.image("hard", "hard_level_bg.png");
+        this.load.image("logo", "logo.png");
     }
           
     create() {
