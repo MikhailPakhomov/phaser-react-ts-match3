@@ -18,12 +18,12 @@ const config: Phaser.Types.Core.GameConfig = {
         width: window.innerWidth,
         height: window.innerHeight,
     },
-    pixelArt: true, // 💡 это важно
-    render: {
-        antialias: false, // отключает сглаживание
-        antialiasGL: false, // для WebGL
-        pixelArt: true, // оставляет пиксельную четкость
-    },
+  
+    // render: {
+    //     antialias: false, // отключает сглаживание
+    //     antialiasGL: false, // для WebGL
+    //     pixelArt: true, // оставляет пиксельную четкость
+    // },
 };
 
 const StartGame = (parent: string) => {
