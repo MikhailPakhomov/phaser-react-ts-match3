@@ -89,7 +89,11 @@ export class MainMenu extends Scene {
         });
 
         const logoY = startY + gridHeight + 30;
-        const logo = this.add.image(centerX, this.cameras.main.height - 40, "logo");
+        const logo = this.add.image(
+            centerX,
+            this.cameras.main.height - 120,
+            "logo"
+        );
         logo.setOrigin(0.5);
         logo.setDepth(1);
 

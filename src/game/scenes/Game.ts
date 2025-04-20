@@ -2430,10 +2430,13 @@ export class Game extends Scene {
 
         this.createGoalsPanel(this.levelConfig.goals);
 
-
-        const logo = this.add.image(this.cameras.main.centerX, this.cameras.main.height - 40, "logo");
+        const logo = this.add.image(
+            this.cameras.main.centerX,
+            this.cameras.main.height - 120,
+            "logo"
+        );
         logo.setOrigin(0.5);
-       
+
         logo.setDepth(10);
         EventBus.emit("current-scene-ready", this);
     }
@@ -2443,7 +2446,6 @@ export class Game extends Scene {
         this.scaleFactor = 1;
         this.offsetX = 0;
         this.offsetY = 0;
-    
     }
 
     changeScene() {
