@@ -417,6 +417,10 @@ export class Game extends Scene {
         await this.basicSwap(tileA, tileB);
     }
 
+    private isValidTile(tile: any): tile is Phaser.GameObjects.Sprite {
+        return tile && typeof tile.getData === "function";
+    }
+
     findMatches(): Phaser.GameObjects.Sprite[][] {
         const matches: Phaser.GameObjects.Sprite[][] = [];
 
@@ -426,11 +430,12 @@ export class Game extends Scene {
         const isMatchable = (
             tile: Phaser.GameObjects.Sprite | null
         ): boolean => {
-            if (!tile) return false;
-            if (tile.getData("box")) return false;
-            if (tile.getData("isHelper")) return false;
-            if (!tile.getData("type")) return false;
-            return true;
+            return (
+                this.isValidTile(tile) &&
+                !tile.getData("box") &&
+                !tile.getData("isHelper") &&
+                !!tile.getData("type")
+            );
         };
 
         // Горизонтальные
@@ -495,6 +500,7 @@ export class Game extends Scene {
 
         return matches;
     }
+
     async removeMatches(matches: Phaser.GameObjects.Sprite[][]): Promise<void> {
         const tweens: Promise<void>[] = [];
         const tilesToDestroyLater: Phaser.GameObjects.Sprite[] = [];
@@ -517,73 +523,64 @@ export class Game extends Scene {
                 for (const { dx, dy } of directions) {
                     const nx = x + dx;
                     const ny = y + dy;
+                    if (!this.grid[ny] || !this.grid[ny][nx]) continue;
 
-                    if (
-                        ny >= 0 &&
-                        ny < this.grid.length &&
-                        nx >= 0 &&
-                        nx < this.grid[0].length
-                    ) {
-                        const neighbor = this.grid[ny][nx];
-                        if (!neighbor || damagedTiles.has(neighbor)) continue;
+                    const neighbor = this.grid[ny][nx];
+                    if (!neighbor || damagedTiles.has(neighbor)) continue;
 
-                        if (neighbor.getData("ice")) {
-                            const ice = neighbor.getData("ice");
-                            const iceSprite = neighbor.getData("iceSprite");
-
-                            if (ice.strength > 1) {
-                                ice.strength--;
-                                if (iceSprite)
-                                    iceSprite.setTexture("ice_cracked");
-                            } else {
-                                if (iceSprite) iceSprite.destroy();
-                                neighbor.setData("ice", null);
-                                neighbor.setData("iceSprite", null);
-                            }
-
-                            damagedTiles.add(neighbor);
+                    if (neighbor.getData("ice")) {
+                        const ice = neighbor.getData("ice");
+                        const iceSprite = neighbor.getData("iceSprite");
+                        if (ice.strength > 1) {
+                            ice.strength--;
+                            if (iceSprite) iceSprite.setTexture("ice_cracked");
+                        } else {
+                            if (iceSprite) iceSprite.destroy();
+                            neighbor.setData("ice", null);
+                            neighbor.setData("iceSprite", null);
                         }
+                        damagedTiles.add(neighbor);
+                    }
 
-                        if (neighbor.getData("box")) {
-                            const box = neighbor.getData("box");
-                            const sprite =
-                                neighbor.getData("boxSprite") || neighbor;
+                    if (neighbor.getData("box")) {
+                        const box = neighbor.getData("box");
+                        const sprite =
+                            neighbor.getData("boxSprite") || neighbor;
+                        if (box.strength > 1) {
+                            box.strength--;
+                            sprite.setTexture("box_cracked");
+                        } else {
+                            const gx = neighbor.getData("gridX");
+                            const gy = neighbor.getData("gridY");
+                            this.grid[gy][gx] = null;
 
-                            if (box.strength > 1) {
-                                box.strength--;
-                                if (sprite) sprite.setTexture("box_cracked");
-                            } else {
-                                const gx = neighbor.getData("gridX");
-                                const gy = neighbor.getData("gridY");
+                            // Обеспечим наличие всех нужных данных на спрайте
+                            sprite.setData("gridX", gx);
+                            sprite.setData("gridY", gy);
+                            sprite.setData("type", "box"); // Убедись, что у тебя цели оформлены как "box_full"
 
-                                this.grid[gy][gx] = null;
-
-                                tweens.push(
-                                    tweenPromise(this, {
-                                        targets: sprite,
-                                        alpha: 0,
-                                        duration: 200,
-                                        ease: "Power2",
-                                        onUpdate: (tween) => {
-                                            const progress = 1 - tween.progress;
-                                            sprite.setDisplaySize(
-                                                size * progress,
-                                                size * progress
-                                            );
-                                        },
-                                        onComplete: () => {
-                                            this.updateGoalProgress(
-                                                sprite.getData("type") + "_full"
-                                            );
-                                            this.checkWin();
-                                            sprite.destroy();
-                                        },
-                                    })
-                                );
-                            }
-
-                            damagedTiles.add(neighbor);
+                            await this.animateAndRemoveMatchesGoals(
+                                sprite,
+                                size,
+                                tweens,
+                                tilesToDestroyLater
+                            );
+                            tweens.push(
+                                tweenPromise(this, {
+                                    targets: sprite,
+                                    alpha: 0,
+                                    duration: 200,
+                                    onComplete: () => {
+                                        this.updateGoalProgress(
+                                            sprite.getData("type") + "_full"
+                                        );
+                                        this.checkWin();
+                                        sprite.destroy();
+                                    },
+                                })
+                            );
                         }
+                        damagedTiles.add(neighbor);
                     }
                 }
             }
@@ -597,29 +594,8 @@ export class Game extends Scene {
                 const x = tile.getData("gridX");
                 const y = tile.getData("gridY");
 
-                const ice = tile.getData("ice");
-                const iceSprite = tile.getData("iceSprite");
-
-                if (ice) {
-                    if (ice.strength > 1) {
-                        ice.strength--;
-                        if (iceSprite) iceSprite.setTexture("ice_cracked");
-                        tile.setDepth(5);
-                        tile.alpha = 1;
-                        tile.setDisplaySize(size, size);
-                        tile.y =
-                            this.offsetY + y * (size + this.gap) + size / 2;
-                        damagedTiles.add(tile);
-                        continue;
-                    }
-
-                    if (iceSprite) iceSprite.destroy();
-                    tile.setData("ice", null);
-                    tile.setData("iceSprite", null);
-                    tile.setDepth(5);
-                    tile.y = this.offsetY + y * (size + this.gap) + size / 2;
-                    damagedTiles.add(tile);
-                    continue;
+                if (this.grid[y][x] === tile) {
+                    this.grid[y][x] = null;
                 }
 
                 await this.animateAndRemoveMatchesGoals(
@@ -633,21 +609,7 @@ export class Game extends Scene {
 
         await Promise.all(tweens);
 
-        tilesToDestroyLater.forEach((tile) => {
-            const x = tile.getData("gridX");
-            const y = tile.getData("gridY");
-
-            if (this.grid?.[y]?.[x] === tile) {
-                console.warn(
-                    "🚫 Удаляем, но всё ещё в grid — чистим вручную!",
-                    x,
-                    y
-                );
-                this.grid[y][x] = null;
-            }
-
-            tile.destroy();
-        });
+        for (const tile of tilesToDestroyLater) tile.destroy();
     }
 
     async animateAndRemoveMatchesGoals(
@@ -656,6 +618,8 @@ export class Game extends Scene {
         tweens?: Promise<void>[],
         tilesToDestroyLater?: Phaser.GameObjects.Sprite[]
     ): Promise<void> {
+        if (!tile || typeof tile.getData !== "function") return;
+
         if (tile.getData("removing")) return;
         tile.setData("removing", true);
 
@@ -702,7 +666,7 @@ export class Game extends Scene {
             // 🧱 Обычный — исчезновение
             tile.setVisible(true);
             tile.setAlpha(1);
-            tile.setDisplaySize(size, size); // ✅ размер выставляем вручную, без scale
+            tile.setDisplaySize(size, size);
 
             tweens?.push(
                 tweenPromise(this, {
@@ -778,50 +742,37 @@ export class Game extends Scene {
     }
 
     async dropTiles(): Promise<void> {
+        const tweens: Promise<void>[] = [];
         const gap = this.gap;
-        const cellSize = this.cellSize;
+        const size = this.cellSize;
         const height = this.grid.length;
         const width = this.grid[0].length;
 
-        const tweenPromises: Promise<void>[] = [];
-
         for (let x = 0; x < width; x++) {
-            let emptySpots = 0;
+            let col: (Phaser.GameObjects.Sprite | null)[] = [];
+            for (let y = 0; y < height; y++) col.push(this.grid[y][x]);
+
+            const newCol = Array(height).fill(null);
+            let insertY = height - 1;
 
             for (let y = height - 1; y >= 0; y--) {
-                const tile = this.grid[y][x];
-                const posKey = `${x},${y}`;
+                const tile = col[y];
+                const key = `${x},${y}`;
+                if (tile && !this.holePositions.has(key)) {
+                    newCol[insertY] = tile;
+                    const newY = insertY;
 
-                if (tile === null && !this.holePositions.has(posKey)) {
-                    emptySpots++;
-                } else if (emptySpots > 0 && tile) {
-                    const newY = y + emptySpots;
-                    this.grid[newY][x] = tile;
-                    this.grid[y][x] = null;
+                    if (y !== newY) {
+                        tile.setData("gridY", newY);
+                        this.grid[newY][x] = tile;
+                        this.grid[y][x] = null;
 
-                    tile.setData("gridY", newY);
-
-                    const targetY =
-                        this.offsetY + newY * (cellSize + gap) + cellSize / 2;
-
-                    tweenPromises.push(
-                        new Promise<void>((resolve) => {
-                            this.tweens.add({
-                                targets: tile,
-                                y: targetY,
-                                duration: 250,
-                                ease: "Power2",
-                                onComplete: () => resolve(),
-                            });
-                        })
-                    );
-
-                    const iceSprite = tile.getData("iceSprite");
-                    if (iceSprite) {
-                        tweenPromises.push(
-                            new Promise<void>((resolve) => {
+                        const targetY =
+                            this.offsetY + newY * (size + gap) + size / 2;
+                        tweens.push(
+                            new Promise((resolve) => {
                                 this.tweens.add({
-                                    targets: iceSprite,
+                                    targets: tile,
                                     y: targetY,
                                     duration: 250,
                                     ease: "Power2",
@@ -829,13 +780,31 @@ export class Game extends Scene {
                                 });
                             })
                         );
+
+                        const iceSprite = tile.getData("iceSprite");
+                        if (iceSprite) {
+                            tweens.push(
+                                new Promise((resolve) => {
+                                    this.tweens.add({
+                                        targets: iceSprite,
+                                        y: targetY,
+                                        duration: 250,
+                                        ease: "Power2",
+                                        onComplete: () => resolve(),
+                                    });
+                                })
+                            );
+                        }
                     }
+
+                    insertY--;
                 }
             }
         }
 
-        await Promise.all(tweenPromises);
+        await Promise.all(tweens);
     }
+
     getRandomTile() {
         const types = this.levelConfig.elements;
         return Phaser.Utils.Array.GetRandom(types);
@@ -848,24 +817,14 @@ export class Game extends Scene {
 
         for (let y = 0; y < this.grid.length; y++) {
             for (let x = 0; x < this.grid[0].length; x++) {
-                const tile = this.grid[y][x];
                 const posKey = `${x},${y}`;
-
-                const isBlocked =
-                    tile &&
-                    (tile.getData("box") ||
-                        tile.getData("ice") ||
-                        tile.getData("isHelper"));
-
-                if (!tile && !this.holePositions.has(posKey)) {
+                if (!this.grid[y][x] && !this.holePositions.has(posKey)) {
                     const type = this.getRandomTile();
-
                     const sprite = this.add.sprite(
                         this.offsetX + x * (cellSize + gap) + cellSize / 2,
                         -cellSize,
                         type
                     );
-
                     sprite.setOrigin(0.5);
                     sprite.setDisplaySize(
                         cellSize * this.scaleFactor - 5,
@@ -878,24 +837,21 @@ export class Game extends Scene {
                     sprite.setDepth(5);
 
                     this.setupPointerEvents(sprite);
-
                     this.grid[y][x] = sprite;
 
-                    const tweenPromise = new Promise<void>((resolve) => {
-                        this.tweens.add({
-                            targets: sprite,
-                            y:
-                                this.offsetY +
-                                y * (cellSize + gap) +
-                                cellSize / 2,
-                            duration: 200,
-                            delay: x * 10,
-                            ease: "Cubic.easeOut",
-                            onComplete: () => resolve(),
-                        });
-                    });
-
-                    tweenPromises.push(tweenPromise);
+                    const targetY =
+                        this.offsetY + y * (cellSize + gap) + cellSize / 2;
+                    tweenPromises.push(
+                        new Promise((resolve) => {
+                            this.tweens.add({
+                                targets: sprite,
+                                y: targetY,
+                                duration: 250,
+                                ease: "Cubic.easeOut",
+                                onComplete: () => resolve(),
+                            });
+                        })
+                    );
                 }
             }
         }
@@ -905,7 +861,6 @@ export class Game extends Scene {
 
     async processMatchesLoop(): Promise<void> {
         this.isProcessing = true;
-
         const matches = this.findMatches();
 
         if (matches.length > 0) {
@@ -913,22 +868,30 @@ export class Game extends Scene {
                 [];
 
             for (const match of matches) {
-                if (match.length >= 5) {
-                    const centerTile = match[Math.floor(match.length / 2)];
+                const valid = match.filter(
+                    (tile) =>
+                        tile &&
+                        tile.active &&
+                        this.grid?.[tile.getData("gridY")]?.[
+                            tile.getData("gridX")
+                        ] === tile
+                );
+
+                if (valid.length >= 5) {
+                    const center = valid[Math.floor(valid.length / 2)];
                     helpersToCreate.push({
-                        x: centerTile.getData("gridX"),
-                        y: centerTile.getData("gridY"),
+                        x: center.getData("gridX"),
+                        y: center.getData("gridY"),
                         type: "discoball",
                     });
-                } else if (match.length === 4) {
-                    const type = this.isHorizontalMatch(match)
+                } else if (valid.length === 4) {
+                    const type = this.isHorizontalMatch(valid)
                         ? "verticalHelper"
                         : "horizontalHelper";
-                    const centerTile = match[Math.floor(match.length / 2)];
-
+                    const center = valid[Math.floor(valid.length / 2)];
                     helpersToCreate.push({
-                        x: centerTile.getData("gridX"),
-                        y: centerTile.getData("gridY"),
+                        x: center.getData("gridX"),
+                        y: center.getData("gridY"),
                         type,
                     });
                 }
@@ -937,6 +900,9 @@ export class Game extends Scene {
             await this.removeMatches(matches);
 
             for (const helper of helpersToCreate) {
+                if (this.grid[helper.y][helper.x]) {
+                    this.grid[helper.y][helper.x].destroy();
+                }
                 await this.createHelperWithEffect(
                     helper.x,
                     helper.y,
@@ -944,14 +910,33 @@ export class Game extends Scene {
                 );
             }
 
-            await delayPromise(this, helpersToCreate.length > 0 ? 200 : 200);
+            await delayPromise(this, 100);
             await this.dropTiles();
             await this.fillEmptyTiles();
-            await delayPromise(this, 200);
+            await delayPromise(this, 100);
+
+            this.cleanupGrid();
             await this.processMatchesLoop();
             await this.reshuffleBoardIfNoMoves();
         } else {
             this.isProcessing = false;
+        }
+    }
+
+    cleanupGrid() {
+        for (let y = 0; y < this.grid.length; y++) {
+            for (let x = 0; x < this.grid[0].length; x++) {
+                const tile = this.grid[y][x];
+
+                if (tile && (!tile.active || tile.getData("removing"))) {
+                    console.warn(
+                        "🧹 Удалённый или сломанный тайл в grid — чистим вручную",
+                        x,
+                        y
+                    );
+                    this.grid[y][x] = null;
+                }
+            }
         }
     }
 
