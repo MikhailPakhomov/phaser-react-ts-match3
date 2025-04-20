@@ -507,6 +507,8 @@ export class Game extends Scene {
         const damagedTiles = new Set<Phaser.GameObjects.Sprite>();
         const handled = new Set<Phaser.GameObjects.Sprite>();
         const size = this.cellSize * this.scaleFactor;
+        const tilesJustDamagedInFirstPass =
+            new Set<Phaser.GameObjects.Sprite>();
 
         const directions = [
             { dx: -1, dy: 0 },
@@ -515,6 +517,7 @@ export class Game extends Scene {
             { dx: 0, dy: 1 },
         ];
 
+        // Сначала обрабатываем соседние с матчами тайлы — лёд и коробки
         for (const group of matches) {
             for (const tile of group) {
                 const x = tile.getData("gridX");
@@ -533,12 +536,14 @@ export class Game extends Scene {
                         const iceSprite = neighbor.getData("iceSprite");
                         if (ice.strength > 1) {
                             ice.strength--;
+                            console.log(ice.strength);
                             if (iceSprite) iceSprite.setTexture("ice_cracked");
                         } else {
                             if (iceSprite) iceSprite.destroy();
                             neighbor.setData("ice", null);
                             neighbor.setData("iceSprite", null);
                         }
+                        tilesJustDamagedInFirstPass.add(neighbor);
                         damagedTiles.add(neighbor);
                     }
 
@@ -554,10 +559,10 @@ export class Game extends Scene {
                             const gy = neighbor.getData("gridY");
                             this.grid[gy][gx] = null;
 
-                            // Обеспечим наличие всех нужных данных на спрайте
+                            // Подготовка к отправке в цель
                             sprite.setData("gridX", gx);
                             sprite.setData("gridY", gy);
-                            sprite.setData("type", "box"); // Убедись, что у тебя цели оформлены как "box_full"
+                            sprite.setData("type", "box");
 
                             await this.animateAndRemoveMatchesGoals(
                                 sprite,
@@ -565,15 +570,14 @@ export class Game extends Scene {
                                 tweens,
                                 tilesToDestroyLater
                             );
+
                             tweens.push(
                                 tweenPromise(this, {
                                     targets: sprite,
                                     alpha: 0,
                                     duration: 200,
                                     onComplete: () => {
-                                        this.updateGoalProgress(
-                                            sprite.getData("type") + "_full"
-                                        );
+                                        this.updateGoalProgress("box_full");
                                         this.checkWin();
                                         sprite.destroy();
                                     },
@@ -586,6 +590,7 @@ export class Game extends Scene {
             }
         }
 
+        // Теперь обрабатываем сами тайлы из матчей
         for (const group of matches) {
             for (const tile of group) {
                 if (handled.has(tile)) continue;
@@ -593,6 +598,28 @@ export class Game extends Scene {
 
                 const x = tile.getData("gridX");
                 const y = tile.getData("gridY");
+
+                const ice = tile.getData("ice");
+                const iceSprite = tile.getData("iceSprite");
+
+                if (ice) {
+                    console.log(ice.strength);
+                    if (tilesJustDamagedInFirstPass.has(tile)) {
+                        continue;
+                    }
+                    // Фишка во льду — только повреждаем лёд, саму фишку не трогаем
+                    if (ice.strength > 1) {
+                        console.log(ice.strength);
+                        ice.strength--;
+                        if (iceSprite) iceSprite.setTexture("ice_cracked");
+                    } else {
+                        if (iceSprite) iceSprite.destroy();
+                        tile.setData("ice", null);
+                        tile.setData("iceSprite", null);
+                    }
+                    damagedTiles.add(tile);
+                    continue; // НЕ удаляем фишку
+                }
 
                 if (this.grid[y][x] === tile) {
                     this.grid[y][x] = null;
@@ -608,7 +635,6 @@ export class Game extends Scene {
         }
 
         await Promise.all(tweens);
-
         for (const tile of tilesToDestroyLater) tile.destroy();
     }
 
@@ -624,8 +650,12 @@ export class Game extends Scene {
         tile.setData("removing", true);
 
         const type = tile.getData("type");
-        const goal = this.goalIcons?.[type];
 
+        const goal =
+            type === "box"
+                ? this.goalIcons?.[type + "_full"]
+                : this.goalIcons?.[type];
+     
         const x = tile.getData("gridX");
         const y = tile.getData("gridY");
 
@@ -633,7 +663,11 @@ export class Game extends Scene {
             // 🎯 Целевой — полёт к цели
             tile.setVisible(false);
 
-            const clone = this.add.sprite(tile.x, tile.y, type);
+            const clone = this.add.sprite(
+                tile.x,
+                tile.y,
+                type === "box" ? "box_full" : type
+            );
             clone.setDisplaySize(size, size);
             clone.setDepth(1000);
 
@@ -1315,6 +1349,21 @@ export class Game extends Scene {
                         if (tile.getData("isHelper")) {
                             triggerHelper(tile);
                         } else {
+                            const type = tile.getData("type");
+                            const isTarget =
+                                type === "box"
+                                    ? this.levelConfig.goals.includes(
+                                          type + "_full"
+                                      )
+                                    : this.levelConfig.goals.includes(type);
+                            console.log(isTarget, type);
+                            if (isTarget) {
+                                await this.animateAndRemoveMatchesGoals(
+                                    tile,
+                                    this.cellSize * this.scaleFactor - 5
+                                );
+                            }
+
                             const originalSize = this.cellSize;
                             this.tweens.add({
                                 targets: tile,
@@ -1330,7 +1379,9 @@ export class Game extends Scene {
                                     );
                                     tile.setDisplaySize(size, size);
                                 },
+                                onComplete: () => tile.destroy(),
                             });
+
                             toRemove.push(tile);
                             this.grid[ty][tx] = null;
                         }
@@ -1880,6 +1931,7 @@ export class Game extends Scene {
             for (let x = 0; x < this.grid[y].length; x++) {
                 const tile = this.grid[y][x];
                 if (!tile) continue;
+                if (tile.getData("ice") || tile.getData("box")) continue;
 
                 const iceSprite = tile.getData("iceSprite");
                 this.grid[y][x] = null;
