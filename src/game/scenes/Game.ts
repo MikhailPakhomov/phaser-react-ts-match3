@@ -3,6 +3,7 @@ import { Scene } from "phaser";
 import { delayPromise, tweenPromise } from "../utils/tween-utils";
 import { LevelConfig, LevelGoal } from "../levels/levelConfig";
 
+const dpr = window.devicePixelRatio || 1;
 export class Game extends Scene {
     levelConfig!: LevelConfig;
     remainingMoves!: number;
@@ -2139,6 +2140,7 @@ export class Game extends Scene {
             );
             text.setOrigin(0.5);
             text.setDepth(13);
+            text.setResolution(4)
 
             this.goalIcons[goal.type] = {
                 icon,
@@ -2253,9 +2255,9 @@ export class Game extends Scene {
 
     create() {
         this.cameras.main.setScroll(0, 0);
-        this.cameras.main.setZoom(1);
         this.cameras.main.fadeIn(1000, 0, 0, 0);
         this.levelCompleted = false;
+
         this.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {
             if (this.selectedSprite && this.pointerDownPos) {
                 const dx = pointer.x - this.pointerDownPos.x;
@@ -2265,11 +2267,7 @@ export class Game extends Scene {
                 if (distance < 10) {
                     this.handleTileClick(this.selectedSprite);
                 } else {
-                    this.handleSwipe(
-                        this.selectedSprite,
-                        pointer,
-                        this.pointerDownPos
-                    );
+                    this.handleSwipe(this.selectedSprite, pointer, this.pointerDownPos);
                 }
 
                 this.selectedSprite = null;
@@ -2278,29 +2276,24 @@ export class Game extends Scene {
         });
 
         const levelGrid = this.levelConfig.grid;
-
         const gap = this.gap;
         const cellSize = this.cellSize;
-
         const cols = levelGrid[0].length;
         const rows = levelGrid.length;
 
-        const fieldWidth = cols * (cellSize + gap) - gap;
-        const fieldHeight = rows * (cellSize + gap) - gap;
+        const gridWidth = cols * (cellSize + gap) - gap;
+        const gridHeight = rows * (cellSize + gap) - gap;
 
-        // 📏 1. Рассчитываем масштаб под ширину экрана
-        const padding = 20; // по 10px слева и справа
+        const padding = 40;
         const availableWidth = this.cameras.main.width - padding;
-        const scaleFactor = Math.min(1, availableWidth / fieldWidth);
-        this.scaleFactor = scaleFactor;
+        const availableHeight = this.cameras.main.height - padding;
 
-        // 🔍 2. Применяем масштаб через камеру
+        const scaleFactor = Math.min(1, availableWidth / gridWidth, availableHeight / gridHeight);
+        this.scaleFactor = scaleFactor;
         this.cameras.main.setZoom(scaleFactor);
 
-        // 🎯 3. Центрируем поле
-        this.offsetX = (this.cameras.main.width / scaleFactor - fieldWidth) / 2;
-        this.offsetY =
-            (this.cameras.main.height / scaleFactor - fieldHeight) / 2;
+        this.offsetX = (this.cameras.main.width / scaleFactor - gridWidth) / 2;
+        this.offsetY = (this.cameras.main.height / scaleFactor - gridHeight) / 2;
 
         this.grid = [];
 
@@ -2353,16 +2346,11 @@ export class Game extends Scene {
                     };
                 }
 
-                let sprite:
-                    | Phaser.GameObjects.Sprite
-                    | Phaser.GameObjects.Container;
+                let sprite: Phaser.GameObjects.Sprite | Phaser.GameObjects.Container;
 
                 if (data.isHelper && data.helperType === "verticalHelper") {
                     sprite = this.createDoubleRocketVertical(posX, posY);
-                } else if (
-                    data.isHelper &&
-                    data.helperType === "horizontalHelper"
-                ) {
+                } else if (data.isHelper && data.helperType === "horizontalHelper") {
                     sprite = this.createDoubleRocketHorizontal(posX, posY);
                 } else if (data.isHelper && data.helperType === "discoball") {
                     sprite = this.add.sprite(posX, posY, type);
@@ -2395,14 +2383,9 @@ export class Game extends Scene {
             });
         });
 
-        const cam = this.cameras.main;
-        this.movesBg = this.add.image(
-            this.offsetX + 50,
-            this.offsetY - 104,
-            "moves_bg"
-        );
+        this.movesBg = this.add.image(this.offsetX + 50, this.offsetY - 104, "moves_bg");
         this.movesBg.setOrigin(0.5);
-        this.movesBg.setDepth(100); // выше поля
+        this.movesBg.setDepth(100);
 
         this.movesText = this.add.text(this.movesBg.x, this.movesBg.y, "", {
             fontFamily: "Nunito",
@@ -2412,14 +2395,11 @@ export class Game extends Scene {
         });
         this.movesText.setOrigin(0.5);
         this.movesText.setDepth(101);
+        this.movesText.setResolution(4);
 
         this.updateMovesUI();
 
-        this.pauseButton = this.add.image(
-            this.offsetX + cellSize * cols - 10,
-            this.offsetY - 104,
-            "pause"
-        );
+        this.pauseButton = this.add.image(this.offsetX + cellSize * cols - 10, this.offsetY - 104, "pause");
         this.pauseButton.setOrigin(0.5);
         this.pauseButton.setInteractive();
         this.pauseButton.setDepth(100);
@@ -2430,14 +2410,10 @@ export class Game extends Scene {
 
         this.createGoalsPanel(this.levelConfig.goals);
 
-        const logo = this.add.image(
-            this.cameras.main.centerX,
-            this.cameras.main.height - 120,
-            "logo"
-        );
+        const logo = this.add.image(this.cameras.main.centerX, this.cameras.main.height - 120, "logo");
         logo.setOrigin(0.5);
-
         logo.setDepth(10);
+
         EventBus.emit("current-scene-ready", this);
     }
     init(data: { config: LevelConfig }) {

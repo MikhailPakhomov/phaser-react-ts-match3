@@ -7,27 +7,37 @@ import { Preloader } from "./scenes/Preloader";
 
 //  Find out more information about the Game Config at:
 //  https://newdocs.phaser.io/docs/3.70.0/Phaser.Types.Core.GameConfig
+
+const deviceWidth = window.innerWidth;
+const deviceHeight = window.innerHeight;
+
 const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,
     parent: "game-container",
     backgroundColor: "#00adef",
-    scene: [Boot, Preloader, MainMenu, MainGame, GameOver],
+    width: deviceWidth,
+    height: deviceHeight,
+    resolution: window.devicePixelRatio, // ← максимально чёткая отрисовка
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
-        width: window.innerWidth,
-        height: window.innerHeight,
+        width: deviceWidth,
+        height: deviceHeight,
     },
-  
-    // render: {
-    //     antialias: false, // отключает сглаживание
-    //     antialiasGL: false, // для WebGL
-    //     pixelArt: true, // оставляет пиксельную четкость
-    // },
+    render: {
+        antialias: true,     // сглаживание округлых форм
+        pixelArt: false,     // отключить пиксельную графику
+        roundPixels: false,  // не округлять координаты
+    },
+    scene: [Boot, Preloader, MainMenu, MainGame],
 };
 
 const StartGame = (parent: string) => {
-    return new Game({ ...config, parent });
+    return new Game({
+        ...config,
+        parent,
+        resolution: window.devicePixelRatio > 1 ? 2 : 1,
+    } as Phaser.Types.Core.GameConfig & { resolution: number });
 };
 
 export default StartGame;

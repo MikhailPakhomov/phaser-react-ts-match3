@@ -13,7 +13,10 @@ export class MainMenu extends Scene {
     }
 
     create() {
+        // this.cameras.main.setZoom(1 / window.devicePixelRatio);
+
         const camera = this.cameras.main;
+
         const centerX = camera.centerX;
         const centerY = camera.centerY;
         const bottomY = camera.height;
@@ -30,6 +33,17 @@ export class MainMenu extends Scene {
         const startX = centerX - gridWidth / 2 + cellWidth / 2;
         const startY = centerY - gridHeight / 2 + cellHeight / 2;
 
+        const padding = 20; // запас по краям
+        const availableWidth = this.cameras.main.width - padding;
+        const availableHeight = this.cameras.main.height - padding;
+        const scaleFactor = Math.min(
+            1,
+            availableWidth / gridWidth,
+            availableHeight / gridHeight
+        );
+
+        this.cameras.main.setZoom(scaleFactor);
+
         this.add
             .text(centerX, startY - 140, "Выбери уровень", {
                 fontFamily: "Nunito",
@@ -37,6 +51,7 @@ export class MainMenu extends Scene {
                 color: "#ffffff",
                 fontStyle: "bold",
             })
+            .setResolution(4)
             .setOrigin(0.5);
 
         this.add
@@ -45,6 +60,7 @@ export class MainMenu extends Scene {
                 fontSize: "18px",
                 color: "#ffffff",
             })
+            .setResolution(4)
             .setOrigin(0.5);
 
         this.add
@@ -53,6 +69,7 @@ export class MainMenu extends Scene {
                 fontSize: "18px",
                 color: "#ffffff",
             })
+            .setResolution(4)
             .setOrigin(0.5);
 
         levelConfigs.forEach((level, index) => {
@@ -81,6 +98,7 @@ export class MainMenu extends Scene {
                     color: "#ffffff",
                     fontStyle: "bold",
                 })
+                .setResolution(4)
                 .setOrigin(0.5);
 
             // Наведение на плитку
