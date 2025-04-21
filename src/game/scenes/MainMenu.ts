@@ -13,12 +13,13 @@ export class MainMenu extends Scene {
     }
 
     create() {
+        console.log("сцена создалась");
         this.game.renderer.config.antialias = true;
 
-const ctx = this.game.canvas.getContext("2d");
-if (ctx) {
-    ctx.imageSmoothingEnabled = true;
-}
+        const ctx = this.game.canvas.getContext("2d");
+        if (ctx) {
+            ctx.imageSmoothingEnabled = true;
+        }
 
         const camera = this.cameras.main;
 
@@ -89,12 +90,19 @@ if (ctx) {
                 .sprite(x, y, level.difficult)
                 .setDisplaySize(cellWidth, cellHeight)
                 .setInteractive({ useHandCursor: true })
-                .on("pointerdown", () => {
-                    this.scene.stop("MainMenu");
-                    this.scene.start("Game", {
-                        config: level,
-                    });
+                            .on("pointerdown", () => {
+                this.scene.stop("MainMenu");
+                this.scene.start("Game", {
+                    config: level,
                 });
+            });
+                // .on("pointerdown", () => {
+                //     this.scene.stop("MainMenu");
+                //     this.scene.start("WinScene", {
+                //         levelId: level.id,
+                //     });
+                // });
+
 
             // Номер уровня по центру
             const label = this.add

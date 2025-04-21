@@ -54,6 +54,10 @@ export class Preloader extends Scene {
         this.load.image("medium", "medium_level_bg.png");
         this.load.image("hard", "hard_level_bg.png");
         this.load.image("logo", "logo.png");
+        this.load.image("gift", "gift.png");
+        this.load.image("tile_green", "tile_green.png");
+        this.load.image("puzzle_8", "puzzle_8.png");
+        this.load.image("win_bg", "win_bg.png");
     }
           
     create() {
