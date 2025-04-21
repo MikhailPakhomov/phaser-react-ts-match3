@@ -2190,11 +2190,11 @@ export class Game extends Scene {
         .text(
             this.cameras.main.centerX,
             this.cameras.main.centerY,
-            "💀 Победа",
+            " Победа",
             {
                 fontSize: "32px",
                 color: "#ffffff",
-                backgroundColor: "#dc3545",
+                backgroundColor: "#36ee98",
                 padding: { x: 20, y: 10 },
             }
         )
