@@ -51,7 +51,7 @@ export class MainMenu extends Scene {
                 color: "#ffffff",
                 fontStyle: "bold",
             })
-            .setResolution(4)
+            .setResolution(2)
             .setOrigin(0.5);
 
         this.add
@@ -60,7 +60,7 @@ export class MainMenu extends Scene {
                 fontSize: "18px",
                 color: "#ffffff",
             })
-            .setResolution(4)
+            .setResolution(2)
             .setOrigin(0.5);
 
         this.add
@@ -69,7 +69,7 @@ export class MainMenu extends Scene {
                 fontSize: "18px",
                 color: "#ffffff",
             })
-            .setResolution(4)
+            .setResolution(2)
             .setOrigin(0.5);
 
         levelConfigs.forEach((level, index) => {
@@ -98,7 +98,7 @@ export class MainMenu extends Scene {
                     color: "#ffffff",
                     fontStyle: "bold",
                 })
-                .setResolution(4)
+                .setResolution(2)
                 .setOrigin(0.5);
 
             // Наведение на плитку

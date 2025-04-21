@@ -27,7 +27,7 @@ const config: Phaser.Types.Core.GameConfig = {
     render: {
         antialias: true,     // сглаживание округлых форм
         pixelArt: false,     // отключить пиксельную графику
-        roundPixels: false,  // не округлять координаты
+        roundPixels: true,  // не округлять координаты
     },
     scene: [Boot, Preloader, MainMenu, MainGame],
 };

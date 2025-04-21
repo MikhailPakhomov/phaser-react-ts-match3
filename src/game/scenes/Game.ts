@@ -2140,7 +2140,7 @@ export class Game extends Scene {
             );
             text.setOrigin(0.5);
             text.setDepth(13);
-            text.setResolution(4)
+            text.setResolution(2)
 
             this.goalIcons[goal.type] = {
                 icon,
@@ -2395,7 +2395,7 @@ export class Game extends Scene {
         });
         this.movesText.setOrigin(0.5);
         this.movesText.setDepth(101);
-        this.movesText.setResolution(4);
+        this.movesText.setResolution(2);
 
         this.updateMovesUI();
 
