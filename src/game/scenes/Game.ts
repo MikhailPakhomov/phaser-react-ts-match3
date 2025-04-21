@@ -2140,7 +2140,7 @@ export class Game extends Scene {
             );
             text.setOrigin(0.5);
             text.setDepth(13);
-            text.setResolution(2)
+            text.setResolution(2);
 
             this.goalIcons[goal.type] = {
                 icon,
@@ -2254,6 +2254,14 @@ export class Game extends Scene {
     }
 
     create() {
+        this.game.renderer.config.antialias = true;
+
+        const ctx = this.game.canvas.getContext("2d");
+        if (ctx) {
+            console.log("привет");
+            ctx.imageSmoothingEnabled = true;
+        }
+
         this.cameras.main.setScroll(0, 0);
         this.cameras.main.fadeIn(1000, 0, 0, 0);
         this.levelCompleted = false;
@@ -2267,7 +2275,11 @@ export class Game extends Scene {
                 if (distance < 10) {
                     this.handleTileClick(this.selectedSprite);
                 } else {
-                    this.handleSwipe(this.selectedSprite, pointer, this.pointerDownPos);
+                    this.handleSwipe(
+                        this.selectedSprite,
+                        pointer,
+                        this.pointerDownPos
+                    );
                 }
 
                 this.selectedSprite = null;
@@ -2288,12 +2300,17 @@ export class Game extends Scene {
         const availableWidth = this.cameras.main.width - padding;
         const availableHeight = this.cameras.main.height - padding;
 
-        const scaleFactor = Math.min(1, availableWidth / gridWidth, availableHeight / gridHeight);
+        const scaleFactor = Math.min(
+            1,
+            availableWidth / gridWidth,
+            availableHeight / gridHeight
+        );
         this.scaleFactor = scaleFactor;
         this.cameras.main.setZoom(scaleFactor);
 
         this.offsetX = (this.cameras.main.width / scaleFactor - gridWidth) / 2;
-        this.offsetY = (this.cameras.main.height / scaleFactor - gridHeight) / 2;
+        this.offsetY =
+            (this.cameras.main.height / scaleFactor - gridHeight) / 2;
 
         this.grid = [];
 
@@ -2346,11 +2363,16 @@ export class Game extends Scene {
                     };
                 }
 
-                let sprite: Phaser.GameObjects.Sprite | Phaser.GameObjects.Container;
+                let sprite:
+                    | Phaser.GameObjects.Sprite
+                    | Phaser.GameObjects.Container;
 
                 if (data.isHelper && data.helperType === "verticalHelper") {
                     sprite = this.createDoubleRocketVertical(posX, posY);
-                } else if (data.isHelper && data.helperType === "horizontalHelper") {
+                } else if (
+                    data.isHelper &&
+                    data.helperType === "horizontalHelper"
+                ) {
                     sprite = this.createDoubleRocketHorizontal(posX, posY);
                 } else if (data.isHelper && data.helperType === "discoball") {
                     sprite = this.add.sprite(posX, posY, type);
@@ -2383,7 +2405,11 @@ export class Game extends Scene {
             });
         });
 
-        this.movesBg = this.add.image(this.offsetX + 50, this.offsetY - 104, "moves_bg");
+        this.movesBg = this.add.image(
+            this.offsetX + 50,
+            this.offsetY - 104,
+            "moves_bg"
+        );
         this.movesBg.setOrigin(0.5);
         this.movesBg.setDepth(100);
 
@@ -2399,7 +2425,11 @@ export class Game extends Scene {
 
         this.updateMovesUI();
 
-        this.pauseButton = this.add.image(this.offsetX + cellSize * cols - 10, this.offsetY - 104, "pause");
+        this.pauseButton = this.add.image(
+            this.offsetX + cellSize * cols - 10,
+            this.offsetY - 104,
+            "pause"
+        );
         this.pauseButton.setOrigin(0.5);
         this.pauseButton.setInteractive();
         this.pauseButton.setDepth(100);
@@ -2410,7 +2440,11 @@ export class Game extends Scene {
 
         this.createGoalsPanel(this.levelConfig.goals);
 
-        const logo = this.add.image(this.cameras.main.centerX, this.cameras.main.height - 120, "logo");
+        const logo = this.add.image(
+            this.cameras.main.centerX,
+            this.cameras.main.height - 120,
+            "logo"
+        );
         logo.setOrigin(0.5);
         logo.setDepth(10);
 

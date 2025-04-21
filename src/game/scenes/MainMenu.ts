@@ -13,7 +13,12 @@ export class MainMenu extends Scene {
     }
 
     create() {
-        // this.cameras.main.setZoom(1 / window.devicePixelRatio);
+        this.game.renderer.config.antialias = true;
+
+const ctx = this.game.canvas.getContext("2d");
+if (ctx) {
+    ctx.imageSmoothingEnabled = true;
+}
 
         const camera = this.cameras.main;
 
@@ -99,6 +104,7 @@ export class MainMenu extends Scene {
                     fontStyle: "bold",
                 })
                 .setResolution(2)
+
                 .setOrigin(0.5);
 
             // Наведение на плитку

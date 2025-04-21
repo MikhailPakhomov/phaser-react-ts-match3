@@ -15,20 +15,25 @@ const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,
     parent: "game-container",
     backgroundColor: "#00adef",
+
     width: deviceWidth,
     height: deviceHeight,
-    resolution: window.devicePixelRatio, // ← максимально чёткая отрисовка
+
+    resolution: window.devicePixelRatio, // 📱 Чёткая отрисовка на retina и мобилках
+
     scale: {
-        mode: Phaser.Scale.FIT,
+        mode: Phaser.Scale.FIT,           // 📐 Подгоняем под экран
         autoCenter: Phaser.Scale.CENTER_BOTH,
         width: deviceWidth,
         height: deviceHeight,
     },
+
     render: {
-        antialias: true,     // сглаживание округлых форм
-        pixelArt: false,     // отключить пиксельную графику
-        roundPixels: true,  // не округлять координаты
+        antialias: true,     // ✅ Сглаживание для WebGL и Canvas
+        pixelArt: false,     // 🚫 Не пиксельарт
+        roundPixels: false,  // 🚫 Не округлять координаты — сохраняем мягкость
     },
+
     scene: [Boot, Preloader, MainMenu, MainGame],
 };
 
