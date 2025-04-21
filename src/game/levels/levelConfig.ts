@@ -15,6 +15,7 @@ export interface LevelConfig {
         strength?: number;
         content?: { type: string };
     })[][];
+    isCompleted: boolean;
 }
 
 export const levelConfigs: LevelConfig[] = [
@@ -113,6 +114,7 @@ export const levelConfigs: LevelConfig[] = [
                 { type: "message" },
             ],
         ],
+        isCompleted: false,
     },
 
     {
@@ -190,6 +192,7 @@ export const levelConfigs: LevelConfig[] = [
                 null,
             ],
         ],
+        isCompleted: false,
     },
 
     {
@@ -254,6 +257,7 @@ export const levelConfigs: LevelConfig[] = [
                 null,
             ],
         ],
+        isCompleted: false,
     },
 
     {
@@ -340,6 +344,7 @@ export const levelConfigs: LevelConfig[] = [
                 null,
             ],
         ],
+        isCompleted: false,
     },
 
     {
@@ -418,6 +423,7 @@ export const levelConfigs: LevelConfig[] = [
                 { type: "ice", content: { type: "smartphone" }, strength: 2 },
             ],
         ],
+        isCompleted: false,
     },
 
     {
@@ -499,6 +505,7 @@ export const levelConfigs: LevelConfig[] = [
                 null,
             ],
         ],
+        isCompleted: false,
     },
 
     {
@@ -593,6 +600,7 @@ export const levelConfigs: LevelConfig[] = [
                 { type: "energy" },
             ],
         ],
+        isCompleted: false,
     },
 
     {
@@ -681,6 +689,7 @@ export const levelConfigs: LevelConfig[] = [
                 },
             ],
         ],
+        isCompleted: false,
     },
     //Средние
 
@@ -744,6 +753,7 @@ export const levelConfigs: LevelConfig[] = [
                 { type: "message" },
             ],
         ],
+        isCompleted: false,
     },
 
     //Сложные
@@ -824,5 +834,6 @@ export const levelConfigs: LevelConfig[] = [
                 null,
             ],
         ],
+        isCompleted: false,
     },
 ];

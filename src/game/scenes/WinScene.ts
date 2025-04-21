@@ -1,5 +1,6 @@
 import { Scene } from "phaser";
 import { EventBus } from "../EventBus";
+import { delayPromise } from "../utils/tween-utils";
 
 export class WinScene extends Scene {
     private step: number = 0;
@@ -21,7 +22,6 @@ export class WinScene extends Scene {
 
         const ctx = this.game.canvas.getContext("2d");
         if (ctx) {
-
             ctx.imageSmoothingEnabled = true;
         }
 
@@ -31,30 +31,60 @@ export class WinScene extends Scene {
         const centerX = this.cameras.main.centerX;
         const centerY = this.cameras.main.centerY;
 
-        const rays = this.add.image(centerX, centerY, "win_bg"); // фон с лучами
+        const rays = this.add.sprite(centerX, centerY - 30, "win_bg");
+        rays.setAlpha(0.8);
+        rays.setOrigin(0.5);
+        rays.setScale(0);
+
+        // 🌞 Появление + медленное вращение и пульсация
+        this.tweens.add({
+            targets: rays,
+            alpha: 0.8,
+            duration: 2000,
+            ease: "Power1",
+        });
+
+        // 🌀 Медленное вращение (едва заметное)
         this.tweens.add({
             targets: rays,
             angle: 360,
-            duration: 3000,
-            ease: "Cubic.easeInOut",
-            yoyo: true,
+            duration: 35000,
+            ease: "Linear",
+            repeat: -1,
         });
-        rays.setAlpha(0.8);
+
+        // 💫 Лёгкая пульсация масштаба
+        this.tweens.add({
+            targets: rays,
+            scale: { from: 1.3, to: 1.7 },
+            duration: 2000,
+            yoyo: true,
+            ease: "Sine.easeInOut",
+            repeat: -1,
+        });
 
         // 🧧 Шаг 1 — Подарок
-        const gift = this.add.image(centerX, centerY - 80, "gift");
+        const gift = this.add.sprite(centerX, centerY - 100, "gift");
         gift.setScale(0);
 
         this.tweens.add({
             targets: gift,
-            scale:0.2,
+            scale: 0.3,
             duration: 1000,
             ease: "Cubic.easeInOut",
+        });
 
+        this.tweens.add({
+            targets: gift,
+            angle: { from: -5, to: 5 },
+            duration: 600,
+            ease: "Sine.easeInOut",
+            yoyo: true,
+            repeat: -1,
         });
 
         this.add
-            .text(centerX, centerY + 80, "Поздравляем!", {
+            .text(centerX, centerY + 80, "Поздравляю!", {
                 fontFamily: "Nunito",
                 fontSize: "28px",
                 color: "#ffffff",
@@ -62,10 +92,19 @@ export class WinScene extends Scene {
             })
             .setOrigin(0.5);
 
-        this.continueButton = this.add
-            .text(centerX, centerY + 150, "Продолжить", {
+            this.add
+            .text(centerX, centerY + 120, `Ты прошел ${this.levelId} уровень`, {
                 fontFamily: "Nunito",
                 fontSize: "20px",
+                color: "#ffffff",
+                
+            })
+            .setOrigin(0.5);
+
+        this.continueButton = this.add
+            .text(centerX, centerY + 200, "Продолжить", {
+                fontFamily: "Nunito",
+                fontSize: "18px",
                 backgroundColor: "#34c7fd",
                 color: "#ffffff",
                 padding: { x: 16, y: 8 },
@@ -87,20 +126,22 @@ export class WinScene extends Scene {
 
             this.showLevelTile();
         } else if (this.step === 2) {
+
             this.scene.stop("WinScene");
             this.scene.start("MainMenu", {
                 revealPiece: this.levelId,
+
             });
         }
     }
 
-    private showLevelTile() {
+    private  showLevelTile() {
         const centerX = this.cameras.main.centerX;
         const centerY = this.cameras.main.centerY;
 
         // 🔢 Плитка с номером уровня
         const tileSprite = this.add.sprite(0, 0, "tile_green");
-        tileSprite.setDisplaySize(172, 192);
+        tileSprite.setDisplaySize(217, 231);
         tileSprite.setOrigin(0.5);
 
         const levelText = this.add
@@ -114,7 +155,7 @@ export class WinScene extends Scene {
             .setResolution(2);
 
         // 📦 Контейнер с плиткой и номером
-        const tileContainer = this.add.container(centerX, centerY - 40, [
+        const tileContainer = this.add.container(centerX, centerY - 100, [
             tileSprite,
             levelText,
         ]);
@@ -123,30 +164,52 @@ export class WinScene extends Scene {
         // 🎯 Скрытый фрагмент картинки
         this.backPiece = this.add.image(
             centerX,
-            centerY - 40,
+            centerY - 100,
             `puzzle_${this.levelId}`
         );
-        this.backPiece.setDisplaySize(172, 192);
+        this.backPiece.setDisplaySize(217, 231);
         this.backPiece.setOrigin(0.5);
         this.backPiece.setVisible(false);
 
         const maskShape = this.make.graphics({ x: 0, y: 0, add: false });
         maskShape.fillStyle(0xffffff);
         maskShape.fillRoundedRect(0, 0, 172, 192, 20);
-        maskShape.setPosition(centerX - 86, centerY - 136); // выравниваем
+        maskShape.setPosition(centerX - 86, centerY - 196); // выравниваем
         const mask = maskShape.createGeometryMask();
         this.backPiece.setMask(mask);
 
         // 🔄 Анимация поворота контейнера
         this.tweens.add({
             targets: tileContainer,
-            angle: 360,
-            duration: 3000,
+            delay: 1000,
+            angle: 720,
+            duration: 1500,
             ease: "Cubic.easeInOut",
             onComplete: () => {
-                tileContainer.setVisible(false);
-                this.backPiece.setVisible(true);
                 this.continueButton.setVisible(true);
+               
+                this.tweens.add({
+                    targets: tileContainer,
+                    scaleX: 0,
+                    duration: 250,
+                    ease: "Cubic.easeIn",
+                    onComplete: () => {
+                        // Скрываем контейнер с номером уровня
+                        tileContainer.setVisible(false);
+
+                        // Показываем картинку-пазл
+                        this.backPiece.setScale(0, 1);
+                        this.backPiece.setVisible(true);
+
+                        // ⏳ Этап 2: разворот картинки-пазла обратно от 0 до 1
+                        this.tweens.add({
+                            targets: this.backPiece,
+                            scaleX: 1,
+                            duration: 250,
+                            ease: "Cubic.easeOut",
+                        });
+                    },
+                });
             },
         });
     }

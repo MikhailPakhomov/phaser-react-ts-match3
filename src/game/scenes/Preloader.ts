@@ -56,8 +56,17 @@ export class Preloader extends Scene {
         this.load.image("logo", "logo.png");
         this.load.image("gift", "gift.png");
         this.load.image("tile_green", "tile_green.png");
-        this.load.image("puzzle_8", "puzzle_8.png");
         this.load.image("win_bg", "win_bg.png");
+        this.load.image("puzzle_1", "puzzle_1.png");
+        this.load.image("puzzle_2", "puzzle_2.png");
+        this.load.image("puzzle_3", "puzzle_3.png");
+        this.load.image("puzzle_4", "puzzle_4.png");
+        this.load.image("puzzle_5", "puzzle_5.png");
+        this.load.image("puzzle_6", "puzzle_6.png");
+        this.load.image("puzzle_7", "puzzle_7.png");
+        this.load.image("puzzle_8", "puzzle_8.png");
+        this.load.image("puzzle_14", "puzzle_14.png");
+        this.load.image("puzzle_21", "puzzle_21.png");
     }
           
     create() {

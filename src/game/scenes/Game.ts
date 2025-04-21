@@ -2186,30 +2186,8 @@ export class Game extends Scene {
         if (this.levelCompleted) return; // не срабатываем дважды
         this.levelCompleted = true;
 
-        const text = this.add
-        .text(
-            this.cameras.main.centerX,
-            this.cameras.main.centerY,
-            " Победа",
-            {
-                fontSize: "32px",
-                color: "#ffffff",
-                backgroundColor: "#36ee98",
-                padding: { x: 20, y: 10 },
-            }
-        )
-        .setOrigin(0.5)
-        .setDepth(100);
-    text.on("pointerdown", () => {
-        this.scene.stop("Game");
-        this.scene.start("MainMenu");
-    });
-    setTimeout(() => {
-        this.scene.stop("Game");
-        this.scene.start("MainMenu");
-    }, 3000);
 
-        // this.scene.start("WinScene", { levelId: this.levelConfig.id });
+        this.scene.start("WinScene", { levelId: this.levelConfig.id });
     }
     handleLevelLose() {
         this.isInputLocked = true;
@@ -2252,6 +2230,7 @@ export class Game extends Scene {
     }
 
     create() {
+        this.isProcessing = false;
         this.isInputLocked = false;
         this.game.renderer.config.antialias = true;
 
@@ -2465,7 +2444,5 @@ export class Game extends Scene {
         this.offsetY = 0;
     }
 
-    changeScene() {
-        this.scene.start("GameOver");
-    }
+
 }
