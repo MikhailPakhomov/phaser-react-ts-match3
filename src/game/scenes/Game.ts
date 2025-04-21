@@ -2363,6 +2363,14 @@ export class Game extends Scene {
                     };
                 }
 
+                if (cell.type === "random") {
+                    const randomType = this.getRandomTile();
+                    type = randomType;
+                    data = {
+                        type: randomType,
+                        isHelper: false,
+                    };
+                }
                 let sprite:
                     | Phaser.GameObjects.Sprite
                     | Phaser.GameObjects.Container;
