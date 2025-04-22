@@ -1920,17 +1920,17 @@ export class Game extends Scene {
     async reshuffleBoardIfNoMoves(): Promise<void> {
         while (!this.hasAvailableMoves()) {
             console.log("😶 Нет доступных ходов, перезаполняем поле");
-
+    
+            const tweenPromises: Promise<void>[] = [];
+    
             for (let y = 0; y < this.rows; y++) {
                 for (let x = 0; x < this.cols; x++) {
                     const tile = this.grid[y][x];
                     if (!tile) continue;
-
+    
                     if (tile.getData("isHelper")) continue;
-                    // Пропускаем коробки
                     if (tile.getData("box")) continue;
-
-                    // Пропускаем фишки во льду — заменяем только внутреннюю фишку
+    
                     const iceData = tile.getData("ice");
                     if (iceData) {
                         const newType = this.getRandomTile();
@@ -1939,18 +1939,35 @@ export class Game extends Scene {
                         tile.setDisplaySize(this.cellSize, this.cellSize);
                         continue;
                     }
-
-                    // Удаляем обычную фишку
-                    tile.destroy();
+    
+                    // 🔄 Плавная анимация исчезновения
+                    const tween = new Promise<void>((resolve) => {
+                        this.tweens.add({
+                            targets: tile,
+                            alpha: 0,
+                            scale: 0.5,
+                            duration: 250,
+                            ease: "Cubic.easeInOut",
+                            onComplete: () => {
+                                tile.destroy();
+                                resolve();
+                            },
+                        });
+                    });
+    
+                    tweenPromises.push(tween);
                     this.grid[y][x] = null;
                 }
             }
+    
+            await Promise.all(tweenPromises); // дождались исчезновения
             await this.dropTiles();
             await this.fillEmptyTiles();
         }
-
+    
         await this.processMatchesLoop();
     }
+    
 
     async clearBoard(): Promise<void> {
         const tweenPromises: Promise<void>[] = [];
