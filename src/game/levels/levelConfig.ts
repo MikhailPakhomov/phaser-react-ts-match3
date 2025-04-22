@@ -820,7 +820,7 @@ export const levelConfigs: LevelConfig[] = [
 
     {
         id: 11,
-        name: "Уровень 6",
+        name: "Уровень 11",
         rows: 7,
         cols: 6,
         isCompleted: false,

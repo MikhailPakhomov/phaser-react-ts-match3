@@ -64,10 +64,25 @@ export class Preloader extends Scene {
         this.load.image("puzzle_6", "puzzle_6.png");
         this.load.image("puzzle_7", "puzzle_7.png");
         this.load.image("puzzle_8", "puzzle_8.png");
+        this.load.image("puzzle_9", "puzzle_9.png");
+        this.load.image("puzzle_10", "puzzle_10.png");
+        this.load.image("puzzle_11", "puzzle_11.png");
+        this.load.image("puzzle_12", "puzzle_12.png");
+        this.load.image("puzzle_13", "puzzle_13.png");
         this.load.image("puzzle_14", "puzzle_14.png");
+        this.load.image("puzzle_15", "puzzle_15.png");
+        this.load.image("puzzle_16", "puzzle_16.png");
+        this.load.image("puzzle_17", "puzzle_17.png");
+        this.load.image("puzzle_18", "puzzle_18.png");
+        this.load.image("puzzle_19", "puzzle_19.png");
+        this.load.image("puzzle_20", "puzzle_20.png");
         this.load.image("puzzle_21", "puzzle_21.png");
+        this.load.image("puzzle_22", "puzzle_22.png");
+        this.load.image("puzzle_23", "puzzle_23.png");
+        this.load.image("puzzle_24", "puzzle_24.png");
+        this.load.image("puzzle_25", "puzzle_25.png");
     }
-          
+
     create() {
         //  When all the assets have loaded, it's often worth creating global objects here that the rest of the game can use.
         //  For example, you can define global animations here, so we can use them in other scenes.

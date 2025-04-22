@@ -132,7 +132,7 @@ export class MainMenu extends Scene {
             const x = startX + col * (cellWidth + spacing);
             const y = startY + row * (cellHeight + spacing);
 
-            console.log(this.levelsArray);
+           
             const isCompleted = level.isCompleted;
 
             const textureKey = this.checkLevelBg(

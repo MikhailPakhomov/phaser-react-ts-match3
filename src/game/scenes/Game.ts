@@ -868,9 +868,9 @@ export class Game extends Scene {
         const tweenPromises: Promise<void>[] = [];
 
         for (let y = 0; y < this.rows; y++) {
-            if (!this.grid[y]) {
-                this.grid[y] = [];
-            }
+            // if (!this.grid[y]) {
+            //     this.grid[y] = [];
+            // }
             for (let x = 0; x < this.cols; x++) {
                 const posKey = `${x},${y}`;
                 if (!this.grid[y][x] && !this.holePositions.has(posKey)) {
@@ -1346,7 +1346,7 @@ export class Game extends Scene {
                 await tweenPromise(this, {
                     targets: rocket,
                     x: targetX,
-                    duration: 10,
+                    duration: 80,
                     ease: "Linear",
                 });
 
@@ -1389,7 +1389,7 @@ export class Game extends Scene {
                             this.tweens.add({
                                 targets: tile,
                                 alpha: 0,
-                                duration: 10,
+                                duration: 150,
                                 ease: "Power2",
                                 onUpdate: () => {
                                     const progress = tile.alpha;
@@ -1470,7 +1470,7 @@ export class Game extends Scene {
                 await tweenPromise(this, {
                     targets: rocket,
                     y: targetY,
-                    duration: 10,
+                    duration: 80,
                     ease: "Linear",
                 });
 
@@ -1497,7 +1497,7 @@ export class Game extends Scene {
                             this.tweens.add({
                                 targets: tile,
                                 alpha: 0,
-                                duration: 10,
+                                duration: 150,
                                 ease: "Power2",
                                 onUpdate: () => {
                                     const progress = tile.alpha;
@@ -1926,6 +1926,7 @@ export class Game extends Scene {
                     const tile = this.grid[y][x];
                     if (!tile) continue;
 
+                    if (tile.getData("isHelper")) continue;
                     // Пропускаем коробки
                     if (tile.getData("box")) continue;
 
@@ -2481,7 +2482,7 @@ export class Game extends Scene {
         this.remainingMoves = this.levelConfig.moves;
         this.rows = this.levelConfig.rows;
         this.cols = this.levelConfig.cols;
-        console.log(data.config);
+        
         this.scaleFactor = 1;
         this.offsetX = 0;
         this.offsetY = 0;
