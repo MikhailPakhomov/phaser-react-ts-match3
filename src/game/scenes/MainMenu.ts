@@ -2,11 +2,6 @@ import { GameObjects, Scene } from "phaser";
 import { LevelConfig, levelConfigs } from "../levels/levelConfig";
 import { EventBus } from "../EventBus";
 
-const levelsArray = JSON.parse(window.localStorage.getItem("levels"));
-if (!levelsArray) {
-    window.localStorage.setItem("levels", JSON.stringify(levelConfigs));
-}
-
 interface CoordLevel {
     x: number;
     y: number;
@@ -16,6 +11,7 @@ interface CoordLevel {
 }
 export class MainMenu extends Scene {
     levelId!: number;
+    levelsArray!:LevelConfig[];
     background: GameObjects.Image;
     logo: GameObjects.Image;
     logoTween: Phaser.Tweens.Tween | null;
@@ -120,8 +116,9 @@ export class MainMenu extends Scene {
 
         this.coordsLevels = [];
 
-        levelsArray.forEach((level, index) => {
-           
+
+
+        this.levelsArray.forEach((level, index) => {
             const col = index % cols;
             const row = Math.floor(index / cols);
 
@@ -232,5 +229,10 @@ export class MainMenu extends Scene {
     createPuzzle() {}
     init(data: { revealPiece: number }) {
         this.levelId = data.revealPiece;
+        this.levelsArray = JSON.parse(window.localStorage.getItem("levels"));
+        if (!this.levelsArray) {
+            window.localStorage.setItem("levels", JSON.stringify(levelConfigs));
+            this.levelsArray = JSON.parse(window.localStorage.getItem("levels"));
+        }
     }
 }

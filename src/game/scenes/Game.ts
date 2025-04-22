@@ -1343,7 +1343,7 @@ export class Game extends Scene {
                 await tweenPromise(this, {
                     targets: rocket,
                     x: targetX,
-                    duration: 80,
+                    duration: 30,
                     ease: "Linear",
                 });
 
@@ -1386,7 +1386,7 @@ export class Game extends Scene {
                             this.tweens.add({
                                 targets: tile,
                                 alpha: 0,
-                                duration: 60,
+                                duration: 80,
                                 ease: "Power2",
                                 onUpdate: () => {
                                     const progress = tile.alpha;
@@ -1455,7 +1455,7 @@ export class Game extends Scene {
             rocket.setOrigin(0.5);
             rocket.setDisplaySize(34, 15); // фиксированный размер ракеты
 
-            rocket.setAngle(direction < 0 ? -90 : 90); // корректный поворот
+            rocket.setAngle(direction < 0 ? 90 : -90); // корректный поворот
             rocket.setDepth(999);
 
             let y = row;
@@ -1467,7 +1467,7 @@ export class Game extends Scene {
                 await tweenPromise(this, {
                     targets: rocket,
                     y: targetY,
-                    duration: 60,
+                    duration: 30,
                     ease: "Linear",
                 });
 
@@ -1494,7 +1494,7 @@ export class Game extends Scene {
                             this.tweens.add({
                                 targets: tile,
                                 alpha: 0,
-                                duration: 150,
+                                duration: 80,
                                 ease: "Power2",
                                 onUpdate: () => {
                                     const progress = tile.alpha;
@@ -2086,20 +2086,25 @@ export class Game extends Scene {
         const panelHeight = 50;
         const cornerRadius = 16;
 
-        // 🎨 Создаём динамическую текстуру фона панели
-        const graphics = this.add.graphics();
-        graphics.fillStyle(0x2ac5fc, 0.85);
-        graphics.fillRoundedRect(0, 0, panelWidth, panelHeight, cornerRadius);
-        // graphics.lineStyle(2, 0x000000, 0.2);
+        // 🧠 Уникальный ключ текстуры на основе количества целей
+        const bgKey = `goalsPanelBg_${goals.length}`;
 
-        graphics.strokeRoundedRect(0, 0, panelWidth, panelHeight, cornerRadius);
-        graphics.generateTexture("goalsPanelBg", panelWidth, panelHeight);
-        graphics.destroy();
+        // 🎨 Генерируем текстуру, если ещё не была создана
+        if (!this.textures.exists(bgKey)) {
+            const graphics = this.make.graphics({ x: 0, y: 0, add: false });
+            graphics.fillStyle(0x2ac5fc, 0.85);
+            graphics.fillRoundedRect(0, 0, panelWidth, panelHeight, cornerRadius);
+            graphics.strokeRoundedRect(0, 0, panelWidth, panelHeight, cornerRadius);
+            graphics.generateTexture(bgKey, panelWidth, panelHeight);
+            graphics.destroy();
+        }
 
-        const background = this.add.image(centerX, panelY, "goalsPanelBg");
+        // 📦 Панель
+        const background = this.add.image(centerX, panelY, bgKey);
         background.setOrigin(0.5);
         background.setDepth(10);
 
+        // 🧩 Отрисовка иконок и счётчиков
         const iconSpacing = 50;
         const totalWidth = (goals.length - 1) * iconSpacing;
         const startX = centerX - totalWidth / 2;
@@ -2115,18 +2120,18 @@ export class Game extends Scene {
             icon.setOrigin(0.5);
             icon.setDepth(11);
 
-            // 🎯 Кружок под счётчиком — отрисовываем через Graphics
+            // Кружок под счётчиком
             const circle = this.add.graphics();
             const radius = 12;
             const circleX = iconX + 12;
             const circleY = panelY + 10;
 
-            circle.fillStyle(0x000000, 1); // чёрный
+            circle.fillStyle(0x000000, 1);
             circle.fillCircle(radius, radius, radius);
             circle.setPosition(circleX - radius, circleY - radius);
             circle.setDepth(12);
 
-            // Текст
+            // Текст-счётчик
             const text = this.add.text(
                 circleX,
                 circleY,
@@ -2142,6 +2147,7 @@ export class Game extends Scene {
             text.setDepth(13);
             text.setResolution(2);
 
+            // Сохраняем для обновления прогресса
             this.goalIcons[goal.type] = {
                 icon,
                 circle,
@@ -2185,7 +2191,6 @@ export class Game extends Scene {
     handleLevelWin() {
         if (this.levelCompleted) return; // не срабатываем дважды
         this.levelCompleted = true;
-
 
         this.scene.start("WinScene", { levelId: this.levelConfig.id });
     }
@@ -2236,7 +2241,7 @@ export class Game extends Scene {
 
         const ctx = this.game.canvas.getContext("2d");
         if (ctx) {
-            console.log("привет");
+
             ctx.imageSmoothingEnabled = true;
         }
 
@@ -2443,6 +2448,4 @@ export class Game extends Scene {
         this.offsetX = 0;
         this.offsetY = 0;
     }
-
-
 }
