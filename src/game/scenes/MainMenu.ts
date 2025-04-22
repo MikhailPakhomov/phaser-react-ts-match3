@@ -157,12 +157,12 @@ export class MainMenu extends Scene {
                     "pointerdown",
                     () => {
                         this.scene.stop("MainMenu");
-                        // this.scene.start("Game", {
-                        //     config: level,
-                        // });
-                        this.scene.start("WinScene", {
-                            levelId: level.id,
+                        this.scene.start("Game", {
+                            config: level,
                         });
+                        // this.scene.start("WinScene", {
+                        //     levelId: level.id,
+                        // });
                     }
                 );
 

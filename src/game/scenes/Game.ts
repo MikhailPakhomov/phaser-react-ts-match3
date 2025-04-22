@@ -914,7 +914,6 @@ export class Game extends Scene {
         await Promise.all(tweenPromises);
     }
 
-
     async processMatchesLoop(): Promise<void> {
         this.isProcessing = true;
         const matches = this.findMatches();
@@ -1330,8 +1329,6 @@ export class Game extends Scene {
         });
 
         origin.setAlpha(0);
-
-
 
         const launchRocket = async (startX: number, direction: number) => {
             const rocket = this.add.sprite(startX, baseY, "rocket");
@@ -1868,7 +1865,7 @@ export class Game extends Scene {
     }
 
     hasAvailableMoves(): boolean {
-        const rows = this.rows
+        const rows = this.rows;
 
         for (let y = 0; y < rows; y++) {
             const row = this.grid[y];
@@ -1947,9 +1944,11 @@ export class Game extends Scene {
                     this.grid[y][x] = null;
                 }
             }
-
+            await this.dropTiles();
             await this.fillEmptyTiles();
         }
+
+        await this.processMatchesLoop();
     }
 
     async clearBoard(): Promise<void> {
@@ -2161,7 +2160,6 @@ export class Game extends Scene {
                 {
                     font: "800 14px Nunito",
                     color: "#ffffff",
-
                 }
             );
             text.setOrigin(0.5);
@@ -2272,7 +2270,6 @@ export class Game extends Scene {
         });
     }
 
-
     create() {
         this.isProcessing = false;
         this.isInputLocked = false;
@@ -2313,7 +2310,6 @@ export class Game extends Scene {
         const cellSize = this.cellSize;
         const cols = this.cols;
         const rows = this.rows;
-
 
         const gridWidth = cols * (cellSize + gap) - gap;
         const gridHeight = rows * (cellSize + gap) - gap;
@@ -2442,9 +2438,9 @@ export class Game extends Scene {
         );
         this.movesBg.setOrigin(0.5);
         this.movesBg.setDepth(100);
-        this.movesBg.setDisplaySize(83,40)
+        this.movesBg.setDisplaySize(83, 40);
 
-        this.movesText = this.add.text(this.movesBg.x, this.movesBg.y-2, "", {
+        this.movesText = this.add.text(this.movesBg.x, this.movesBg.y - 2, "", {
             font: "800 20px Nunito",
             color: "#0095ff",
             fontStyle: "bold",
@@ -2485,7 +2481,7 @@ export class Game extends Scene {
         this.remainingMoves = this.levelConfig.moves;
         this.rows = this.levelConfig.rows;
         this.cols = this.levelConfig.cols;
-        console.log(data.config)
+        console.log(data.config);
         this.scaleFactor = 1;
         this.offsetX = 0;
         this.offsetY = 0;

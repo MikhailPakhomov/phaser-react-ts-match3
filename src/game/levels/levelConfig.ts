@@ -896,7 +896,7 @@ export const levelConfigs: LevelConfig[] = [
         elements: ["smartphone", "energy", "phone", "message"],
         goals: [
             { type: "energy", count: 12 },
-            { type: "box", count: 6 },
+            { type: "box_full", count: 6 },
         ],
         grid: [
             [null, null, { type: "message" }, { type: "energy" }, null, null],
@@ -973,14 +973,14 @@ export const levelConfigs: LevelConfig[] = [
             [
                 { type: "smartphone" },
                 {
-                    type: "verticalHelper",
-                    isHepler: true,
+                    type: "verticallHelper",
+                    isHelper: true,
                     helperType: "verticalHelper",
                 },
                 { type: "ice", content: { type: "smartphone" }, strength: 2 },
                 {
                     type: "horizontalHelper",
-                    isHepler: true,
+                    isHelper: true,
                     helperType: "horizontalHelper",
                 },
                 { type: "smartphone" },
@@ -1000,13 +1000,13 @@ export const levelConfigs: LevelConfig[] = [
                 { type: "smartphone" },
                 {
                     type: "horizontalHelper",
-                    isHepler: true,
+                    isHelper: true,
                     helperType: "horizontalHelper",
                 },
                 { type: "ice", content: { type: "smartphone" }, strength: 2 },
                 {
-                    type: "verticalHelper",
-                    isHepler: true,
+                    type: "verticallHelper",
+                    isHelper: true,
                     helperType: "verticalHelper",
                 },
                 { type: "smartphone" },

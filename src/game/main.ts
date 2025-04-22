@@ -23,27 +23,35 @@ const config: Phaser.Types.Core.GameConfig = {
     resolution: window.devicePixelRatio, // 📱 Чёткая отрисовка на retina и мобилках
 
     scale: {
-        mode: Phaser.Scale.FIT,           // 📐 Подгоняем под экран
+        mode: Phaser.Scale.FIT, // 📐 Подгоняем под экран
         autoCenter: Phaser.Scale.CENTER_BOTH,
         width: deviceWidth,
         height: deviceHeight,
     },
 
     render: {
-        antialias: true,     // ✅ Сглаживание для WebGL и Canvas
-        pixelArt: false,     // 🚫 Не пиксельарт
-        roundPixels: false,  // 🚫 Не округлять координаты — сохраняем мягкость
+        antialias: true, // ✅ Сглаживание для WebGL и Canvas
+        pixelArt: false, // 🚫 Не пиксельарт
+        roundPixels: false, // 🚫 Не округлять координаты — сохраняем мягкость
     },
 
     scene: [Boot, Preloader, MainMenu, MainGame, WinScene],
 };
 
 const StartGame = (parent: string) => {
-    return new Game({
-        ...config,
-        parent,
-        resolution: window.devicePixelRatio > 1 ? 2 : 1,
-    } as Phaser.Types.Core.GameConfig & { resolution: number });
+    (async () => {
+        // Подгружаем нужный вес, размер и шрифт
+        await document.fonts.load("24px 'Nunito'");
+        await document.fonts.load("800 24px 'Nunito'");
+
+        // Только после загрузки шрифта запускаем игру
+
+        return new Game({
+            ...config,
+            parent,
+            resolution: window.devicePixelRatio > 1 ? 2 : 1,
+        } as Phaser.Types.Core.GameConfig & { resolution: number });
+    })();
 };
 
 export default StartGame;
