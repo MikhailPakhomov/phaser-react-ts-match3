@@ -132,7 +132,6 @@ export class MainMenu extends Scene {
             const x = startX + col * (cellWidth + spacing);
             const y = startY + row * (cellHeight + spacing);
 
-           
             const isCompleted = level.isCompleted;
 
             const textureKey = this.checkLevelBg(
@@ -160,9 +159,12 @@ export class MainMenu extends Scene {
                         this.scene.start("Game", {
                             config: level,
                         });
+
                         // this.scene.start("WinScene", {
                         //     levelId: level.id,
                         // });
+
+                        // this.scene.start("LoseScene", {});
                     }
                 );
 
@@ -196,9 +198,7 @@ export class MainMenu extends Scene {
         logo.setOrigin(0.5);
         logo.setDepth(1);
 
-
         if (this.levelId) {
-
             this.puzzle = this.add.image(
                 centerX,
                 centerY - 100,
@@ -209,7 +209,6 @@ export class MainMenu extends Scene {
             this.puzzle.setDepth(10);
 
             const currentLevelcoords = this.coordsLevels.find((level) => {
-
                 return level.id === this.levelId;
             });
 

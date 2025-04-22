@@ -31,10 +31,9 @@ export class WinScene extends Scene {
         const centerX = this.cameras.main.centerX;
         const centerY = this.cameras.main.centerY;
 
-        const rays = this.add.sprite(centerX, centerY - 30, "win_bg");
-        rays.setAlpha(0.8);
+        const rays = this.add.sprite(centerX, centerY - 120, "win_bg");
+        rays.setAlpha(0.9);
         rays.setOrigin(0.5);
-        rays.setScale(0);
 
         // 🌞 Появление + медленное вращение и пульсация
         this.tweens.add({
@@ -56,7 +55,7 @@ export class WinScene extends Scene {
         // 💫 Лёгкая пульсация масштаба
         this.tweens.add({
             targets: rays,
-            scale: { from: 1.3, to: 1.7 },
+            scale: { from: 1, to: 1.2 },
             duration: 2000,
             yoyo: true,
             ease: "Sine.easeInOut",
@@ -64,7 +63,7 @@ export class WinScene extends Scene {
         });
 
         // 🧧 Шаг 1 — Подарок
-        const gift = this.add.sprite(centerX, centerY - 100, "gift");
+        const gift = this.add.sprite(centerX, centerY - 130, "gift");
         gift.setScale(0);
 
         this.tweens.add({
@@ -101,15 +100,9 @@ export class WinScene extends Scene {
             .setOrigin(0.5);
 
         this.continueButton = this.add
-            .text(centerX, centerY + 200, "Продолжить", {
-                fontFamily: "Nunito",
-                fontSize: "18px",
-                backgroundColor: "#34c7fd",
-                color: "#ffffff",
-                padding: { x: 16, y: 8 },
-            })
+            .image(centerX, centerY + 250, "later_btn")
             .setOrigin(0.5)
-            .setResolution(2)
+            .setDisplaySize(176, 48)
             .setInteractive({ useHandCursor: true })
             .on("pointerdown", () => this.nextStep(gift));
 
@@ -120,12 +113,20 @@ export class WinScene extends Scene {
         this.step++;
 
         if (this.step === 1) {
-            gift.destroy();
-            this.continueButton.setVisible(false);
-
-            this.showLevelTile();
+            this.tweens.add({
+                targets: gift,
+                scale: 0,
+                duration: 700,
+                ease: "Cubic.easeInOut",
+                onComplete: () => {
+                    gift.destroy();
+                    this.continueButton.setVisible(false);
+                    this.showLevelTile();
+                },
+            });
         } else if (this.step === 2) {
             this.scene.stop("WinScene");
+            
             this.scene.start("MainMenu", {
                 revealPiece: this.levelId,
             });
@@ -138,7 +139,7 @@ export class WinScene extends Scene {
 
         // 🔢 Плитка с номером уровня
         const tileSprite = this.add.sprite(0, 0, "tile_green");
-        tileSprite.setDisplaySize(217, 231);
+        tileSprite.setDisplaySize(172, 192);
         tileSprite.setOrigin(0.5);
 
         const levelText = this.add
@@ -156,6 +157,13 @@ export class WinScene extends Scene {
             levelText,
         ]);
         this.tileSprite = tileContainer;
+        tileContainer.setScale(0);
+        this.tweens.add({
+            targets: tileContainer,
+            scale: 1,
+            duration: 700,
+            ease: "Cubic.easeInOut",
+        });
 
         // 🎯 Скрытый фрагмент картинки
         this.backPiece = this.add.image(
@@ -163,16 +171,9 @@ export class WinScene extends Scene {
             centerY - 100,
             `puzzle_${this.levelId}`
         );
-        this.backPiece.setDisplaySize(217, 231);
+        this.backPiece.setDisplaySize(172, 192);
         this.backPiece.setOrigin(0.5);
         this.backPiece.setVisible(false);
-
-        const maskShape = this.make.graphics({ x: 0, y: 0, add: false });
-        maskShape.fillStyle(0xffffff);
-        maskShape.fillRoundedRect(0, 0, 172, 192, 20);
-        maskShape.setPosition(centerX - 86, centerY - 196); // выравниваем
-        const mask = maskShape.createGeometryMask();
-        this.backPiece.setMask(mask);
 
         // 🔄 Анимация поворота контейнера
         this.tweens.add({
