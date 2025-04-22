@@ -92,6 +92,7 @@ export class Game extends Scene {
 
         try {
             const isHelper = tile.getData("isHelper");
+            console.log(isHelper);
             const helperType = tile.getData("helperType");
 
             if (isHelper) {
@@ -537,7 +538,7 @@ export class Game extends Scene {
                         const iceSprite = neighbor.getData("iceSprite");
                         if (ice.strength > 1) {
                             ice.strength--;
-                            console.log(ice.strength);
+
                             if (iceSprite) iceSprite.setTexture("ice_cracked");
                         } else {
                             if (iceSprite) iceSprite.destroy();
@@ -1346,7 +1347,7 @@ export class Game extends Scene {
                 await tweenPromise(this, {
                     targets: rocket,
                     x: targetX,
-                    duration: 80,
+                    duration: 20,
                     ease: "Linear",
                 });
 
@@ -1389,7 +1390,7 @@ export class Game extends Scene {
                             this.tweens.add({
                                 targets: tile,
                                 alpha: 0,
-                                duration: 150,
+                                duration: 80,
                                 ease: "Power2",
                                 onUpdate: () => {
                                     const progress = tile.alpha;
@@ -1470,7 +1471,7 @@ export class Game extends Scene {
                 await tweenPromise(this, {
                     targets: rocket,
                     y: targetY,
-                    duration: 80,
+                    duration: 20,
                     ease: "Linear",
                 });
 
@@ -1497,7 +1498,7 @@ export class Game extends Scene {
                             this.tweens.add({
                                 targets: tile,
                                 alpha: 0,
-                                duration: 150,
+                                duration: 80,
                                 ease: "Power2",
                                 onUpdate: () => {
                                     const progress = tile.alpha;
@@ -1920,17 +1921,17 @@ export class Game extends Scene {
     async reshuffleBoardIfNoMoves(): Promise<void> {
         while (!this.hasAvailableMoves()) {
             console.log("😶 Нет доступных ходов, перезаполняем поле");
-    
+
             const tweenPromises: Promise<void>[] = [];
-    
+
             for (let y = 0; y < this.rows; y++) {
                 for (let x = 0; x < this.cols; x++) {
                     const tile = this.grid[y][x];
                     if (!tile) continue;
-    
+
                     if (tile.getData("isHelper")) continue;
                     if (tile.getData("box")) continue;
-    
+
                     const iceData = tile.getData("ice");
                     if (iceData) {
                         const newType = this.getRandomTile();
@@ -1939,7 +1940,7 @@ export class Game extends Scene {
                         tile.setDisplaySize(this.cellSize, this.cellSize);
                         continue;
                     }
-    
+
                     // 🔄 Плавная анимация исчезновения
                     const tween = new Promise<void>((resolve) => {
                         this.tweens.add({
@@ -1954,20 +1955,19 @@ export class Game extends Scene {
                             },
                         });
                     });
-    
+
                     tweenPromises.push(tween);
                     this.grid[y][x] = null;
                 }
             }
-    
+
             await Promise.all(tweenPromises); // дождались исчезновения
             await this.dropTiles();
             await this.fillEmptyTiles();
         }
-    
+
         await this.processMatchesLoop();
     }
-    
 
     async clearBoard(): Promise<void> {
         const tweenPromises: Promise<void>[] = [];
@@ -2232,30 +2232,7 @@ export class Game extends Scene {
         this.scene.start("WinScene", { levelId: this.levelConfig.id });
     }
     handleLevelLose() {
-        this.isInputLocked = true;
-        const text = this.add
-            .text(
-                this.cameras.main.centerX,
-                this.cameras.main.centerY,
-                "💀 Поражение",
-                {
-                    fontSize: "32px",
-                    color: "#ffffff",
-                    backgroundColor: "#dc3545",
-                    padding: { x: 20, y: 10 },
-                }
-            )
-            .setOrigin(0.5)
-            .setDepth(100);
-        text.on("pointerdown", () => {
-            this.scene.stop("Game");
-            this.scene.start("MainMenu");
-        });
-        setTimeout(() => {
-            this.scene.stop("Game");
-            this.scene.start("MainMenu");
-        }, 3000);
-        // this.scene.start("GameOverScene");
+        this.scene.start("LoseScene", { levelId: this.levelConfig.id });
     }
     async checkWin() {
         if (this.remainingMoves > 0) {
@@ -2289,6 +2266,7 @@ export class Game extends Scene {
     }
 
     create() {
+        this.holePositions = new Set();
         this.isProcessing = false;
         this.isInputLocked = false;
         this.game.renderer.config.antialias = true;
@@ -2390,7 +2368,7 @@ export class Game extends Scene {
 
                 let type = cell.type;
                 let data = cell;
-
+                console.log(cell.isHelper, cell.helperType);
                 if (cell.type === "ice") {
                     type = cell.content.type;
                     data = {
@@ -2499,7 +2477,7 @@ export class Game extends Scene {
         this.remainingMoves = this.levelConfig.moves;
         this.rows = this.levelConfig.rows;
         this.cols = this.levelConfig.cols;
-        
+
         this.scaleFactor = 1;
         this.offsetX = 0;
         this.offsetY = 0;

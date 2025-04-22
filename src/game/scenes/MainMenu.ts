@@ -204,7 +204,7 @@ export class MainMenu extends Scene {
                 centerY - 100,
                 `puzzle_${this.levelId}`
             );
-            this.puzzle.setDisplaySize(217, 231);
+            this.puzzle.setDisplaySize(172, 192);
             this.puzzle.setOrigin(0.5);
             this.puzzle.setDepth(10);
 

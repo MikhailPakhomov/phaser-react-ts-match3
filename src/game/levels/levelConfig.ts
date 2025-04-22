@@ -990,7 +990,7 @@ export const levelConfigs: LevelConfig[] = [
                 { type: "ice", content: { type: "smartphone" }, strength: 2 },
                 {
                     type: "discoball",
-                    isHepler: true,
+                    isHelper: true,
                     helperType: "discoball",
                 },
                 { type: "ice", content: { type: "smartphone" }, strength: 2 },
