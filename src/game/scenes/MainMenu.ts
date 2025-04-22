@@ -11,7 +11,7 @@ interface CoordLevel {
 }
 export class MainMenu extends Scene {
     levelId!: number;
-    levelsArray!:LevelConfig[];
+    levelsArray!: LevelConfig[];
     background: GameObjects.Image;
     logo: GameObjects.Image;
     logoTween: Phaser.Tweens.Tween | null;
@@ -34,6 +34,7 @@ export class MainMenu extends Scene {
             return difficult;
         }
     }
+
     removeLevelTile(levelId: number) {
         const levelEntry = this.coordsLevels.find(
             (entry) => entry.id === levelId
@@ -88,8 +89,7 @@ export class MainMenu extends Scene {
 
         this.add
             .text(centerX, startY - 140, "Выбери уровень", {
-                fontFamily: "Nunito",
-                fontSize: "28px",
+                font: "800 28px Nunito",
                 color: "#ffffff",
                 fontStyle: "bold",
             })
@@ -98,8 +98,7 @@ export class MainMenu extends Scene {
 
         this.add
             .text(centerX, startY - 100, "Пройди все уровни, чтобы", {
-                fontFamily: "Nunito",
-                fontSize: "18px",
+                font: "600 18px Nunito",
                 color: "#ffffff",
             })
             .setResolution(2)
@@ -107,8 +106,7 @@ export class MainMenu extends Scene {
 
         this.add
             .text(centerX, startY - 75, "собрать пазл", {
-                fontFamily: "Nunito",
-                fontSize: "18px",
+                font: "600 18px Nunito",
                 color: "#ffffff",
             })
             .setResolution(2)
@@ -116,7 +114,16 @@ export class MainMenu extends Scene {
 
         this.coordsLevels = [];
 
-
+        interface ILevelTextColor {
+            easy: string;
+            medium: string;
+            hard: string;
+        }
+        const levelTextColor: ILevelTextColor = {
+            easy: "#00AEEF",
+            medium: "#202020",
+            hard: "#FFFFFF",
+        };
 
         this.levelsArray.forEach((level, index) => {
             const col = index % cols;
@@ -125,52 +132,59 @@ export class MainMenu extends Scene {
             const x = startX + col * (cellWidth + spacing);
             const y = startY + row * (cellHeight + spacing);
 
-            // Фоновая плитка
+            console.log(this.levelsArray);
+            const isCompleted = level.isCompleted;
+
+            const textureKey = this.checkLevelBg(
+                isCompleted,
+                level.id,
+                level.difficult
+            );
+
             const tile = this.add
-                .sprite(
-                    x,
-                    y,
-                    this.checkLevelBg(
-                        level.isCompleted,
-                        level.id,
-                        level.difficult
-                    )
-                )
-                .setDisplaySize(cellWidth, cellHeight)
-                .setInteractive({ useHandCursor: true })
-                .on("pointerdown", () => {
-                    this.scene.stop("MainMenu");
-                    this.scene.start("Game", {
-                        config: level,
-                    });
-                });
-            // .on("pointerdown", () => {
-            //     this.scene.stop("MainMenu");
-            //     this.scene.start("WinScene", {
-            //         levelId: level.id,
-            //     });
-            // });
+                .sprite(x, y, textureKey)
+                .setDisplaySize(cellWidth, cellHeight);
 
-            // Номер уровня по центру
-            const label = this.add
-                .text(x, y, `${level.id}`, {
-                    fontSize: "24px",
-                    color: "#ffffff",
-                    fontStyle: "bold",
-                })
-                .setResolution(2)
-                .setOrigin(0.5);
+            if (isCompleted) {
+                tile.setPosition(x, y - 2);
+                tile.setScale(0.344);
+            }
 
-            // Наведение на плитку
-            tile.on("pointerover", () => tile.setTint(0xaaaaaa));
-            tile.on("pointerout", () => tile.clearTint());
+            let label: Phaser.GameObjects.Text | undefined;
 
+            if (!isCompleted) {
+                tile.setInteractive({ useHandCursor: true }).on(
+                    "pointerdown",
+                    () => {
+                        this.scene.stop("MainMenu");
+                        // this.scene.start("Game", {
+                        //     config: level,
+                        // });
+                        this.scene.start("WinScene", {
+                            levelId: level.id,
+                        });
+                    }
+                );
+
+                label = this.add
+                    .text(x, y, `${level.id}`, {
+                        font: "800 24px Nunito",
+                        color: levelTextColor[level.difficult],
+                    })
+                    .setResolution(2)
+                    .setOrigin(0.5);
+
+                tile.on("pointerover", () => tile.setTint(0xaaaaaa));
+                tile.on("pointerout", () => tile.clearTint());
+            }
+
+            // 🧩 Добавляем ВСЕ уровни в массив координат
             this.coordsLevels[index] = {
-                x: x,
-                y: y,
+                x,
+                y,
                 id: level.id,
                 tile,
-                label,
+                label, // undefined, если уровень завершён
             };
         });
 
@@ -182,7 +196,9 @@ export class MainMenu extends Scene {
         logo.setOrigin(0.5);
         logo.setDepth(1);
 
+
         if (this.levelId) {
+
             this.puzzle = this.add.image(
                 centerX,
                 centerY - 100,
@@ -192,33 +208,47 @@ export class MainMenu extends Scene {
             this.puzzle.setOrigin(0.5);
             this.puzzle.setDepth(10);
 
-            const currentLevelcoords = this.coordsLevels.find(
-                (level) => level.id === this.levelId
-            );
+            const currentLevelcoords = this.coordsLevels.find((level) => {
 
+                return level.id === this.levelId;
+            });
+
+            // 💥 Отключаем интерактив и удаляем надпись сразу
+            if (currentLevelcoords) {
+                currentLevelcoords.tile.disableInteractive();
+                currentLevelcoords.label.destroy();
+            }
+
+            // 🧩 Анимация вставки фрагмента
             this.tweens.add({
                 targets: this.puzzle,
                 x: currentLevelcoords?.x,
-                y: currentLevelcoords?.y,
-                scale: 0.285, // например, 0.37 или вычисленный scale
+                y: currentLevelcoords?.y - 2,
+                scale: 0.345,
                 duration: 700,
                 ease: "Cubic.easeInOut",
                 onComplete: () => {
-                    this.removeLevelTile(this.levelId);
+                    // 🧼 Полностью удаляем тайл после завершения (на всякий случай)
+                    currentLevelcoords?.tile.destroy();
+                    this.coordsLevels = this.coordsLevels.filter(
+                        (entry) => entry.id !== this.levelId
+                    );
+
+                    // 💾 Обновление localStorage
                     const levels = JSON.parse(
                         window.localStorage.getItem("levels")
                     );
-
                     const level = levels.find(
-                        (level, index) => level.id === this.levelId
+                        (level) => level.id === this.levelId
                     );
-                    level.isCompleted = true;
-                    levels[level.id - 1] = level;
-                    window.localStorage.setItem(
-                        "levels",
-                        JSON.stringify(levels)
-                    );
-                    console.log("levels", level);
+                    if (level) {
+                        level.isCompleted = true;
+                        levels[level.id - 1] = level;
+                        window.localStorage.setItem(
+                            "levels",
+                            JSON.stringify(levels)
+                        );
+                    }
                 },
             });
         }
@@ -226,13 +256,14 @@ export class MainMenu extends Scene {
         EventBus.emit("current-scene-ready", this);
     }
 
-    createPuzzle() {}
     init(data: { revealPiece: number }) {
         this.levelId = data.revealPiece;
         this.levelsArray = JSON.parse(window.localStorage.getItem("levels"));
         if (!this.levelsArray) {
             window.localStorage.setItem("levels", JSON.stringify(levelConfigs));
-            this.levelsArray = JSON.parse(window.localStorage.getItem("levels"));
+            this.levelsArray = JSON.parse(
+                window.localStorage.getItem("levels")
+            );
         }
     }
 }

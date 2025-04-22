@@ -36,8 +36,8 @@ export class Game extends Scene {
     cellSize = 48;
     gap = 2;
 
-    rows = 7;
-    cols = 7;
+    rows: number;
+    cols: number;
 
     offsetX = 0;
     offsetY = 0;
@@ -867,8 +867,11 @@ export class Game extends Scene {
         const cellSize = this.cellSize;
         const tweenPromises: Promise<void>[] = [];
 
-        for (let y = 0; y < this.grid.length; y++) {
-            for (let x = 0; x < this.grid[0].length; x++) {
+        for (let y = 0; y < this.rows; y++) {
+            if (!this.grid[y]) {
+                this.grid[y] = [];
+            }
+            for (let x = 0; x < this.cols; x++) {
                 const posKey = `${x},${y}`;
                 if (!this.grid[y][x] && !this.holePositions.has(posKey)) {
                     const type = this.getRandomTile();
@@ -910,6 +913,7 @@ export class Game extends Scene {
 
         await Promise.all(tweenPromises);
     }
+
 
     async processMatchesLoop(): Promise<void> {
         this.isProcessing = true;
@@ -1327,9 +1331,11 @@ export class Game extends Scene {
 
         origin.setAlpha(0);
 
+
+
         const launchRocket = async (startX: number, direction: number) => {
             const rocket = this.add.sprite(startX, baseY, "rocket");
-            rocket.setDisplaySize(34, 15);
+            rocket.setDisplaySize(37, 17);
             rocket.setOrigin(0.5);
             rocket.setAngle(direction < 0 ? 0 : 180);
             rocket.setDepth(999);
@@ -1343,7 +1349,7 @@ export class Game extends Scene {
                 await tweenPromise(this, {
                     targets: rocket,
                     x: targetX,
-                    duration: 30,
+                    duration: 10,
                     ease: "Linear",
                 });
 
@@ -1386,7 +1392,7 @@ export class Game extends Scene {
                             this.tweens.add({
                                 targets: tile,
                                 alpha: 0,
-                                duration: 80,
+                                duration: 10,
                                 ease: "Power2",
                                 onUpdate: () => {
                                     const progress = tile.alpha;
@@ -1453,7 +1459,7 @@ export class Game extends Scene {
         const launchRocket = async (startY: number, direction: number) => {
             const rocket = this.add.sprite(baseX, startY, "rocket");
             rocket.setOrigin(0.5);
-            rocket.setDisplaySize(34, 15); // фиксированный размер ракеты
+            rocket.setDisplaySize(37, 17); // фиксированный размер ракеты
 
             rocket.setAngle(direction < 0 ? 90 : -90); // корректный поворот
             rocket.setDepth(999);
@@ -1467,7 +1473,7 @@ export class Game extends Scene {
                 await tweenPromise(this, {
                     targets: rocket,
                     y: targetY,
-                    duration: 30,
+                    duration: 10,
                     ease: "Linear",
                 });
 
@@ -1494,7 +1500,7 @@ export class Game extends Scene {
                             this.tweens.add({
                                 targets: tile,
                                 alpha: 0,
-                                duration: 80,
+                                duration: 10,
                                 ease: "Power2",
                                 onUpdate: () => {
                                     const progress = tile.alpha;
@@ -1862,34 +1868,38 @@ export class Game extends Scene {
     }
 
     hasAvailableMoves(): boolean {
-        const rows = this.rows;
-        const cols = this.cols;
+        const rows = this.rows
 
         for (let y = 0; y < rows; y++) {
+            const row = this.grid[y];
+            if (!row) continue;
+
+            const cols = row.length;
+
             for (let x = 0; x < cols; x++) {
-                const tile = this.grid[y][x];
+                const tile = row[x];
                 if (!tile || tile.getData("ice") || tile.getData("box"))
                     continue;
 
                 // Свап вправо
                 if (x < cols - 1) {
-                    const right = this.grid[y][x + 1];
+                    const right = row[x + 1];
                     if (!right || right.getData("ice") || right.getData("box"))
                         continue;
 
-                    this.grid[y][x] = right;
-                    this.grid[y][x + 1] = tile;
+                    row[x] = right;
+                    row[x + 1] = tile;
 
                     const match = this.findMatches();
 
-                    this.grid[y][x] = tile;
-                    this.grid[y][x + 1] = right;
+                    row[x] = tile;
+                    row[x + 1] = right;
 
                     if (match.length > 0) return true;
                 }
 
                 // Свап вниз
-                if (y < rows - 1) {
+                if (y < rows - 1 && this.grid[y + 1]) {
                     const down = this.grid[y + 1][x];
                     if (!down || down.getData("ice") || down.getData("box"))
                         continue;
@@ -2093,8 +2103,20 @@ export class Game extends Scene {
         if (!this.textures.exists(bgKey)) {
             const graphics = this.make.graphics({ x: 0, y: 0, add: false });
             graphics.fillStyle(0x2ac5fc, 0.85);
-            graphics.fillRoundedRect(0, 0, panelWidth, panelHeight, cornerRadius);
-            graphics.strokeRoundedRect(0, 0, panelWidth, panelHeight, cornerRadius);
+            graphics.fillRoundedRect(
+                0,
+                0,
+                panelWidth,
+                panelHeight,
+                cornerRadius
+            );
+            graphics.strokeRoundedRect(
+                0,
+                0,
+                panelWidth,
+                panelHeight,
+                cornerRadius
+            );
             graphics.generateTexture(bgKey, panelWidth, panelHeight);
             graphics.destroy();
         }
@@ -2137,10 +2159,9 @@ export class Game extends Scene {
                 circleY,
                 goal.count.toString(),
                 {
-                    fontFamily: "Nunito",
-                    fontSize: "14px",
+                    font: "800 14px Nunito",
                     color: "#ffffff",
-                    fontStyle: "bold",
+
                 }
             );
             text.setOrigin(0.5);
@@ -2220,19 +2241,37 @@ export class Game extends Scene {
         }, 3000);
         // this.scene.start("GameOverScene");
     }
-    checkWin() {
-        if (this.remainingMoves <= 0) {
+    async checkWin() {
+        if (this.remainingMoves > 0) {
             if (this.checkGoalsCompleted()) {
                 this.handleLevelWin();
-            } else {
-                this.handleLevelLose();
             }
+            return;
+        }
+
+        // Осталось 0 ходов — ждём завершения всех действий
+        await this.waitForProcessingComplete();
+
+        if (this.checkGoalsCompleted()) {
+            this.handleLevelWin();
         } else {
-            if (this.checkGoalsCompleted()) {
-                this.handleLevelWin();
-            }
+            this.handleLevelLose();
         }
     }
+
+    waitForProcessingComplete(): Promise<void> {
+        return new Promise((resolve) => {
+            const check = () => {
+                if (!this.isProcessing) {
+                    resolve();
+                } else {
+                    this.time.delayedCall(100, check);
+                }
+            };
+            check();
+        });
+    }
+
 
     create() {
         this.isProcessing = false;
@@ -2241,7 +2280,6 @@ export class Game extends Scene {
 
         const ctx = this.game.canvas.getContext("2d");
         if (ctx) {
-
             ctx.imageSmoothingEnabled = true;
         }
 
@@ -2273,8 +2311,9 @@ export class Game extends Scene {
         const levelGrid = this.levelConfig.grid;
         const gap = this.gap;
         const cellSize = this.cellSize;
-        const cols = levelGrid[0].length;
-        const rows = levelGrid.length;
+        const cols = this.cols;
+        const rows = this.rows;
+
 
         const gridWidth = cols * (cellSize + gap) - gap;
         const gridHeight = rows * (cellSize + gap) - gap;
@@ -2403,10 +2442,10 @@ export class Game extends Scene {
         );
         this.movesBg.setOrigin(0.5);
         this.movesBg.setDepth(100);
+        this.movesBg.setDisplaySize(83,40)
 
-        this.movesText = this.add.text(this.movesBg.x, this.movesBg.y, "", {
-            fontFamily: "Nunito",
-            fontSize: "20px",
+        this.movesText = this.add.text(this.movesBg.x, this.movesBg.y-2, "", {
+            font: "800 20px Nunito",
             color: "#0095ff",
             fontStyle: "bold",
         });
@@ -2444,6 +2483,9 @@ export class Game extends Scene {
     init(data: { config: LevelConfig }) {
         this.levelConfig = data.config;
         this.remainingMoves = this.levelConfig.moves;
+        this.rows = this.levelConfig.rows;
+        this.cols = this.levelConfig.cols;
+        console.log(data.config)
         this.scaleFactor = 1;
         this.offsetX = 0;
         this.offsetY = 0;

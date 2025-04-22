@@ -92,12 +92,11 @@ export class WinScene extends Scene {
             })
             .setOrigin(0.5);
 
-            this.add
+        this.add
             .text(centerX, centerY + 120, `Ты прошел ${this.levelId} уровень`, {
                 fontFamily: "Nunito",
                 fontSize: "20px",
                 color: "#ffffff",
-                
             })
             .setOrigin(0.5);
 
@@ -126,16 +125,14 @@ export class WinScene extends Scene {
 
             this.showLevelTile();
         } else if (this.step === 2) {
-
             this.scene.stop("WinScene");
             this.scene.start("MainMenu", {
                 revealPiece: this.levelId,
-
             });
         }
     }
 
-    private  showLevelTile() {
+    private showLevelTile() {
         const centerX = this.cameras.main.centerX;
         const centerY = this.cameras.main.centerY;
 
@@ -146,9 +143,8 @@ export class WinScene extends Scene {
 
         const levelText = this.add
             .text(0, 0, `${this.levelId}`, {
-                fontFamily: "Nunito",
-                fontSize: "32px",
-                color: "#ffffff",
+                font: "800 112px Nunito",
+                color: "#00AEEF",
                 fontStyle: "bold",
             })
             .setOrigin(0.5)
@@ -187,7 +183,7 @@ export class WinScene extends Scene {
             ease: "Cubic.easeInOut",
             onComplete: () => {
                 this.continueButton.setVisible(true);
-               
+
                 this.tweens.add({
                     targets: tileContainer,
                     scaleX: 0,

@@ -6,6 +6,8 @@ export interface LevelGoal {
 export interface LevelConfig {
     id: number;
     name: string;
+    rows: number;
+    cols: number;
     moves: number;
     elements: string[];
     difficult: string;
@@ -23,6 +25,8 @@ export const levelConfigs: LevelConfig[] = [
     {
         id: 1,
         name: "Уровень 1",
+        rows: 7,
+        cols: 6,
         moves: 12,
         difficult: "easy",
         elements: ["phone", "energy", "message", "sim"],
@@ -120,6 +124,8 @@ export const levelConfigs: LevelConfig[] = [
     {
         id: 2,
         name: "Уровень 2",
+        rows: 7,
+        cols: 7,
         moves: 12,
         difficult: "easy",
         elements: ["smartphone", "energy", "message", "sim"],
@@ -198,6 +204,8 @@ export const levelConfigs: LevelConfig[] = [
     {
         id: 3,
         name: "Уровень 3",
+        rows: 7,
+        cols: 6,
         moves: 15,
         difficult: "easy",
         elements: ["smartphone", "energy", "phone", "message"],
@@ -263,6 +271,8 @@ export const levelConfigs: LevelConfig[] = [
     {
         id: 4,
         name: "Уровень 4",
+        rows: 7,
+        cols: 6,
         moves: 20,
         difficult: "easy",
         elements: ["smartphone", "energy", "phone", "sim"],
@@ -350,6 +360,8 @@ export const levelConfigs: LevelConfig[] = [
     {
         id: 5,
         name: "Уровень 5",
+        rows: 6,
+        cols: 6,
         moves: 19,
         difficult: "easy",
         elements: ["smartphone", "sim", "phone", "message"],
@@ -429,6 +441,8 @@ export const levelConfigs: LevelConfig[] = [
     {
         id: 6,
         name: "Уровень 6",
+        rows: 6,
+        cols: 7,
         moves: 12,
         difficult: "easy",
         elements: ["smartphone", "energy", "sim", "message"],
@@ -511,6 +525,8 @@ export const levelConfigs: LevelConfig[] = [
     {
         id: 7,
         name: "Уровень 7",
+        rows: 7,
+        cols: 7,
         moves: 13,
         difficult: "easy",
         elements: ["phone", "energy", "smartphone", "message"],
@@ -606,6 +622,8 @@ export const levelConfigs: LevelConfig[] = [
     {
         id: 8,
         name: "Уровень 8",
+        rows: 6,
+        cols: 5,
         moves: 15,
         difficult: "easy",
         elements: ["smartphone", "sim", "message"],
@@ -691,11 +709,324 @@ export const levelConfigs: LevelConfig[] = [
         ],
         isCompleted: false,
     },
+
+    {
+        id: 9,
+        name: "Уровень 9",
+        rows: 5,
+        cols: 5,
+        isCompleted: false,
+        moves: 9,
+        difficult: "easy",
+        elements: ["smartphone", "energy", "message"],
+        goals: [
+            { type: "box", count: 6 },
+            { type: "smartphone", count: 20 },
+        ],
+        grid: [
+            [
+                null,
+                { type: "box", strength: 2 },
+                { type: "smartphone" },
+                { type: "box", strength: 2 },
+                null,
+            ],
+            [
+                null,
+                { type: "smartphone" },
+                { type: "energy" },
+                { type: "smartphone" },
+                null,
+            ],
+            [
+                { type: "smartphone" },
+                { type: "box", strength: 2 },
+                { type: "smartphone" },
+                { type: "box", strength: 2 },
+                { type: "energy" },
+            ],
+            [
+                { type: "smartphone" },
+                { type: "box", strength: 2 },
+                { type: "smartphone" },
+                { type: "box", strength: 2 },
+                { type: "energy" },
+            ],
+            [
+                { type: "energy" },
+                { type: "smartphone" },
+                null,
+                { type: "energy" },
+                { type: "smartphone" },
+            ],
+        ],
+    },
+
+    {
+        id: 10,
+        name: "Уровень 6",
+        rows: 5,
+        cols: 5,
+        isCompleted: false,
+        moves: 6,
+        difficult: "easy",
+        elements: ["sim", "energy", "phone", "message"],
+        goals: [
+            { type: "phone", count: 10 },
+            { type: "energy", count: 10 },
+        ],
+        grid: [
+            [
+                { type: "phone" },
+                { type: "energy" },
+                null,
+                { type: "phone" },
+                { type: "energy" },
+            ],
+            [
+                { type: "phone" },
+                { type: "ice", content: { type: "phone" }, strength: 2 },
+                { type: "ice", content: { type: "energy" }, strength: 2 },
+                { type: "ice", content: { type: "phone" }, strength: 2 },
+                { type: "energy" },
+            ],
+            [
+                { type: "energy" },
+                { type: "ice", content: { type: "energy" }, strength: 2 },
+                {
+                    type: "horizontalHelper",
+                    isHelper: true,
+                    helperType: "horizontalHelper",
+                },
+                { type: "ice", content: { type: "energy" }, strength: 2 },
+                { type: "phone" },
+            ],
+            [
+                { type: "phone" },
+                { type: "ice", content: { type: "phone" }, strength: 2 },
+                { type: "ice", content: { type: "energy" }, strength: 2 },
+                { type: "ice", content: { type: "phone" }, strength: 2 },
+                { type: "energy" },
+            ],
+            [
+                { type: "phone" },
+                { type: "energy" },
+                null,
+                { type: "phone" },
+                { type: "energy" },
+            ],
+        ],
+    },
+
+    {
+        id: 11,
+        name: "Уровень 6",
+        rows: 7,
+        cols: 6,
+        isCompleted: false,
+        moves: 20,
+        difficult: "easy",
+        elements: ["smartphone", "energy", "sim"],
+        goals: [
+            { type: "energy", count: 20 },
+            { type: "smartphone", count: 20 },
+            { type: "box_full", count: 21 },
+        ],
+        grid: [
+            [null, { type: "sim" }, { type: "sim" }, null, null, null],
+            [
+                { type: "smartphone" },
+                { type: "smartphone" },
+                { type: "energy" },
+                { type: "smartphone" },
+                null,
+                null,
+            ],
+            [
+                { type: "box", strength: 2 },
+                { type: "box", strength: 2 },
+                { type: "smartphone" },
+                { type: "box", strength: 2 },
+                { type: "box", strength: 2 },
+                { type: "box", strength: 2 },
+            ],
+            [
+                { type: "box", strength: 2 },
+                { type: "box", strength: 2 },
+                { type: "energy" },
+                { type: "box", strength: 2 },
+                { type: "box", strength: 2 },
+                { type: "box", strength: 2 },
+            ],
+            [
+                { type: "box", strength: 2 },
+                { type: "box", strength: 2 },
+                { type: "energy" },
+                { type: "box", strength: 2 },
+                { type: "box", strength: 2 },
+                { type: "box", strength: 2 },
+            ],
+            [
+                null,
+                null,
+                { type: "box", strength: 2 },
+                { type: "box", strength: 2 },
+                { type: "box", strength: 2 },
+                { type: "box", strength: 2 },
+            ],
+            [
+                null,
+                null,
+                null,
+                { type: "box", strength: 2 },
+                { type: "box", strength: 2 },
+                null,
+            ],
+        ],
+    },
+
+    {
+        id: 12,
+        name: "Уровень 12",
+        rows: 7,
+        cols: 6,
+        isCompleted: false,
+        moves: 10,
+        difficult: "easy",
+        elements: ["smartphone", "energy", "phone", "message"],
+        goals: [
+            { type: "energy", count: 12 },
+            { type: "box", count: 6 },
+        ],
+        grid: [
+            [null, null, { type: "message" }, { type: "energy" }, null, null],
+            [
+                null,
+                { type: "message" },
+                { type: "energy" },
+                { type: "message" },
+                { type: "energy" },
+                null,
+            ],
+            [
+                null,
+                { type: "phone" },
+                { type: "message" },
+                { type: "smartphone" },
+                { type: "smartphone" },
+                null,
+            ],
+
+            [
+                { type: "box", strength: 2 },
+                { type: "energy" },
+                { type: "message" },
+                { type: "phone" },
+                { type: "smartphone" },
+                { type: "box", strength: 2 },
+            ],
+            [
+                { type: "box", strength: 2 },
+                { type: "ice", content: { type: "smartphone" }, strength: 2 },
+                { type: "ice", content: { type: "energy" }, strength: 2 },
+                { type: "ice", content: { type: "smartphone" }, strength: 2 },
+                { type: "ice", content: { type: "energy" }, strength: 2 },
+                { type: "box", strength: 2 },
+            ],
+            [
+                { type: "energy" },
+                { type: "energy" },
+                { type: "phone" },
+                { type: "energy" },
+                { type: "smartphone" },
+                { type: "phone" },
+            ],
+            [
+                null,
+                { type: "message" },
+                { type: "box", strength: 2 },
+                { type: "box", strength: 2 },
+                { type: "phone" },
+                null,
+            ],
+        ],
+    },
+
+    {
+        id: 13,
+        name: "Уровень 13",
+        rows: 5,
+        cols: 5,
+        isCompleted: false,
+        moves: 10,
+        difficult: "easy",
+        elements: ["smartphone", "energy", "sim", "phone"],
+        goals: [{ type: "smartphone", count: 20 }],
+        grid: [
+            [
+                { type: "smartphone" },
+                { type: "smartphone" },
+                { type: "energy" },
+                { type: "smartphone" },
+                { type: "smartphone" },
+            ],
+            [
+                { type: "smartphone" },
+                {
+                    type: "verticalHelper",
+                    isHepler: true,
+                    helperType: "verticalHelper",
+                },
+                { type: "ice", content: { type: "smartphone" }, strength: 2 },
+                {
+                    type: "horizontalHelper",
+                    isHepler: true,
+                    helperType: "horizontalHelper",
+                },
+                { type: "smartphone" },
+            ],
+            [
+                { type: "phone" },
+                { type: "ice", content: { type: "smartphone" }, strength: 2 },
+                {
+                    type: "discoball",
+                    isHepler: true,
+                    helperType: "discoball",
+                },
+                { type: "ice", content: { type: "smartphone" }, strength: 2 },
+                { type: "phone" },
+            ],
+            [
+                { type: "smartphone" },
+                {
+                    type: "horizontalHelper",
+                    isHepler: true,
+                    helperType: "horizontalHelper",
+                },
+                { type: "ice", content: { type: "smartphone" }, strength: 2 },
+                {
+                    type: "verticalHelper",
+                    isHepler: true,
+                    helperType: "verticalHelper",
+                },
+                { type: "smartphone" },
+            ],
+            [
+                { type: "smartphone" },
+                { type: "smartphone" },
+                { type: "energy" },
+                { type: "smartphone" },
+                { type: "smartphone" },
+            ],
+        ],
+    },
     //Средние
 
     {
         id: 14,
         name: "Уровень 14",
+        rows: 6,
+        cols: 6,
         moves: 13,
         difficult: "medium",
         elements: ["smartphone", "energy", "message", "sim"],
@@ -760,6 +1091,8 @@ export const levelConfigs: LevelConfig[] = [
     {
         id: 21,
         name: "Уровень 21",
+        rows: 7,
+        cols: 6,
         moves: 3,
         difficult: "hard",
         elements: ["energy", "message", "smartphone", "sim"],
