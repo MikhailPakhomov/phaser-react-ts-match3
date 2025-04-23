@@ -84,6 +84,10 @@ export class Preloader extends Scene {
         this.load.image("sad_mobile", "sad_mobile.png");
         this.load.image("later_btn", "later_btn.png");
         this.load.image("later_btn_lose", "later_btn_lose.png");
+        this.load.image("promo", "promo.png");
+        this.load.image("copy_bg", "copy_bg.png");
+        this.load.image("copy_btn", "copy_btn.png");
+        this.load.image("puzzle_full", "puzzle_full.png");
     }
 
     create() {

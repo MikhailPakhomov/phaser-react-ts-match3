@@ -10,13 +10,16 @@ export class WinScene extends Scene {
     private tileSprite!: Phaser.GameObjects.Sprite;
     private backPiece!: Phaser.GameObjects.Image;
 
+    private isFinal!: boolean;
+
     constructor() {
         super("WinScene");
     }
 
-    init(data: { levelId: number; difficult: string }) {
+    init(data: { levelId: number; difficult: string; isFinal: boolean }) {
         this.levelId = data.levelId;
         this.difficult = data.difficult;
+        this.isFinal = data.isFinal;
     }
 
     create() {
@@ -64,40 +67,34 @@ export class WinScene extends Scene {
             repeat: -1,
         });
 
-        // 🧧 Шаг 1 — Подарок
-        // const gift = this.add.sprite(centerX, centerY - 130, "gift");
-        // gift.setScale(0);
+        if (this.isFinal) {
+            this.showPromocode(centerX, centerY, rays, "YOTA2025");
+            return;
+        }
 
-        // this.tweens.add({
-        //     targets: gift,
-        //     scale: 0.3,
-        //     duration: 1000,
-        //     ease: "Cubic.easeInOut",
-        // });
-
-        // this.tweens.add({
-        //     targets: gift,
-        //     angle: { from: -5, to: 5 },
-        //     duration: 600,
-        //     ease: "Sine.easeInOut",
-        //     yoyo: true,
-        //     repeat: -1,
-        // });
         this.showLevelTile(centerX, centerY);
 
         this.add
-            .text(centerX, centerY + 80, "Поздравляю!", {
-                fontFamily: "Nunito",
-                fontSize: "28px",
+            .text(centerX, centerY + 80, "Поздравляем!", {
+                font: "800 28px Nunito",
                 color: "#ffffff",
-                fontStyle: "bold",
             })
             .setOrigin(0.5);
 
         this.add
-            .text(centerX, centerY + 120, `Ты прошел ${this.levelId} уровень`, {
-                fontFamily: "Nunito",
-                fontSize: "20px",
+            .text(
+                centerX,
+                centerY + 120,
+                `Уровень ${this.levelId} пройден, вы открыли`,
+                {
+                    font: "600 18px Nunito",
+                    color: "#ffffff",
+                }
+            )
+            .setOrigin(0.5);
+        this.add
+            .text(centerX + 10, centerY + 140, `один фрагмент пазла `, {
+                font: "600 18px Nunito",
                 color: "#ffffff",
             })
             .setOrigin(0.5);
@@ -113,21 +110,16 @@ export class WinScene extends Scene {
     }
 
     private nextStep() {
-        // this.tweens.add({
-        //     targets: gift,
-        //     scale: 0,
-        //     duration: 700,
-        //     ease: "Cubic.easeInOut",
-        //     onComplete: () => {
-        //         gift.destroy();
-        //         this.continueButton.setVisible(false);
-        //         this.showLevelTile();
-        //     },
-        // });
-        this.scene.stop("WinScene");
-        this.scene.start("MainMenu", {
-            revealPiece: this.levelId,
-        });
+        if (this.isFinal) {
+            this.scene.stop("WinScene");
+            this.scene.start("MainMenu");
+            window.localStorage.setItem("gameOver", JSON.stringify(true));
+        } else {
+            this.scene.stop("WinScene");
+            this.scene.start("MainMenu", {
+                revealPiece: this.levelId,
+            });
+        }
     }
 
     private showLevelTile(centerX: number, centerY: number) {
@@ -200,5 +192,141 @@ export class WinScene extends Scene {
                 });
             },
         });
+    }
+    private showPromocode(
+        centerX: number,
+        centerY: number,
+        rays: Phaser.GameObjects.Sprite,
+        code?: string
+    ) {
+        // 🧧 Шаг 1 — Подарок
+
+        rays.setPosition(centerX, centerY - 160)
+            .setAlpha(0.9)
+            .setOrigin(0.5);
+
+        const gift = this.add.sprite(centerX - 60, centerY - 200, "gift");
+        gift.setScale(0);
+
+        this.tweens.add({
+            targets: gift,
+            scale: 0.3,
+            duration: 1000,
+            ease: "Cubic.easeInOut",
+            onComplete: () => {
+                const promo = this.add.sprite(
+                    centerX + 30,
+                    centerY - 130,
+                    "promo"
+                );
+                promo.setScale(0);
+
+                this.tweens.add({
+                    targets: promo,
+                    scale: 0.3,
+                    duration: 1000,
+                    ease: "Cubic.easeInOut",
+                });
+
+                this.tweens.add({
+                    targets: promo,
+                    angle: { from: 5, to: -5 },
+                    duration: 600,
+                    ease: "Sine.easeInOut",
+                    yoyo: true,
+                    repeat: -1,
+                });
+            },
+        });
+
+        this.tweens.add({
+            targets: gift,
+            angle: { from: -5, to: 5 },
+            duration: 600,
+            ease: "Sine.easeInOut",
+            yoyo: true,
+            repeat: -1,
+        });
+
+        this.add
+            .text(centerX, centerY + 10, "Победа!", {
+                font: "800 28px Nunito",
+                color: "#ffffff",
+                fontStyle: "bold",
+            })
+            .setOrigin(0.5);
+
+        this.add
+            .text(centerX, centerY + 55, `Ты прошел все уровни`, {
+                font: "600 18px Nunito",
+                color: "#ffffff",
+            })
+            .setOrigin(0.5);
+        this.add
+            .text(centerX, centerY + 75, `Держи промокод`, {
+                font: "600 18px Nunito",
+                color: "#ffffff",
+            })
+            .setOrigin(0.5);
+
+        const copyBg = this.add.image(0, 0, "copy_bg");
+        copyBg.setDisplaySize(278, 68);
+        copyBg.setOrigin(0.5);
+
+        const copyButton = this.add.image(110, 0, "copy_btn");
+        copyButton.setDisplaySize(28, 28);
+        copyButton.setOrigin(0.5);
+
+        const copyText = this.add.text(-50, 10, "Скопировать промокод", {
+            font: "600 12px Nunito",
+            color: "#ffffff",
+        });
+        copyText.setOrigin(0.5);
+
+        const promoText = this.add
+            .text(-65, -10, code, {
+                font: "800 20px Nunito",
+                color: "#ffffff",
+            })
+            .setOrigin(0.5);
+
+        const copyContainer = this.add.container(centerX, centerY + 140, [
+            copyBg,
+            copyButton,
+            copyText,
+            promoText,
+        ]);
+
+        copyContainer.setDisplaySize(278, 68);
+        copyContainer.setScale(1);
+
+        copyContainer
+            .setInteractive(
+                new Phaser.Geom.Rectangle(-140, -35, 278, 68),
+                Phaser.Geom.Rectangle.Contains
+            )
+            .on("pointerover", () => this.input.setDefaultCursor("pointer"))
+            .on("pointerout", () => this.input.setDefaultCursor("default"))
+            .on("pointerdown", () => {
+                navigator.clipboard
+                    .writeText(code)
+                    .then(() => {
+                        console.log("Скопировано:", code);
+                        copyText.setText("Скопировано");
+                        copyText.setPosition(-75, 10);
+                        copyText.setOrigin(0.5);
+                    })
+                    .catch((err) => {
+                        console.error("Ошибка копирования:", err);
+                        copyText.setText("Ошибка ❌");
+                    });
+            });
+
+        this.continueButton = this.add
+            .image(centerX, centerY + 220, "later_btn")
+            .setOrigin(0.5)
+            .setDisplaySize(176, 48)
+            .setInteractive({ useHandCursor: true })
+            .on("pointerdown", () => this.nextStep());
     }
 }

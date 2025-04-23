@@ -12,6 +12,7 @@ interface CoordLevel {
 export class MainMenu extends Scene {
     levelId!: number;
     levelsArray!: LevelConfig[];
+    gameOver!: boolean;
     background: GameObjects.Image;
     logo: GameObjects.Image;
     logoTween: Phaser.Tweens.Tween | null;
@@ -19,6 +20,7 @@ export class MainMenu extends Scene {
     completedCount: number;
 
     private puzzle!: Phaser.GameObjects.Image;
+    private puzzleFull!: Phaser.GameObjects.Image;
 
     constructor() {
         super("MainMenu");
@@ -73,7 +75,7 @@ export class MainMenu extends Scene {
 
         const gridWidth = cols * cellWidth + (cols - 1) * spacing;
         const gridHeight = rows * cellHeight + (rows - 1) * spacing;
-
+        console.log(gridWidth, gridHeight);
         const startX = centerX - gridWidth / 2 + cellWidth / 2;
         const startY = centerY - gridHeight / 2 + cellHeight / 2;
 
@@ -157,14 +159,14 @@ export class MainMenu extends Scene {
                     "pointerdown",
                     () => {
                         this.scene.stop("MainMenu");
-                        this.scene.start("Game", {
-                            config: level,
-                        });
-
-                        // this.scene.start("WinScene", {
-                        //     levelId: level.id,
-                        //     difficult: level.difficult,
+                        // this.scene.start("Game", {
+                        //     config: level,
                         // });
+
+                        this.scene.start("WinScene", {
+                            levelId: level.id,
+                            difficult: level.difficult,
+                        });
 
                         // this.scene.start("LoseScene", {});
                     }
@@ -199,6 +201,22 @@ export class MainMenu extends Scene {
         );
         logo.setOrigin(0.5);
         logo.setDepth(1);
+
+        if (this.gameOver) {
+            this.puzzleFull = this.add.image(centerX, centerY, "puzzle_full");
+            this.puzzleFull.setDisplaySize(320, 360);
+            this.puzzleFull.setOrigin(0.5);
+            this.puzzleFull.setDepth(20);
+            this.puzzleFull.setAlpha(0);
+
+            this.tweens.add({
+                targets: this.puzzleFull,
+                alpha: 1,
+                duration: 1200,
+                ease: "Cubic.easeInOut",
+            });
+            return;
+        }
 
         if (this.levelId) {
             this.puzzle = this.add.image(
@@ -259,7 +277,7 @@ export class MainMenu extends Scene {
 
                     if (this.completedCount === 25) {
                         this.scene.start("WinScene", {
-                            levelId: 100,
+                            isFinal: true,
                         });
                     }
                 },
@@ -269,8 +287,14 @@ export class MainMenu extends Scene {
         EventBus.emit("current-scene-ready", this);
     }
 
-    init(data: { revealPiece: number }) {
+    init(data: { revealPiece?: number }) {
         this.levelId = data.revealPiece;
+
+        this.gameOver = JSON.parse(window.localStorage.getItem("gameOver"));
+        if (!this.gameOver) {
+            window.localStorage.setItem("gameOver", JSON.stringify(false));
+            this.gameOver = JSON.parse(window.localStorage.getItem("gameOver"));
+        }
 
         this.levelsArray = JSON.parse(window.localStorage.getItem("levels"));
         if (!this.levelsArray) {
@@ -279,6 +303,7 @@ export class MainMenu extends Scene {
                 window.localStorage.getItem("levels")
             );
         }
+
         this.completedCount = JSON.parse(
             window.localStorage.getItem("completedCount")
         );
