@@ -6,6 +6,7 @@ export class WinScene extends Scene {
     private step: number = 0;
     private continueButton!: Phaser.GameObjects.Text;
     private levelId!: number;
+    private difficult!: string;
     private tileSprite!: Phaser.GameObjects.Sprite;
     private backPiece!: Phaser.GameObjects.Image;
 
@@ -13,8 +14,9 @@ export class WinScene extends Scene {
         super("WinScene");
     }
 
-    init(data: { levelId: number }) {
+    init(data: { levelId: number, difficult:string }) {
         this.levelId = data.levelId;
+        this.difficult = data.difficult
     }
 
     create() {
@@ -126,7 +128,7 @@ export class WinScene extends Scene {
             });
         } else if (this.step === 2) {
             this.scene.stop("WinScene");
-            
+
             this.scene.start("MainMenu", {
                 revealPiece: this.levelId,
             });
@@ -138,14 +140,20 @@ export class WinScene extends Scene {
         const centerY = this.cameras.main.centerY;
 
         // 🔢 Плитка с номером уровня
-        const tileSprite = this.add.sprite(0, 0, "tile_green");
+        const tileSprite = this.add.sprite(0, 0, this.difficult);
         tileSprite.setDisplaySize(172, 192);
         tileSprite.setOrigin(0.5);
+
+        const levelTextColor: ILevelTextColor = {
+            easy: "#00AEEF",
+            medium: "#202020",
+            hard: "#FFFFFF",
+        };
 
         const levelText = this.add
             .text(0, 0, `${this.levelId}`, {
                 font: "800 112px Nunito",
-                color: "#00AEEF",
+                color: levelTextColor[this.difficult],
                 fontStyle: "bold",
             })
             .setOrigin(0.5)

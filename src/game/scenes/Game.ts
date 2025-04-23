@@ -1133,9 +1133,8 @@ export class Game extends Scene {
         triggerChain?: Set<Phaser.GameObjects.Sprite>
     ): Promise<void> {
         // отнимаем ход, проверяем победу
-        this.remainingMoves--;
+
         this.updateMovesUI();
-        this.checkWin();
 
         const x = sprite.getData("gridX");
         const y = sprite.getData("gridY");
@@ -1298,6 +1297,8 @@ export class Game extends Scene {
         for (const helper of helpersToActivate) {
             await this._activateSingleHelper(helper, undefined, triggerChain);
         }
+        this.remainingMoves--;
+        this.checkWin();
     }
 
     async launchHorizontalRocketWithDamage(
@@ -2229,7 +2230,10 @@ export class Game extends Scene {
         if (this.levelCompleted) return; // не срабатываем дважды
         this.levelCompleted = true;
 
-        this.scene.start("WinScene", { levelId: this.levelConfig.id });
+        this.scene.start("WinScene", {
+            levelId: this.levelConfig.id,
+            difficult: this.levelConfig.difficult,
+        });
     }
     handleLevelLose() {
         this.scene.start("LoseScene", { levelId: this.levelConfig.id });
