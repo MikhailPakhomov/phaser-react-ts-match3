@@ -21,7 +21,6 @@ export interface LevelConfig {
 }
 
 export const levelConfigs: LevelConfig[] = [
-
     {
         id: 1,
         name: "Уровень 1",
@@ -475,7 +474,7 @@ export const levelConfigs: LevelConfig[] = [
     },
 
     {
-        id: 13,
+        id: 7,
         name: "Уровень 13",
         rows: 5,
         cols: 5,
@@ -1870,6 +1869,4 @@ export const levelConfigs: LevelConfig[] = [
             ],
         ],
     },
-
-
 ];

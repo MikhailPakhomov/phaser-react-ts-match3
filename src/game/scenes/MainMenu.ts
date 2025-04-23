@@ -16,6 +16,7 @@ export class MainMenu extends Scene {
     logo: GameObjects.Image;
     logoTween: Phaser.Tweens.Tween | null;
     coordsLevels: CoordLevel[] = [];
+    completedCount: number;
 
     private puzzle!: Phaser.GameObjects.Image;
 
@@ -162,6 +163,7 @@ export class MainMenu extends Scene {
 
                         // this.scene.start("WinScene", {
                         //     levelId: level.id,
+                        //     difficult: level.difficult,
                         // });
 
                         // this.scene.start("LoseScene", {});
@@ -248,6 +250,18 @@ export class MainMenu extends Scene {
                             JSON.stringify(levels)
                         );
                     }
+                    this.completedCount++;
+                    console.log(this.completedCount);
+                    window.localStorage.setItem(
+                        "completedCount",
+                        JSON.stringify(this.completedCount)
+                    );
+
+                    if (this.completedCount === 25) {
+                        this.scene.start("WinScene", {
+                            levelId: 100,
+                        });
+                    }
                 },
             });
         }
@@ -257,11 +271,21 @@ export class MainMenu extends Scene {
 
     init(data: { revealPiece: number }) {
         this.levelId = data.revealPiece;
+
         this.levelsArray = JSON.parse(window.localStorage.getItem("levels"));
         if (!this.levelsArray) {
             window.localStorage.setItem("levels", JSON.stringify(levelConfigs));
             this.levelsArray = JSON.parse(
                 window.localStorage.getItem("levels")
+            );
+        }
+        this.completedCount = JSON.parse(
+            window.localStorage.getItem("completedCount")
+        );
+        if (!this.completedCount) {
+            window.localStorage.setItem("completedCount", JSON.stringify(0));
+            this.completedCount = JSON.parse(
+                window.localStorage.getItem("completedCount")
             );
         }
     }

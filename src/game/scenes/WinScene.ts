@@ -14,9 +14,9 @@ export class WinScene extends Scene {
         super("WinScene");
     }
 
-    init(data: { levelId: number, difficult:string }) {
+    init(data: { levelId: number; difficult: string }) {
         this.levelId = data.levelId;
-        this.difficult = data.difficult
+        this.difficult = data.difficult;
     }
 
     create() {
@@ -65,24 +65,25 @@ export class WinScene extends Scene {
         });
 
         // 🧧 Шаг 1 — Подарок
-        const gift = this.add.sprite(centerX, centerY - 130, "gift");
-        gift.setScale(0);
+        // const gift = this.add.sprite(centerX, centerY - 130, "gift");
+        // gift.setScale(0);
 
-        this.tweens.add({
-            targets: gift,
-            scale: 0.3,
-            duration: 1000,
-            ease: "Cubic.easeInOut",
-        });
+        // this.tweens.add({
+        //     targets: gift,
+        //     scale: 0.3,
+        //     duration: 1000,
+        //     ease: "Cubic.easeInOut",
+        // });
 
-        this.tweens.add({
-            targets: gift,
-            angle: { from: -5, to: 5 },
-            duration: 600,
-            ease: "Sine.easeInOut",
-            yoyo: true,
-            repeat: -1,
-        });
+        // this.tweens.add({
+        //     targets: gift,
+        //     angle: { from: -5, to: 5 },
+        //     duration: 600,
+        //     ease: "Sine.easeInOut",
+        //     yoyo: true,
+        //     repeat: -1,
+        // });
+        this.showLevelTile(centerX, centerY);
 
         this.add
             .text(centerX, centerY + 80, "Поздравляю!", {
@@ -106,39 +107,30 @@ export class WinScene extends Scene {
             .setOrigin(0.5)
             .setDisplaySize(176, 48)
             .setInteractive({ useHandCursor: true })
-            .on("pointerdown", () => this.nextStep(gift));
+            .on("pointerdown", () => this.nextStep());
 
         EventBus.emit("current-scene-ready", this);
     }
 
-    private nextStep(gift: Phaser.GameObjects.Image) {
-        this.step++;
-
-        if (this.step === 1) {
-            this.tweens.add({
-                targets: gift,
-                scale: 0,
-                duration: 700,
-                ease: "Cubic.easeInOut",
-                onComplete: () => {
-                    gift.destroy();
-                    this.continueButton.setVisible(false);
-                    this.showLevelTile();
-                },
-            });
-        } else if (this.step === 2) {
-            this.scene.stop("WinScene");
-
-            this.scene.start("MainMenu", {
-                revealPiece: this.levelId,
-            });
-        }
+    private nextStep() {
+        // this.tweens.add({
+        //     targets: gift,
+        //     scale: 0,
+        //     duration: 700,
+        //     ease: "Cubic.easeInOut",
+        //     onComplete: () => {
+        //         gift.destroy();
+        //         this.continueButton.setVisible(false);
+        //         this.showLevelTile();
+        //     },
+        // });
+        this.scene.stop("WinScene");
+        this.scene.start("MainMenu", {
+            revealPiece: this.levelId,
+        });
     }
 
-    private showLevelTile() {
-        const centerX = this.cameras.main.centerX;
-        const centerY = this.cameras.main.centerY;
-
+    private showLevelTile(centerX: number, centerY: number) {
         // 🔢 Плитка с номером уровня
         const tileSprite = this.add.sprite(0, 0, this.difficult);
         tileSprite.setDisplaySize(172, 192);
@@ -166,51 +158,42 @@ export class WinScene extends Scene {
         ]);
         this.tileSprite = tileContainer;
         tileContainer.setScale(0);
+        tileContainer.setAngle(0);
+
+        // 🌟 Плавное появление и вращение
         this.tweens.add({
             targets: tileContainer,
             scale: 1,
-            duration: 700,
-            ease: "Cubic.easeInOut",
-        });
-
-        // 🎯 Скрытый фрагмент картинки
-        this.backPiece = this.add.image(
-            centerX,
-            centerY - 100,
-            `puzzle_${this.levelId}`
-        );
-        this.backPiece.setDisplaySize(172, 192);
-        this.backPiece.setOrigin(0.5);
-        this.backPiece.setVisible(false);
-
-        // 🔄 Анимация поворота контейнера
-        this.tweens.add({
-            targets: tileContainer,
-            delay: 1000,
             angle: 720,
-            duration: 1500,
+            duration: 1800,
+            delay: 300,
             ease: "Cubic.easeInOut",
             onComplete: () => {
                 this.continueButton.setVisible(true);
 
+                // 🔁 Разворот плитки и показ картинки-пазла
                 this.tweens.add({
                     targets: tileContainer,
                     scaleX: 0,
-                    duration: 250,
+                    duration: 300,
                     ease: "Cubic.easeIn",
                     onComplete: () => {
-                        // Скрываем контейнер с номером уровня
                         tileContainer.setVisible(false);
 
-                        // Показываем картинку-пазл
+                        this.backPiece = this.add.image(
+                            centerX,
+                            centerY - 100,
+                            `puzzle_${this.levelId}`
+                        );
+                        this.backPiece.setDisplaySize(172, 192);
+                        this.backPiece.setOrigin(0.5);
                         this.backPiece.setScale(0, 1);
                         this.backPiece.setVisible(true);
 
-                        // ⏳ Этап 2: разворот картинки-пазла обратно от 0 до 1
                         this.tweens.add({
                             targets: this.backPiece,
                             scaleX: 1,
-                            duration: 250,
+                            duration: 300,
                             ease: "Cubic.easeOut",
                         });
                     },
