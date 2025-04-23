@@ -2368,7 +2368,7 @@ export class Game extends Scene {
 
                 let type = cell.type;
                 let data = cell;
-                console.log(cell.isHelper, cell.helperType);
+
                 if (cell.type === "ice") {
                     type = cell.content.type;
                     data = {
