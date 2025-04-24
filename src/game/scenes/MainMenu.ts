@@ -10,7 +10,8 @@ interface CoordLevel {
     label: GameObjects.Text;
 }
 export class MainMenu extends Scene {
-    levelId!: number;
+    isFirstLaunch!: boolean;
+    levelId!: number | undefined;
     levelsArray!: LevelConfig[];
     gameOver!: boolean;
     background: GameObjects.Image;
@@ -61,6 +62,7 @@ export class MainMenu extends Scene {
             ctx.imageSmoothingEnabled = true;
         }
 
+        if (this.isFirstLaunch) this.scene.start("Onboarding");
         const camera = this.cameras.main;
 
         const centerX = camera.centerX;
@@ -289,6 +291,16 @@ export class MainMenu extends Scene {
 
     init(data: { revealPiece?: number }) {
         this.levelId = data.revealPiece;
+
+        this.isFirstLaunch = JSON.parse(
+            window.localStorage.getItem("isFirstLaunch")
+        );
+        if (this.isFirstLaunch === null) {
+            this.isFirstLaunch = true;
+            window.localStorage.setItem("isFirstLaunch", JSON.stringify(false));
+        } else {
+            this.isFirstLaunch = false;
+        }
 
         this.gameOver = JSON.parse(window.localStorage.getItem("gameOver"));
         if (!this.gameOver) {

@@ -88,6 +88,20 @@ export class Preloader extends Scene {
         this.load.image("copy_bg", "copy_bg.png");
         this.load.image("copy_btn", "copy_btn.png");
         this.load.image("puzzle_full", "puzzle_full.png");
+
+        this.load.image("onboarding_easy", "onboarding_easy.png");
+        this.load.image("onboarding_medium", "onboarding_medium.png");
+        this.load.image("onboarding_hard", "onboarding_hard.png");
+        this.load.image(
+            "onboarding_top_right_arrow",
+            "onboarding_top_right_arrow.png"
+        );
+        this.load.image(
+            "onboarding_top_left_arrow",
+            "onboarding_top_left_arrow.png"
+        );
+        this.load.image("onboarding_row_1", "onboarding_row_1.png");
+        this.load.image("onboarding_row_2", "onboarding_row_2.png");
     }
 
     create() {
