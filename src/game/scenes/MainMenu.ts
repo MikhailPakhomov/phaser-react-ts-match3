@@ -10,6 +10,7 @@ interface CoordLevel {
     label: GameObjects.Text;
 }
 export class MainMenu extends Scene {
+    isFirstLevelPlay!: boolean;
     isFirstLaunch!: boolean;
     levelId!: number | undefined;
     levelsArray!: LevelConfig[];
@@ -131,6 +132,7 @@ export class MainMenu extends Scene {
         };
 
         this.levelsArray.forEach((level, index) => {
+          
             const col = index % cols;
             const row = Math.floor(index / cols);
 
@@ -160,10 +162,18 @@ export class MainMenu extends Scene {
                 tile.setInteractive({ useHandCursor: true }).on(
                     "pointerdown",
                     () => {
-                        this.scene.stop("MainMenu");
-                        this.scene.start("Game", {
-                            config: level,
-                        });
+                        console.log(this.isFirstLevelPlay);
+                        if (this.isFirstLevelPlay) {
+                            this.scene.stop("MainMenu");
+                            this.scene.start("Tutorial", {
+                                currentLevel: level,
+                            });
+                        } else {
+                            this.scene.stop("MainMenu");
+                            this.scene.start("Game", {
+                                config: level,
+                            });
+                        }
 
                         // this.scene.start("WinScene", {
                         //     levelId: level.id,
@@ -300,6 +310,18 @@ export class MainMenu extends Scene {
             window.localStorage.setItem("isFirstLaunch", JSON.stringify(false));
         } else {
             this.isFirstLaunch = false;
+        }
+        
+        this.isFirstLevelPlay = JSON.parse(
+            window.localStorage.getItem("isFirstLevelPlay")
+        );
+        console.log(this.isFirstLevelPlay)
+        if (this.isFirstLevelPlay === null) {
+            this.isFirstLevelPlay = true;
+            window.localStorage.setItem(
+                "isFirstLevelPlay",
+                JSON.stringify(true)
+            );
         }
 
         this.gameOver = JSON.parse(window.localStorage.getItem("gameOver"));

@@ -11,7 +11,7 @@ export class Onboarding extends Scene {
     }
 
     init(data: { levelId: number }) {
-        this.levelId = data.levelId;
+        
     }
 
     create() {
@@ -91,7 +91,7 @@ export class Onboarding extends Scene {
             .setResolution(2);
 
         const topTextContent = this.add
-            .text(centerX - 78, centerY - 180, "Выбери уровень по сложности", {
+            .text(centerX - 78, centerY - 180, "Выбери уровень по сложности", {
                 font: "600 12px Nunito",
                 color: "#FFFFFF",
             })

@@ -2324,7 +2324,7 @@ export class Game extends Scene {
             availableHeight / gridHeight
         );
         this.scaleFactor = scaleFactor;
-        this.cameras.main.setZoom(scaleFactor);
+        // this.cameras.main.setZoom(scaleFactor);
 
         this.offsetX = (this.cameras.main.width / scaleFactor - gridWidth) / 2;
         this.offsetY =

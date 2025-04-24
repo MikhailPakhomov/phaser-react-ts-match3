@@ -1869,4 +1869,5 @@ export const levelConfigs: LevelConfig[] = [
             ],
         ],
     },
+
 ];
