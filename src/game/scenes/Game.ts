@@ -1133,7 +1133,7 @@ export class Game extends Scene {
         triggerChain?: Set<Phaser.GameObjects.Sprite>
     ): Promise<void> {
         // отнимаем ход, проверяем победу
-
+        this.remainingMoves--;
         this.updateMovesUI();
 
         const x = sprite.getData("gridX");
@@ -1297,7 +1297,7 @@ export class Game extends Scene {
         for (const helper of helpersToActivate) {
             await this._activateSingleHelper(helper, undefined, triggerChain);
         }
-        this.remainingMoves--;
+
         this.checkWin();
     }
 
