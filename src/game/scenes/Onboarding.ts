@@ -87,21 +87,24 @@ export class Onboarding extends Scene {
                 color: "#FFFFFF",
                 fontStyle: "bold",
             })
-            .setOrigin(0.5);
+            .setOrigin(0.5)
+            .setResolution(2);
 
         const topTextContent = this.add
             .text(centerX - 78, centerY - 180, "Выбери уровень по сложности", {
                 font: "600 12px Nunito",
                 color: "#FFFFFF",
             })
-            .setOrigin(0.5);
+            .setOrigin(0.5)
+            .setResolution(2);
 
         const midTextTitle = this.add
             .text(centerX + 65, centerY - 60, "Три в ряд", {
                 font: "800 18px Nunito",
                 color: "#FFFFFF",
             })
-            .setOrigin(0.5);
+            .setOrigin(0.5)
+            .setResolution(2);
 
         const midTextContent = this.add
             .text(
@@ -115,14 +118,16 @@ export class Onboarding extends Scene {
                     wordWrap: { width: 220, useAdvancedWrap: true },
                 }
             )
-            .setOrigin(0.5);
+            .setOrigin(0.5)
+            .setResolution(2);
 
         const bottomTextTitle = this.add
             .text(centerX - 50, centerY + 120, "Награда", {
                 font: "800 18px Nunito",
                 color: "#FFFFFF",
             })
-            .setOrigin(0.5);
+            .setOrigin(0.5)
+            .setResolution(2);
 
         const bottomTextContent = this.add
             .text(
@@ -136,7 +141,8 @@ export class Onboarding extends Scene {
                     wordWrap: { width: 248, useAdvancedWrap: true },
                 }
             )
-            .setOrigin(0.5);
+            .setOrigin(0.5)
+            .setResolution(2);
 
         this.continueButton = this.add
             .image(centerX, centerY + 230, "later_btn")

@@ -88,7 +88,8 @@ export class LoseScene extends Scene {
                 color: "#ffffff",
                 fontStyle: "bold",
             })
-            .setOrigin(0.5);
+            .setOrigin(0.5)
+            .setResolution(2);
 
         this.add
             .text(
@@ -100,7 +101,8 @@ export class LoseScene extends Scene {
                     color: "#ffffff",
                 }
             )
-            .setOrigin(0.5);
+            .setOrigin(0.5)
+            .setResolution(2);
 
         // this.continueButton = this.add
         //     .text(centerX, centerY + 200, "Продолжить", {

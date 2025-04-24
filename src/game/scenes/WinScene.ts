@@ -79,7 +79,8 @@ export class WinScene extends Scene {
                 font: "800 28px Nunito",
                 color: "#ffffff",
             })
-            .setOrigin(0.5);
+            .setOrigin(0.5)
+            .setResolution(2);
 
         this.add
             .text(
@@ -91,13 +92,15 @@ export class WinScene extends Scene {
                     color: "#ffffff",
                 }
             )
-            .setOrigin(0.5);
+            .setOrigin(0.5)
+            .setResolution(2);
         this.add
             .text(centerX + 10, centerY + 140, `один фрагмент пазла `, {
                 font: "600 18px Nunito",
                 color: "#ffffff",
             })
-            .setOrigin(0.5);
+            .setOrigin(0.5)
+            .setResolution(2);
 
         this.continueButton = this.add
             .image(centerX, centerY + 250, "later_btn")
