@@ -1,11 +1,14 @@
+import { LevelConfig } from "./../levels/levelConfig";
 import { Scene } from "phaser";
 import { EventBus } from "../EventBus";
 import { delayPromise } from "../utils/tween-utils";
+import { LevelConfig } from "../levels/levelConfig";
 
 export class LoseScene extends Scene {
     private step: number = 0;
-    private continueButton!: Phaser.GameObjects.Image;
-    private levelId!: number;
+    private menuButton!: Phaser.GameObjects.Image;
+    private replayButton!: Phaser.GameObjects.Image;
+    private levelConfig!: LevelConfig;
     private tileSprite!: Phaser.GameObjects.Sprite;
     private backPiece!: Phaser.GameObjects.Image;
 
@@ -13,8 +16,8 @@ export class LoseScene extends Scene {
         super("LoseScene");
     }
 
-    init(data: { levelId: number }) {
-        this.levelId = data.levelId;
+    init(data: { config: LevelConfig }) {
+        this.levelConfig = data.config;
     }
 
     create() {
@@ -82,7 +85,7 @@ export class LoseScene extends Scene {
         });
 
         this.add
-            .text(centerX, centerY + 120, "Ты проиграл", {
+            .text(centerX, centerY + 40, "Ты проиграл", {
                 font: "800 28px Nunito",
                 color: "#ffffff",
                 fontStyle: "bold",
@@ -93,11 +96,13 @@ export class LoseScene extends Scene {
         this.add
             .text(
                 centerX,
-                centerY + 170,
-                `У тебя не получилось, попробуй еще раз`,
+                centerY + 90,
+                `Выбери другой уровень или попробуй снова`,
                 {
                     font: "600 18px Nunito",
                     color: "#ffffff",
+                    align: "center", // выравнивание
+                    wordWrap: { width: 276, useAdvancedWrap: true },
                 }
             )
             .setOrigin(0.5)
@@ -116,8 +121,26 @@ export class LoseScene extends Scene {
         //     .setInteractive({ useHandCursor: true })
         //     .on("pointerdown", () => this.scene.start("MainMenu", {}));
 
-        this.continueButton = this.add
-            .image(centerX, centerY + 250, "later_btn")
+        this.replayButton = this.add
+            .image(centerX, centerY + 200, "replay_btn")
+            .setOrigin(0.5)
+            .setDisplaySize(176, 48)
+            .setInteractive({ useHandCursor: true })
+            .on("pointerdown", () => {
+                this.tweens.add({
+                    targets: sadMobile,
+                    scale: 0,
+                    duration: 700,
+                    ease: "Cubic.easeInOut",
+                    onComplete: () => {
+                        this.scene.stop("LoseScene");
+                        this.scene.start("Game", { config: this.levelConfig });
+                    },
+                });
+            });
+
+        this.menuButton = this.add
+            .image(centerX, centerY + 250, "main_menu_btn")
             .setOrigin(0.5)
             .setDisplaySize(176, 48)
             .setInteractive({ useHandCursor: true })

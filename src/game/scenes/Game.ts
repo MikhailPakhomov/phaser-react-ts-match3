@@ -2238,7 +2238,7 @@ export class Game extends Scene {
         });
     }
     handleLevelLose() {
-        this.scene.start("LoseScene", { levelId: this.levelConfig.id });
+        this.scene.start("LoseScene", { config: this.levelConfig });
     }
     async checkWin() {
         if (this.remainingMoves > 0) {
