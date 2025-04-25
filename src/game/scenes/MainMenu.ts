@@ -127,12 +127,11 @@ export class MainMenu extends Scene {
         }
         const levelTextColor: ILevelTextColor = {
             easy: "#00AEEF",
-            medium: "#202020",
+            medium: "#ffffff",
             hard: "#FFFFFF",
         };
 
         this.levelsArray.forEach((level, index) => {
-          
             const col = index % cols;
             const row = Math.floor(index / cols);
 
@@ -311,11 +310,11 @@ export class MainMenu extends Scene {
         } else {
             this.isFirstLaunch = false;
         }
-        
+
         this.isFirstLevelPlay = JSON.parse(
             window.localStorage.getItem("isFirstLevelPlay")
         );
-        console.log(this.isFirstLevelPlay)
+        console.log(this.isFirstLevelPlay);
         if (this.isFirstLevelPlay === null) {
             this.isFirstLevelPlay = true;
             window.localStorage.setItem(

@@ -18,7 +18,6 @@ export class LoseScene extends Scene {
     }
 
     create() {
-        this.cameras.main.setBackgroundColor("#FF7D7D");
         this.game.renderer.config.antialias = true;
 
         const ctx = this.game.canvas.getContext("2d");
@@ -83,7 +82,7 @@ export class LoseScene extends Scene {
         });
 
         this.add
-            .text(centerX, centerY + 120, "Сожалеем :(", {
+            .text(centerX, centerY + 120, "Ты проиграл", {
                 font: "800 28px Nunito",
                 color: "#ffffff",
                 fontStyle: "bold",
@@ -118,7 +117,7 @@ export class LoseScene extends Scene {
         //     .on("pointerdown", () => this.scene.start("MainMenu", {}));
 
         this.continueButton = this.add
-            .image(centerX, centerY + 250, "later_btn_lose")
+            .image(centerX, centerY + 250, "later_btn")
             .setOrigin(0.5)
             .setDisplaySize(176, 48)
             .setInteractive({ useHandCursor: true })

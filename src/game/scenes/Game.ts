@@ -1133,8 +1133,10 @@ export class Game extends Scene {
         triggerChain?: Set<Phaser.GameObjects.Sprite>
     ): Promise<void> {
         // отнимаем ход, проверяем победу
-        this.remainingMoves--;
-        this.updateMovesUI();
+        if (this.remainingMoves >= 0) {
+            this.remainingMoves--;
+            this.updateMovesUI();
+        }
 
         const x = sprite.getData("gridX");
         const y = sprite.getData("gridY");

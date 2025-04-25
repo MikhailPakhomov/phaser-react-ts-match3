@@ -100,6 +100,7 @@ export class Preloader extends Scene {
             "onboarding_top_left_arrow",
             "onboarding_top_left_arrow.png"
         );
+        this.load.image("onboarding_row_0", "onboarding_row_0.png");
         this.load.image("onboarding_row_1", "onboarding_row_1.png");
         this.load.image("onboarding_row_2", "onboarding_row_2.png");
 
