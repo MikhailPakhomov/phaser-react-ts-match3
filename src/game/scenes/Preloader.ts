@@ -109,9 +109,8 @@ export class Preloader extends Scene {
         this.load.image("tutorial_finger", "tutorial_finger.png");
         this.load.image("tutorial_arrow_top", "tutorial_arrow_top.png");
         this.load.image("tutorial_arrow_left", "tutorial_arrow_left.png");
-
+        this.load.image("play_btn", "play_btn.png");
     }
-
 
     create() {
         //  When all the assets have loaded, it's often worth creating global objects here that the rest of the game can use.

@@ -2017,7 +2017,7 @@ export class Game extends Scene {
 
         const iceSprite = this.add.sprite(sprite.x, sprite.y, textureKey);
         iceSprite.setOrigin(0.5);
-        iceSprite.setDisplaySize(65, 65);
+        iceSprite.setDisplaySize(48, 48);
         iceSprite.setDepth(10);
         iceSprite.setAlpha(0.7);
         iceSprite.disableInteractive();
