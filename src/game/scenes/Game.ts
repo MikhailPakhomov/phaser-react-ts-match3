@@ -94,7 +94,7 @@ export class Game extends Scene {
 
         try {
             const isHelper = tile.getData("isHelper");
-            
+
             const helperType = tile.getData("helperType");
 
             if (isHelper) {
@@ -607,13 +607,11 @@ export class Game extends Scene {
                 const iceSprite = tile.getData("iceSprite");
 
                 if (ice) {
-                    
                     if (tilesJustDamagedInFirstPass.has(tile)) {
                         continue;
                     }
                     // Фишка во льду — только повреждаем лёд, саму фишку не трогаем
                     if (ice.strength > 1) {
-                       
                         ice.strength--;
                         if (iceSprite) iceSprite.setTexture("ice_cracked");
                     } else {
@@ -639,6 +637,7 @@ export class Game extends Scene {
         }
 
         await Promise.all(tweens);
+
         for (const tile of tilesToDestroyLater) tile.destroy();
     }
 
@@ -663,6 +662,10 @@ export class Game extends Scene {
         const x = tile.getData("gridX");
         const y = tile.getData("gridY");
 
+        // ✨ ЭФФЕКТ: Простые партиклы
+
+        // Ждём эффект увеличения перед удалением
+
         if (goal) {
             // 🎯 Целевой — полёт к цели
             tile.setVisible(false);
@@ -677,14 +680,14 @@ export class Game extends Scene {
 
             const targetX = goal.icon.x;
             const targetY = goal.icon.y;
-
+            this.spawnTileParticles(tile.x, tile.y, type);
             tweens?.push(
                 tweenPromise(this, {
                     targets: clone,
                     x: targetX,
                     y: targetY,
                     scale: 0,
-                    alpha: 0.7,
+                    alpha: 0.9,
                     duration: 550,
                     ease: "Cubic.easeIn",
                     onComplete: () => {
@@ -705,6 +708,20 @@ export class Game extends Scene {
             tile.setVisible(true);
             tile.setAlpha(1);
             tile.setDisplaySize(size, size);
+
+            await tweenPromise(this, {
+                targets: tile,
+                scale: 0.45,
+                duration: 100,
+                ease: "Power1",
+                onComplete: () => {
+                    this.spawnTileParticles(tile.x, tile.y, type);
+                },
+            });
+
+            if (this.grid?.[y]?.[x] === tile) {
+                this.grid[y][x] = null;
+            }
 
             tweens?.push(
                 tweenPromise(this, {
@@ -728,6 +745,81 @@ export class Game extends Scene {
             );
         }
     }
+
+    // spawnTileParticles(x: number, y: number, type: string) {
+    //     const textureKey = `particle_${type}`;
+
+    //     const particles = this.add.particles(0, 0, textureKey, {
+    //         x: { min: -10, max: 10 },
+    //         y: { min: -10, max: 10 },
+    //         speed: { min: 50, max: 150 },
+    //         angle: { min: 0, max: 360 },
+    //         scale: { start: 0.6, end: 0 },
+    //         alpha: { start: 1, end: 0 },
+    //         lifespan: 500,
+    //         gravityY: 200,
+    //         quantity: 10,
+    //         blendMode: "NORMAL",
+    //     });
+
+    //     particles.setPosition(x, y);
+    //     particles.setDepth(1000);
+
+    //     this.time.delayedCall(400, () => {
+    //         particles.destroy();
+    //     });
+    // }
+
+    spawnTileParticles(x: number, y: number, type: string) {
+        const textureKey = `particle_${type}`;
+
+        const particles = this.add.particles(0, 0, textureKey, {
+            x: { min: -12, max: 12 },
+            y: { min: -12, max: 12 },
+            speed: { min: 20, max: 60 },
+            angle: { min: 0, max: 360 },
+            scale: { start: 0.8, end: 0 },
+            alpha: { start: 0.8, end: 0 },
+            lifespan: 700,
+            gravityY: 50,
+            quantity: 15,
+            blendMode: "NORMAL", // сохраняем цвет
+        });
+
+        particles.setPosition(x, y);
+        particles.setDepth(1000);
+
+       
+
+
+        this.time.delayedCall(500, () => {
+            particles.destroy();
+        });
+    }
+
+    // spawnTileParticles(x: number, y: number, type: string) {
+    //     const textureKey = `particle_${type}`;
+
+    //     const particles = this.add.particles(0, 0, textureKey, {
+    //         x: { min: -5, max: 5 },
+    //         y: { min: -5, max: 5 },
+    //         speed: { min: 200, max: 400 },
+    //         angle: { min: -45, max: 45 },
+    //         scale: { start: 0.6, end: 0 },
+    //         alpha: { start: 1, end: 0 },
+    //         lifespan: { min: 300, max: 500 },
+    //         gravityY: 600,
+    //         quantity: 20,
+    //         blendMode: "ADD", // искры хорошо смотрятся в ADD
+    //     });
+
+    //     particles.setPosition(x, y);
+    //     particles.setDepth(1000);
+
+    //     this.time.delayedCall(600, () => {
+    //         particles.destroy();
+    //     });
+    // }
 
     async undoSwap(
         tileA: Phaser.GameObjects.Sprite,
@@ -1140,6 +1232,9 @@ export class Game extends Scene {
             this.updateMovesUI();
         }
 
+        this.cameras.main.shake(200, 0.02);
+        this.cameras.main.flash(150, 200, 220, 255);
+
         const x = sprite.getData("gridX");
         const y = sprite.getData("gridY");
         const type = sprite.getData("helperType");
@@ -1280,7 +1375,6 @@ export class Game extends Scene {
             const iceSprite = tile?.getData("iceSprite");
 
             if (ice?.destroyed) {
-               
                 if (iceSprite) iceSprite.destroy();
                 tile?.setData("ice", null);
                 tile?.setData("iceSprite", null);
@@ -1392,6 +1486,7 @@ export class Game extends Scene {
                             }
 
                             const originalSize = this.cellSize;
+
                             this.tweens.add({
                                 targets: tile,
                                 alpha: 0,
@@ -1406,7 +1501,14 @@ export class Game extends Scene {
                                     );
                                     tile.setDisplaySize(size, size);
                                 },
-                                onComplete: () => tile.destroy(),
+                                onComplete: () => {
+                                    this.spawnTileParticles(
+                                        tile.x,
+                                        tile.y,
+                                        tile.getData("type")
+                                    );
+                                    tile.destroy();
+                                },
                             });
 
                             toRemove.push(tile);
@@ -1513,6 +1615,14 @@ export class Game extends Scene {
                                         1 - progress
                                     );
                                     tile.setDisplaySize(size, size);
+                                },
+                                onComplete: () => {
+                                    this.spawnTileParticles(
+                                        tile.x,
+                                        tile.y,
+                                        tile.getData("type")
+                                    );
+                                    tile.destroy();
                                 },
                             });
                             toRemove.push(tile);
@@ -1807,6 +1917,7 @@ export class Game extends Scene {
         );
 
         // Шаг 4: Дожидаемся завершения всех анимаций
+
         await Promise.all(tweenPromises);
 
         // Шаг 5: Продолжаем
@@ -2288,6 +2399,23 @@ export class Game extends Scene {
         this.cameras.main.fadeIn(1000, 0, 0, 0);
         this.levelCompleted = false;
 
+        const color = {
+            message: 0xe7e3de,
+            energy: 0xfed26a,
+            phone: 0xeb638b,
+            smartphone: 0xc6ebf7,
+            sim: 0xf7c64c,
+            box: 0xe48c32,
+        };
+
+        for (const [type, colorHex] of Object.entries(color)) {
+            const graphics = this.make.graphics({ x: 0, y: 0, add: false });
+            graphics.fillStyle(colorHex, 1);
+            graphics.fillCircle(4, 4, 4);
+            graphics.generateTexture(`particle_${type}`, 8, 8); // Уникальное имя
+            graphics.destroy();
+        }
+
         this.input.on("pointerup", (pointer: Phaser.Input.Pointer) => {
             if (this.selectedSprite && this.pointerDownPos) {
                 const dx = pointer.x - this.pointerDownPos.x;
@@ -2465,8 +2593,13 @@ export class Game extends Scene {
         this.pauseButton.setDepth(100);
         this.pauseButton.setDisplaySize(this.cellSize, this.cellSize);
         this.pauseButton.on("pointerdown", () => {
-            this.scene.launch('Pause', {cellSize: this.cellSize, offsetX: this.offsetX, offsetY: this.offsetY, cols: this.cols});
-            this.scene.pause('Game');
+            this.scene.launch("Pause", {
+                cellSize: this.cellSize,
+                offsetX: this.offsetX,
+                offsetY: this.offsetY,
+                cols: this.cols,
+            });
+            this.scene.pause("Game");
             // this.scene.start("MainMenu", {});
         });
 
