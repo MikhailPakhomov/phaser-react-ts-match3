@@ -483,7 +483,7 @@ export class Tutorial extends Scene {
 
         this.grid = [];
 
-        console.log(scaleFactor);
+        
         levelGrid.forEach((row, y) => {
             this.grid[y] = [];
 
@@ -500,7 +500,7 @@ export class Tutorial extends Scene {
                 let type = cell.type;
                 let data = cell;
 
-                console.log(type);
+              
                 let sprite:
                     | Phaser.GameObjects.Sprite
                     | Phaser.GameObjects.Container;
@@ -593,8 +593,8 @@ export class Tutorial extends Scene {
             "tutorial_overlay"
         );
         overlay.setDisplaySize(
-            this.cameras.main.width,
-            this.cameras.main.height
+            this.cameras.main.width + 5,
+            this.cameras.main.height + 5
         );
         overlay.setOrigin(0.5);
         overlay.setDepth(100);

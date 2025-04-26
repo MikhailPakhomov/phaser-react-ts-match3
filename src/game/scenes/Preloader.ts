@@ -49,6 +49,10 @@ export class Preloader extends Scene {
         this.load.image("rocket", "rocket.png");
         this.load.image("moves_bg", "moves_bg.png");
         this.load.image("pause", "pause.png");
+        this.load.image("close", "close.png");
+        this.load.image("gameover_btn", "gameover_btn.png");
+        this.load.image("sound_off", "sound_off.png");
+        this.load.image("sound_on", "sound_on.png");
         this.load.image("easy", "easy_level_bg.png");
         this.load.image("medium", "medium_level_bg.png");
         this.load.image("hard", "hard_level_bg.png");
@@ -90,9 +94,6 @@ export class Preloader extends Scene {
         this.load.image("copy_btn", "copy_btn.png");
         this.load.image("puzzle_full", "puzzle_full.png");
 
-        this.load.image("onboarding_easy", "onboarding_easy.png");
-        this.load.image("onboarding_medium", "onboarding_medium.png");
-        this.load.image("onboarding_hard", "onboarding_hard.png");
         this.load.image(
             "onboarding_top_right_arrow",
             "onboarding_top_right_arrow.png"
@@ -110,6 +111,9 @@ export class Preloader extends Scene {
         this.load.image("tutorial_arrow_top", "tutorial_arrow_top.png");
         this.load.image("tutorial_arrow_left", "tutorial_arrow_left.png");
         this.load.image("play_btn", "play_btn.png");
+
+        this.load.image("info_bg", "info_bg.png");
+        this.load.image("info_btn", "info_btn.png");
     }
 
     create() {

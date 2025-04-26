@@ -49,6 +49,8 @@ export class Game extends Scene {
 
     isInputLocked = false;
     isProcessing = false;
+    isPaused = false;
+
     constructor() {
         super("Game");
     }
@@ -92,7 +94,7 @@ export class Game extends Scene {
 
         try {
             const isHelper = tile.getData("isHelper");
-            console.log(isHelper);
+            
             const helperType = tile.getData("helperType");
 
             if (isHelper) {
@@ -605,13 +607,13 @@ export class Game extends Scene {
                 const iceSprite = tile.getData("iceSprite");
 
                 if (ice) {
-                    console.log(ice.strength);
+                    
                     if (tilesJustDamagedInFirstPass.has(tile)) {
                         continue;
                     }
                     // Фишка во льду — только повреждаем лёд, саму фишку не трогаем
                     if (ice.strength > 1) {
-                        console.log(ice.strength);
+                       
                         ice.strength--;
                         if (iceSprite) iceSprite.setTexture("ice_cracked");
                     } else {
@@ -1278,7 +1280,7 @@ export class Game extends Scene {
             const iceSprite = tile?.getData("iceSprite");
 
             if (ice?.destroyed) {
-                console.log(`💥 Лёд в (${ix},${iy}) разрушен`);
+               
                 if (iceSprite) iceSprite.destroy();
                 tile?.setData("ice", null);
                 tile?.setData("iceSprite", null);
@@ -2463,7 +2465,9 @@ export class Game extends Scene {
         this.pauseButton.setDepth(100);
         this.pauseButton.setDisplaySize(this.cellSize, this.cellSize);
         this.pauseButton.on("pointerdown", () => {
-            this.scene.start("MainMenu", {});
+            this.scene.launch('Pause', {cellSize: this.cellSize, offsetX: this.offsetX, offsetY: this.offsetY, cols: this.cols});
+            this.scene.pause('Game');
+            // this.scene.start("MainMenu", {});
         });
 
         this.createGoalsPanel(this.levelConfig.goals);

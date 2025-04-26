@@ -8,6 +8,7 @@ import { WinScene } from "./scenes/WinScene";
 import { LoseScene } from "./scenes/LoseScene";
 import { Onboarding } from "./scenes/Onboarding";
 import { Tutorial } from "./scenes/Tutorial";
+import { Pause } from "./scenes/Pause";
 
 //  Find out more information about the Game Config at:
 //  https://newdocs.phaser.io/docs/3.70.0/Phaser.Types.Core.GameConfig
@@ -38,7 +39,17 @@ const config: Phaser.Types.Core.GameConfig = {
         roundPixels: false, // 🚫 Не округлять координаты — сохраняем мягкость
     },
 
-    scene: [Boot, Preloader, MainMenu, MainGame, WinScene, LoseScene, Onboarding, Tutorial],
+    scene: [
+        Boot,
+        Preloader,
+        MainMenu,
+        MainGame,
+        WinScene,
+        LoseScene,
+        Onboarding,
+        Tutorial,
+        Pause,
+    ],
 };
 
 const StartGame = (parent: string) => {

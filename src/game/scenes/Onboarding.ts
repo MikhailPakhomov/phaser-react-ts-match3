@@ -121,6 +121,10 @@ export class Onboarding extends Scene {
                     "isFirstLaunch",
                     JSON.stringify(false)
                 );
+                window.localStorage.setItem(
+                    "isShowInfo",
+                    JSON.stringify(true)
+                );
                 this.scene.stop("Onboarding");
                 this.scene.start("MainMenu", {});
             });

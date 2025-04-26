@@ -12,6 +12,7 @@ interface CoordLevel {
 export class MainMenu extends Scene {
     isFirstLevelPlay!: boolean;
     isFirstLaunch!: boolean;
+    isShowInfo!: boolean;
     levelId!: number | undefined;
     levelsArray!: LevelConfig[];
     gameOver!: boolean;
@@ -20,6 +21,8 @@ export class MainMenu extends Scene {
     logoTween: Phaser.Tweens.Tween | null;
     coordsLevels: CoordLevel[] = [];
     completedCount: number;
+
+    isInputLocked = false;
 
     private puzzle!: Phaser.GameObjects.Image;
     private puzzleFull!: Phaser.GameObjects.Image;
@@ -78,7 +81,6 @@ export class MainMenu extends Scene {
 
         const gridWidth = cols * cellWidth + (cols - 1) * spacing;
         const gridHeight = rows * cellHeight + (rows - 1) * spacing;
-        console.log(gridWidth, gridHeight);
         const startX = centerX - gridWidth / 2 + cellWidth / 2;
         const startY = centerY - gridHeight / 2 + cellHeight / 2;
 
@@ -161,7 +163,8 @@ export class MainMenu extends Scene {
                 tile.setInteractive({ useHandCursor: true }).on(
                     "pointerdown",
                     () => {
-                        console.log(this.isFirstLevelPlay);
+                        if (this.isInputLocked) return;
+
                         if (this.isFirstLevelPlay) {
                             this.scene.stop("MainMenu");
                             this.scene.start("Tutorial", {
@@ -190,9 +193,6 @@ export class MainMenu extends Scene {
                     })
                     .setResolution(2)
                     .setOrigin(0.5);
-
-                tile.on("pointerover", () => tile.setTint(0xaaaaaa));
-                tile.on("pointerout", () => tile.clearTint());
             }
 
             // 🧩 Добавляем ВСЕ уровни в массив координат
@@ -212,6 +212,81 @@ export class MainMenu extends Scene {
         );
         logo.setOrigin(0.5);
         logo.setDepth(1);
+
+        if (this.isShowInfo) {
+            this.isInputLocked = true;
+
+            const overlay = this.add.image(
+                this.cameras.main.centerX,
+                this.cameras.main.centerY,
+                "tutorial_overlay"
+            );
+            overlay.setDisplaySize(
+                this.cameras.main.width + 10,
+                this.cameras.main.height + 10
+            );
+            overlay.setOrigin(0.5);
+            overlay.setDepth(100);
+
+            const bgInfo = this.add.image(
+                this.cameras.main.centerX,
+                this.cameras.main.centerY - 20,
+                "info_bg"
+            );
+            bgInfo.setDisplaySize(300, 244);
+            bgInfo.setOrigin(0.5);
+            bgInfo.setDepth(1001);
+
+            const infoTitle = this.add.text(
+                this.cameras.main.centerX,
+                this.cameras.main.centerY - 85,
+                "Это бета-версия игры, возможны ошибки",
+                {
+                    font: "800 20px Nunito",
+                    color: "#ffffff",
+                    align: "center",
+                    wordWrap: { width: 300 },
+                }
+            );
+            infoTitle.setOrigin(0.5);
+            infoTitle.setDepth(1002);
+            infoTitle.setResolution(2);
+
+            const infoText = this.add.text(
+                this.cameras.main.centerX,
+                this.cameras.main.centerY - 35,
+                "Мы продолжаем улучшать игру, чтобы играть было приятнее!",
+                {
+                    font: "600 16px Nunito",
+                    color: "#ffffff",
+                    align: "center",
+                    wordWrap: { width: 300 },
+                }
+            );
+            infoText.setOrigin(0.5);
+            infoText.setDepth(1002);
+            infoText.setResolution(2);
+
+            const infoBtn = this.add
+                .image(
+                    this.cameras.main.centerX,
+                    this.cameras.main.centerY + 40,
+                    "info_btn"
+                )
+                .setOrigin(0.5)
+                .setDisplaySize(196, 48)
+                .setDepth(1002)
+                .setInteractive({ useHandCursor: true })
+                .on("pointerdown", () => {
+                    this.isInputLocked = false;
+                    window.localStorage.setItem(
+                        "isShowInfo",
+                        JSON.stringify(false)
+                    );
+                    this.scene.stop("MainMenu", {});
+                    this.scene.start("MainMenu", {});
+                });
+        }
 
         if (this.gameOver) {
             this.puzzleFull = this.add.image(centerX, centerY, "puzzle_full");
@@ -280,7 +355,7 @@ export class MainMenu extends Scene {
                         );
                     }
                     this.completedCount++;
-                    console.log(this.completedCount);
+
                     window.localStorage.setItem(
                         "completedCount",
                         JSON.stringify(this.completedCount)
@@ -311,10 +386,16 @@ export class MainMenu extends Scene {
             this.isFirstLaunch = false;
         }
 
+        this.isShowInfo = JSON.parse(window.localStorage.getItem("isShowInfo"));
+        if (this.isShowInfo === null) {
+            this.isShowInfo = false;
+            window.localStorage.setItem("isShowInfo", JSON.stringify(false));
+        }
+
         this.isFirstLevelPlay = JSON.parse(
             window.localStorage.getItem("isFirstLevelPlay")
         );
-        console.log(this.isFirstLevelPlay);
+
         if (this.isFirstLevelPlay === null) {
             this.isFirstLevelPlay = true;
             window.localStorage.setItem(
