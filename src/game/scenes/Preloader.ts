@@ -7,33 +7,140 @@ export class Preloader extends Scene {
 
     init() {
         const { width, height } = this.scale;
-        //  We loaded this image in our Boot Scene, so we can display it here
-        // this.add.image(width / 2, height / 2, "background");
 
-        //  A simple progress bar. This is the outline of the bar.
-        this.add
-            .rectangle(width / 2, height / 2, 468, 32)
-            .setStrokeStyle(1, 0xffffff);
+        const logo = this.add.image(this.cameras.main.centerX, 50, "logo");
 
-        //  This is the progress bar itself. It will increase in size from the left based on the % of progress.
-        const bar = this.add.rectangle(
-            width / 2 - 230,
-            height / 2,
-            4,
-            28,
-            0xffffff
+        logo.setOrigin(0.5);
+        logo.setDepth(10);
+
+        const title = this.add.text(
+            this.cameras.main.centerX,
+            140,
+            "НАЗВАНИЕ ИГРЫ",
+            {
+                font: "800 56px Nunito",
+                color: "#ffffff",
+                align: "center",
+                wordWrap: { width: 325 },
+            }
         );
+        title.setOrigin(0.5);
+        title.setResolution(2);
 
-        //  Use the 'progress' event emitted by the LoaderPlugin to update the loading bar
+        const energy = this.add.image(
+            this.cameras.main.centerX - 70,
+            this.cameras.main.centerY - 30,
+            "preloader_energy"
+        );
+        energy.setOrigin(0.5);
+        energy.setScale(0.333);
+        energy.setDepth(2);
+
+        const smartphone = this.add.image(
+            this.cameras.main.centerX + 55,
+            this.cameras.main.centerY + 15,
+            "preloader_smartphone"
+        );
+        smartphone.setOrigin(0.5);
+        smartphone.setScale(0.333);
+        smartphone.setDepth(2);
+
+        const sim = this.add.image(
+            this.cameras.main.centerX - 70,
+            this.cameras.main.centerY + 140,
+            "preloader_sim"
+        );
+        sim.setOrigin(0.5);
+        sim.setScale(0.333);
+        sim.setDepth(2);
+
+        const rays = this.add.image(
+            this.cameras.main.centerX + 50,
+            this.cameras.main.centerY,
+            "win_bg"
+        );
+        const barBg = this.add.image(
+            this.cameras.main.centerX,
+            this.cameras.main.height - 80,
+            "preloader_bar_bg"
+        );
+        barBg.setOrigin(0.5);
+        barBg.setDisplaySize(240, 28);
+
+        // const bar = this.add.image(
+        //     this.cameras.main.centerX - 110,
+        //     this.cameras.main.height - 80,
+        //     "preloader_bar_progress"
+        // );
+        // bar.setOrigin(0, 0.5);
+        // bar.setDisplaySize(4, 28);
+
+        // this.load.on("progress", (progress: number) => {
+        //     bar.setDisplaySize(4 + 240 * progress, 28);
+        // });
+
+        // Настроим размеры
+        const totalBarWidth = 240;
+        const barHeight = 28;
+        const barRadius = 15; // радиус скругления углов
+
+        // Создаём графику для прогресс-бара
+        const barGraphics = this.add.graphics();
+        barGraphics.setDepth(2);
+
+        // Стартовая ширина — почти 0
+        let currentProgressWidth = 4;
+
+        // Функция перерисовки полоски
+        function drawProgressBar(progress: number) {
+            // Очищаем старый рисунок
+            barGraphics.clear();
+
+            // Устанавливаем цвет заливки
+            barGraphics.fillStyle(0xffffff, 1);
+
+            // Вычисляем новую ширину
+            currentProgressWidth = 4 + totalBarWidth * progress;
+
+            const safeWidth = Math.max(currentProgressWidth, barRadius * 2);
+
+            // Координаты для центра
+            const barX = width / 2 - totalBarWidth / 2;
+            const barY = height - 80 - barHeight / 2;
+
+            // Рисуем скруглённый прямоугольник
+            barGraphics.fillRoundedRect(
+                barX,
+                barY,
+                safeWidth,
+                barHeight,
+                barRadius
+            );
+        }
+
+        const progressText = this.add.text(
+            this.cameras.main.centerX,
+            this.cameras.main.height - 80,
+            "0%",
+            { font: "800 16px Nunito" }
+        );
+        progressText.setOrigin(0.5);
+        progressText.setDepth(3);
+
+        // Подписываемся на событие загрузки
         this.load.on("progress", (progress: number) => {
-            //  Update the progress bar (our bar is 464px wide, so 100% = 464px)
-            bar.width = 4 + 460 * progress;
+            const percent = Math.round(progress * 100);
+            progressText.setText(`${percent}%`);
+            if (percent >= 50) {
+                progressText.setColor("#1394db");
+            } else {
+                progressText.setColor("#dbeeff");
+            }
+            drawProgressBar(progress);
         });
     }
 
     preload() {
-        (this.textures as any).setFilter?.("nearest");
-        //  Load the assets for the game - Replace with your own assets
         this.load.setPath("assets");
         this.load.image("tile_bg", "tile_bg.png");
         this.load.image("phone", "phone.png");
@@ -56,10 +163,10 @@ export class Preloader extends Scene {
         this.load.image("easy", "easy_level_bg.png");
         this.load.image("medium", "medium_level_bg.png");
         this.load.image("hard", "hard_level_bg.png");
-        this.load.image("logo", "logo.png");
+
         this.load.image("gift", "gift.png");
         this.load.image("tile_green", "tile_green.png");
-        this.load.image("win_bg", "win_bg.png");
+
         this.load.image("puzzle_1", "puzzle_1.png");
         this.load.image("puzzle_2", "puzzle_2.png");
         this.load.image("puzzle_3", "puzzle_3.png");
@@ -117,10 +224,6 @@ export class Preloader extends Scene {
     }
 
     create() {
-        //  When all the assets have loaded, it's often worth creating global objects here that the rest of the game can use.
-        //  For example, you can define global animations here, so we can use them in other scenes.
-
-        //  Move to the MainMenu. You could also swap this for a Scene Transition, such as a camera fade.
         this.scene.start("MainMenu");
     }
 }

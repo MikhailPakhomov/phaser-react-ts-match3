@@ -91,7 +91,7 @@ export class Pause extends Scene {
             .on("pointerdown", () => {
                 this.scene.stop("Pause");
                 this.scene.stop("Game");
-                this.scene.start("MainMenu");
+                this.scene.start("MainMenu", { revealPiece: null });
             });
 
         const pauseBg = this.add

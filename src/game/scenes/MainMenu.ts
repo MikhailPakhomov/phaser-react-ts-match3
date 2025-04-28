@@ -305,6 +305,7 @@ export class MainMenu extends Scene {
         }
 
         if (this.levelId) {
+            console.log(this.levelId);
             this.puzzle = this.add.image(
                 centerX,
                 centerY - 100,

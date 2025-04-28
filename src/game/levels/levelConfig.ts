@@ -1533,7 +1533,7 @@ export const levelConfigs: LevelConfig[] = [
         difficult: "easy",
         elements: ["smartphone", "energy", "message"],
         goals: [
-            { type: "box", count: 6 },
+            { type: "box_full", count: 6 },
             { type: "smartphone", count: 20 },
         ],
         grid: [
@@ -1869,5 +1869,4 @@ export const levelConfigs: LevelConfig[] = [
             ],
         ],
     },
-
 ];

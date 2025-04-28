@@ -260,7 +260,7 @@ export class WinScene extends Scene {
             .setOrigin(0.5);
 
         this.add
-            .text(centerX, centerY + 55, `Ты прошел все уровни`, {
+            .text(centerX, centerY + 55, `          прошел все уровни`, {
                 font: "600 18px Nunito",
                 color: "#ffffff",
             })
