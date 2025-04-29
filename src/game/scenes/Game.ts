@@ -662,10 +662,6 @@ export class Game extends Scene {
         const x = tile.getData("gridX");
         const y = tile.getData("gridY");
 
-        // ✨ ЭФФЕКТ: Простые партиклы
-
-        // Ждём эффект увеличения перед удалением
-
         if (goal) {
             // 🎯 Целевой — полёт к цели
             tile.setVisible(false);
@@ -691,6 +687,7 @@ export class Game extends Scene {
                     duration: 550,
                     ease: "Cubic.easeIn",
                     onComplete: () => {
+                        console.log(type);
                         this.updateGoalProgress(type);
                         this.checkWin();
                         clone.destroy();
@@ -788,9 +785,6 @@ export class Game extends Scene {
 
         particles.setPosition(x, y);
         particles.setDepth(1000);
-
-       
-
 
         this.time.delayedCall(500, () => {
             particles.destroy();
@@ -1326,7 +1320,7 @@ export class Game extends Scene {
         };
 
         if (sprite instanceof Phaser.GameObjects.Container) {
-            sprite.destroy(); // Удаляем спрайт ракеты сразу
+            sprite.destroy();
         }
 
         if (type === "horizontalHelper") {
@@ -1412,7 +1406,7 @@ export class Game extends Scene {
         const spacing = this.gap;
         const baseY = this.offsetY + row * (cellSize + spacing) + cellSize / 2;
 
-        // 💥 Пульсация без scale
+  
         await tweenPromise(this, {
             targets: origin,
             duration: 100,
@@ -1479,6 +1473,7 @@ export class Game extends Scene {
                                     : this.levelConfig.goals.includes(type);
 
                             if (isTarget) {
+                                console.log(isTarget);
                                 await this.animateAndRemoveMatchesGoals(
                                     tile,
                                     this.cellSize * this.scaleFactor - 5
@@ -1833,9 +1828,7 @@ export class Game extends Scene {
             }
         };
 
-        // Удаляем подходящие фишки
-        // Шаг 1: Собираем все совпадающие обычные фишки
-        // Шаг 1: Собираем все совпадающие обычные фишки
+
         const matchedTiles: Phaser.GameObjects.Sprite[] = [];
 
         for (let y = 0; y < this.grid.length; y++) {
@@ -1877,7 +1870,6 @@ export class Game extends Scene {
         const targetSize = cellSize * this.scaleFactor - 5;
         const highlightSize = targetSize * 1.2;
 
-        // Шаг 2: Подсветка — увеличиваем displaySize (и возвращаем обратно)
         await Promise.all(
             matchedTiles.map((tile) =>
                 tweenPromise(this, {
@@ -1896,7 +1888,7 @@ export class Game extends Scene {
             )
         );
 
-        // Шаг 3: Полёт к целям — все одновременно
+    
         matchedTiles.forEach((tile) => {
             this.animateAndRemoveMatchesGoals(tile, targetSize, tweenPromises);
         });
@@ -1916,11 +1908,11 @@ export class Game extends Scene {
             })
         );
 
-        // Шаг 4: Дожидаемся завершения всех анимаций
+       
 
         await Promise.all(tweenPromises);
 
-        // Шаг 5: Продолжаем
+       
         if (helpersToActivate.length > 0) {
             await this.activateHelperChain(helpersToActivate);
             return;

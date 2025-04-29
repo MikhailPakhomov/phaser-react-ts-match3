@@ -13,9 +13,11 @@ export class MainMenu extends Scene {
     isFirstLevelPlay!: boolean;
     isFirstLaunch!: boolean;
     isShowInfo!: boolean;
+    isShowInfoPromo!: boolean;
     levelId!: number | undefined;
     levelsArray!: LevelConfig[];
     gameOver!: boolean;
+    isFinal!: boolean;
     background: GameObjects.Image;
     logo: GameObjects.Image;
     logoTween: Phaser.Tweens.Tween | null;
@@ -175,14 +177,20 @@ export class MainMenu extends Scene {
                             this.scene.start("Game", {
                                 config: level,
                             });
+
+                            //Тест экрана победы
+                            // this.scene.start("WinScene", {
+                            //     levelId: level.id,
+                            //     difficult: level.difficult,
+                            // });
+
+                            //Тест экрана промокода
+                            // this.scene.start("WinScene", {
+                            //     isFinal: true,
+                            // });
+                            //Тест экрана поражения
+                            // this.scene.start("LoseScene", {});
                         }
-
-                        // this.scene.start("WinScene", {
-                        //     levelId: level.id,
-                        //     difficult: level.difficult,
-                        // });
-
-                        // this.scene.start("LoseScene", {});
                     }
                 );
 
@@ -195,7 +203,6 @@ export class MainMenu extends Scene {
                     .setOrigin(0.5);
             }
 
-            // 🧩 Добавляем ВСЕ уровни в массив координат
             this.coordsLevels[index] = {
                 x,
                 y,
@@ -288,6 +295,14 @@ export class MainMenu extends Scene {
                 });
         }
 
+        if (this.isFinal && this.completedCount === 25) {
+            this.scene.stop("MainMenu", {});
+            this.scene.start("WinScene", {
+                isFinal: true,
+            });
+            return;
+        }
+
         if (this.gameOver) {
             this.puzzleFull = this.add.image(centerX, centerY, "puzzle_full");
             this.puzzleFull.setDisplaySize(320, 360);
@@ -300,6 +315,78 @@ export class MainMenu extends Scene {
                 alpha: 1,
                 duration: 1200,
                 ease: "Cubic.easeInOut",
+                onComplete: () => {
+                    setTimeout(() => {
+                        this.isInputLocked = true;
+
+                        const overlay = this.add.image(
+                            this.cameras.main.centerX,
+                            this.cameras.main.centerY,
+                            "tutorial_overlay"
+                        );
+                        overlay.setDisplaySize(
+                            this.cameras.main.width + 10,
+                            this.cameras.main.height + 10
+                        );
+                        overlay.setOrigin(0.5);
+                        overlay.setDepth(100);
+
+                        const bgInfo = this.add.image(
+                            this.cameras.main.centerX,
+                            this.cameras.main.centerY - 20,
+                            "info_promo_bg"
+                        );
+                        bgInfo.setDisplaySize(300, 512);
+                        bgInfo.setOrigin(0.5);
+                        bgInfo.setDepth(1001);
+
+                        const infoPromoTitle = this.add.text(
+                            this.cameras.main.centerX,
+                            this.cameras.main.centerY - 230,
+                            "Инструкция по активации промокода",
+                            {
+                                font: "800 20px Nunito",
+                                color: "#ffffff",
+                                align: "center",
+                                wordWrap: { width: 252 },
+                            }
+                        );
+                        infoPromoTitle.setOrigin(0.5);
+                        infoPromoTitle.setDepth(1001);
+                        infoPromoTitle.setResolution(2);
+
+                        const infoPromoText = this.add.text(
+                            this.cameras.main.centerX,
+                            this.cameras.main.centerY - 70,
+                            "1. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. \n2. Aenean commodo ligula eget dolor. Aenean massa. \n3. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.\n4. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim.\n5. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu.",
+                            {
+                                font: "600 16px Nunito",
+                                color: "#ffffff",
+                                wordWrap: { width: 252 },
+                            }
+                        );
+
+                        infoPromoText.setOrigin(0.5);
+                        infoPromoText.setDepth(1001);
+                        infoPromoText.setResolution(2);
+
+                        const activateBtn = this.add.image(
+                            this.cameras.main.centerX,
+                            this.cameras.main.centerY + 120,
+                            "activate_btn"
+                        );
+                        activateBtn.setOrigin(0.5);
+                        activateBtn.setDepth(10001);
+
+                        const toMainBtn = this.add.image(
+                            this.cameras.main.centerX,
+                            this.cameras.main.centerY + 180,
+                            "to_main_btn"
+                        );
+                        toMainBtn.setOrigin(0.5);
+                        toMainBtn.setDepth(10001);
+                    }, 3000);
+                },
             });
             return;
         }
@@ -319,13 +406,11 @@ export class MainMenu extends Scene {
                 return level.id === this.levelId;
             });
 
-            // 💥 Отключаем интерактив и удаляем надпись сразу
             if (currentLevelcoords) {
                 currentLevelcoords.tile.disableInteractive();
                 currentLevelcoords.label.destroy();
             }
 
-            // 🧩 Анимация вставки фрагмента
             this.tweens.add({
                 targets: this.puzzle,
                 x: currentLevelcoords?.x,
@@ -334,13 +419,11 @@ export class MainMenu extends Scene {
                 duration: 700,
                 ease: "Cubic.easeInOut",
                 onComplete: () => {
-                    // 🧼 Полностью удаляем тайл после завершения (на всякий случай)
                     currentLevelcoords?.tile.destroy();
                     this.coordsLevels = this.coordsLevels.filter(
                         (entry) => entry.id !== this.levelId
                     );
 
-                    // 💾 Обновление localStorage
                     const levels = JSON.parse(
                         window.localStorage.getItem("levels")
                     );
@@ -374,8 +457,22 @@ export class MainMenu extends Scene {
         EventBus.emit("current-scene-ready", this);
     }
 
-    init(data: { revealPiece?: number }) {
+    init(data: { revealPiece?: number; isShowInfoPromo?: boolean }) {
         this.levelId = data.revealPiece;
+
+        if (data.isShowInfoPromo) {
+            this.isShowInfoPromo = data.isShowInfoPromo;
+        }
+
+        if (data.isShowInfoPromo) {
+            this.isFinal = false;
+        } else {
+            this.isFinal = JSON.parse(window.localStorage.getItem("isFinal"));
+            if (this.isFinal === null) {
+                this.isFinal = false;
+                window.localStorage.setItem("isFinal", JSON.stringify(false));
+            }
+        }
 
         this.isFirstLaunch = JSON.parse(
             window.localStorage.getItem("isFirstLaunch")

@@ -28,7 +28,7 @@ export class Preloader extends Scene {
         title.setResolution(2);
 
         const energy = this.add.image(
-            this.cameras.main.centerX - 70,
+            this.cameras.main.centerX - 90,
             this.cameras.main.centerY - 30,
             "preloader_energy"
         );
@@ -67,48 +67,27 @@ export class Preloader extends Scene {
         barBg.setOrigin(0.5);
         barBg.setDisplaySize(240, 28);
 
-        // const bar = this.add.image(
-        //     this.cameras.main.centerX - 110,
-        //     this.cameras.main.height - 80,
-        //     "preloader_bar_progress"
-        // );
-        // bar.setOrigin(0, 0.5);
-        // bar.setDisplaySize(4, 28);
-
-        // this.load.on("progress", (progress: number) => {
-        //     bar.setDisplaySize(4 + 240 * progress, 28);
-        // });
-
-        // Настроим размеры
         const totalBarWidth = 240;
         const barHeight = 28;
-        const barRadius = 15; // радиус скругления углов
+        const barRadius = 15;
 
-        // Создаём графику для прогресс-бара
         const barGraphics = this.add.graphics();
         barGraphics.setDepth(2);
 
-        // Стартовая ширина — почти 0
         let currentProgressWidth = 4;
 
-        // Функция перерисовки полоски
         function drawProgressBar(progress: number) {
-            // Очищаем старый рисунок
             barGraphics.clear();
 
-            // Устанавливаем цвет заливки
             barGraphics.fillStyle(0xffffff, 1);
 
-            // Вычисляем новую ширину
             currentProgressWidth = 4 + totalBarWidth * progress;
 
             const safeWidth = Math.max(currentProgressWidth, barRadius * 2);
 
-            // Координаты для центра
             const barX = width / 2 - totalBarWidth / 2;
             const barY = height - 80 - barHeight / 2;
 
-            // Рисуем скруглённый прямоугольник
             barGraphics.fillRoundedRect(
                 barX,
                 barY,
@@ -221,6 +200,10 @@ export class Preloader extends Scene {
 
         this.load.image("info_bg", "info_bg.png");
         this.load.image("info_btn", "info_btn.png");
+
+        this.load.image("info_promo_bg", "info_promo_bg.png");
+        this.load.image("to_main_btn", "to_main_btn.png");
+        this.load.image("activate_btn", "activate_btn.png");
     }
 
     create() {

@@ -40,7 +40,6 @@ export class WinScene extends Scene {
         rays.setAlpha(0.9);
         rays.setOrigin(0.5);
 
-        // 🌞 Появление + медленное вращение и пульсация
         this.tweens.add({
             targets: rays,
             alpha: 0.8,
@@ -48,7 +47,6 @@ export class WinScene extends Scene {
             ease: "Power1",
         });
 
-        // 🌀 Медленное вращение (едва заметное)
         this.tweens.add({
             targets: rays,
             angle: 360,
@@ -57,7 +55,6 @@ export class WinScene extends Scene {
             repeat: -1,
         });
 
-        // 💫 Лёгкая пульсация масштаба
         this.tweens.add({
             targets: rays,
             scale: { from: 1, to: 1.2 },
@@ -115,8 +112,10 @@ export class WinScene extends Scene {
     private nextStep() {
         if (this.isFinal) {
             this.scene.stop("WinScene");
-            this.scene.start("MainMenu");
+            this.scene.start("MainMenu", {isShowInfoPromo: true});
             window.localStorage.setItem("gameOver", JSON.stringify(true));
+            window.localStorage.setItem("isFinal", JSON.stringify(true));
+            
         } else {
             this.scene.stop("WinScene");
             this.scene.start("MainMenu", {
@@ -239,6 +238,81 @@ export class WinScene extends Scene {
                     yoyo: true,
                     repeat: -1,
                 });
+
+                const energy1 = this.add.sprite(
+                    centerX + 55,
+                    centerY - 250,
+                    "energy"
+                );
+                const energy2 = this.add.sprite(
+                    centerX - 85,
+                    centerY - 80,
+                    "energy"
+                );
+                const energy3 = this.add.sprite(
+                    centerX + 85,
+                    centerY - 70,
+                    "energy"
+                );
+                energy1.setScale(0);
+                energy2.setScale(0);
+                energy3.setScale(0);
+
+                energy1.setAngle(20);
+                energy2.setAngle(-20);
+                energy3.setAngle(20);
+
+                this.tweens.add({
+                    targets: energy1,
+                    scale: 0.29,
+                    duration: 1000,
+                    ease: "Cubic.easeInOut",
+                    onComplete: () => {
+                        this.tweens.add({
+                            targets: energy1,
+                            scale: { from: 0.29, to: 0.44 },
+                            angle: { from: 20, to: 40 },
+                            repeat: -1,
+                            yoyo: true,
+                            duration: 2000,
+                            ease: "Cubic.easeInOut",
+                        });
+                    },
+                });
+                this.tweens.add({
+                    targets: energy2,
+                    scale: 0.25,
+                    duration: 1000,
+                    ease: "Cubic.easeInOut",
+                    onComplete: () => {
+                        this.tweens.add({
+                            targets: energy2,
+                            scale: { from: 0.25, to: 0.33 },
+                            angle: { from: -20, to: -40 },
+                            duration: 2000,
+                            repeat: -1,
+                            yoyo: true,
+                            ease: "Cubic.easeInOut",
+                        });
+                    },
+                });
+                this.tweens.add({
+                    targets: energy3,
+                    scale: 0.18,
+                    duration: 1000,
+                    ease: "Cubic.easeInOut",
+                    onComplete: () => {
+                        this.tweens.add({
+                            targets: energy3,
+                            scale: { from: 0.18, to: 0.28 },
+                            angle: { from: 20, to: 40 },
+                            duration: 2000,
+                            repeat: -1,
+                            yoyo: true,
+                            ease: "Cubic.easeInOut",
+                        });
+                    },
+                });
             },
         });
 
@@ -260,16 +334,17 @@ export class WinScene extends Scene {
             .setOrigin(0.5);
 
         this.add
-            .text(centerX, centerY + 55, `          прошел все уровни`, {
-                font: "600 18px Nunito",
-                color: "#ffffff",
-            })
-            .setOrigin(0.5);
-        this.add
-            .text(centerX, centerY + 75, `Держи промокод`, {
-                font: "600 18px Nunito",
-                color: "#ffffff",
-            })
+            .text(
+                centerX,
+                centerY + 55,
+                "Получи крутой промокод за полное прохождение игры",
+                {
+                    font: "600 18px Nunito",
+                    color: "#ffffff",
+                    align: "center",
+                    wordWrap: { width: 278 },
+                }
+            )
             .setOrigin(0.5);
 
         const copyBg = this.add.image(0, 0, "copy_bg");
@@ -318,6 +393,11 @@ export class WinScene extends Scene {
                         copyText.setText("Скопировано");
                         copyText.setPosition(-75, 10);
                         copyText.setOrigin(0.5);
+
+                        setTimeout(() => {
+                            copyText.setText("Скопировать промокод");
+                            copyText.setPosition(-50, 10);
+                        }, 3000);
                     })
                     .catch((err) => {
                         console.error("Ошибка копирования:", err);
