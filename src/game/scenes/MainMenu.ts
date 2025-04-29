@@ -377,15 +377,19 @@ export class MainMenu extends Scene {
                         );
                         activateBtn.setOrigin(0.5);
                         activateBtn.setDepth(10001);
+                        activateBtn.on("pointerdown", () => {
+                            window.open("https://www.yota.ru/");
+                        });
 
                         const toMainBtn = this.add.image(
                             this.cameras.main.centerX,
                             this.cameras.main.centerY + 180,
-                            "to_main_btn"
+                            "main_menu_btn"
                         );
                         toMainBtn.setOrigin(0.5);
                         toMainBtn.setDepth(10001);
                     }, 3000);
+                    
                 },
             });
             return;

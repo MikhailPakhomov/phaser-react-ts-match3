@@ -202,7 +202,7 @@ export class Preloader extends Scene {
         this.load.image("info_btn", "info_btn.png");
 
         this.load.image("info_promo_bg", "info_promo_bg.png");
-        this.load.image("to_main_btn", "to_main_btn.png");
+       
         this.load.image("activate_btn", "activate_btn.png");
     }
 
