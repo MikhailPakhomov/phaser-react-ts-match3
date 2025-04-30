@@ -317,8 +317,6 @@ export class MainMenu extends Scene {
                 ease: "Cubic.easeInOut",
                 onComplete: () => {
                     setTimeout(() => {
-                        this.isInputLocked = true;
-
                         const overlay = this.add.image(
                             this.cameras.main.centerX,
                             this.cameras.main.centerY,
@@ -375,9 +373,13 @@ export class MainMenu extends Scene {
                             this.cameras.main.centerY + 120,
                             "activate_btn"
                         );
+                        console.log(this.isInputLocked);
                         activateBtn.setOrigin(0.5);
-                        activateBtn.setDepth(10001);
+                        activateBtn.setDepth(1001);
+                        activateBtn.setScale(0.333);
+                        activateBtn.setInteractive({ useHandCursor: true });
                         activateBtn.on("pointerdown", () => {
+                            console.log(111);
                             window.open("https://www.yota.ru/");
                         });
 
@@ -387,9 +389,18 @@ export class MainMenu extends Scene {
                             "main_menu_btn"
                         );
                         toMainBtn.setOrigin(0.5);
-                        toMainBtn.setDepth(10001);
-                    }, 3000);
-                    
+                        toMainBtn.setScale(0.333);
+                        toMainBtn.setDepth(1001);
+                        toMainBtn.setInteractive({ useHandCursor: true });
+                        toMainBtn.on("pointerdown", () => {
+                            overlay.destroy();
+                            bgInfo.destroy();
+                            infoPromoTitle.destroy();
+                            infoPromoText.destroy();
+                            activateBtn.destroy();
+                            toMainBtn.destroy();
+                        });
+                    }, 2000);
                 },
             });
             return;

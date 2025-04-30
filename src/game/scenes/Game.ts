@@ -1178,7 +1178,7 @@ export class Game extends Scene {
             this.updateMovesUI();
         }
 
-        this.cameras.main.shake(200, 0.02);
+
         this.cameras.main.flash(150, 200, 220, 255);
 
         const x = sprite.getData("gridX");
@@ -1296,6 +1296,7 @@ export class Game extends Scene {
                 damageBoxAt
             );
         } else if (type === "discoball") {
+            this.cameras.main.shake(200, 0.02);
             if (!typeToRemove) {
                 await tweenPromise(this, {
                     targets: sprite,
@@ -2616,4 +2617,8 @@ export class Game extends Scene {
         this.offsetX = 0;
         this.offsetY = 0;
     }
+
+preload(){
+
+}
 }

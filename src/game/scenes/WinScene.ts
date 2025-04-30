@@ -112,10 +112,9 @@ export class WinScene extends Scene {
     private nextStep() {
         if (this.isFinal) {
             this.scene.stop("WinScene");
-            this.scene.start("MainMenu", {isShowInfoPromo: true});
+            this.scene.start("MainMenu", { isShowInfoPromo: true });
             window.localStorage.setItem("gameOver", JSON.stringify(true));
             window.localStorage.setItem("isFinal", JSON.stringify(true));
-            
         } else {
             this.scene.stop("WinScene");
             this.scene.start("MainMenu", {
@@ -331,7 +330,8 @@ export class WinScene extends Scene {
                 color: "#ffffff",
                 fontStyle: "bold",
             })
-            .setOrigin(0.5);
+            .setOrigin(0.5)
+            .setResolution(2);
 
         this.add
             .text(
@@ -345,7 +345,8 @@ export class WinScene extends Scene {
                     wordWrap: { width: 278 },
                 }
             )
-            .setOrigin(0.5);
+            .setOrigin(0.5)
+            .setResolution(2);
 
         const copyBg = this.add.image(0, 0, "copy_bg");
         copyBg.setDisplaySize(278, 68);
@@ -360,13 +361,15 @@ export class WinScene extends Scene {
             color: "#ffffff",
         });
         copyText.setOrigin(0.5);
+        copyText.setResolution(2);
 
         const promoText = this.add
             .text(-65, -10, code, {
                 font: "800 20px Nunito",
                 color: "#ffffff",
             })
-            .setOrigin(0.5);
+            .setOrigin(0.5)
+            .setResolution(2);
 
         const copyContainer = this.add.container(centerX, centerY + 140, [
             copyBg,
