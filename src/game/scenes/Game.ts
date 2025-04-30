@@ -751,13 +751,13 @@ export class Game extends Scene {
         const particles = this.add.particles(0, 0, textureKey, {
             x: { min: -12, max: 12 },
             y: { min: -12, max: 12 },
-            speed: { min: 20, max: 60 },
+            speed: { min: 10, max: 20 },
             angle: { min: 0, max: 360 },
             scale: { start: 0.8, end: 0 },
             alpha: { start: 0.8, end: 0 },
-            lifespan: 700,
+            lifespan: 200,
             gravityY: 50,
-            quantity: 15,
+            quantity: 5,
             blendMode: "NORMAL", // сохраняем цвет
         });
 
