@@ -68,7 +68,6 @@ export class Game extends Scene {
         sprite.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
             if (this.isInputLocked) return;
 
-           
             const iceData = sprite.getData("ice");
             if (iceData && iceData.strength > 0) return;
 
@@ -141,7 +140,6 @@ export class Game extends Scene {
                 return;
             }
 
-            
             const selectedAnimation = {
                 targets: tile,
                 displayWidth: baseSize * 1.1,
@@ -260,7 +258,6 @@ export class Game extends Scene {
         tileA: Phaser.GameObjects.Sprite,
         tileB: Phaser.GameObjects.Sprite
     ) {
-        
         const xA = tileA.getData("gridX");
         const yA = tileA.getData("gridY");
         const xB = tileB.getData("gridX");
@@ -271,7 +268,6 @@ export class Game extends Scene {
             tileB: { x: xB, y: yB },
         };
 
-       
         this.grid[yA][xA] = tileB;
         this.grid[yB][xB] = tileA;
 
@@ -378,7 +374,6 @@ export class Game extends Scene {
         const isDiscoA = typeA === "discoball";
         const isDiscoB = typeB === "discoball";
 
-        
         if (isDiscoA && !isDiscoB) {
             await this.basicSwap(tileA, tileB);
             await tweenPromise(this, {
@@ -403,7 +398,6 @@ export class Game extends Scene {
             return;
         }
 
-   
         if (isHelperA && isHelperB) {
             await this.activateHelperChain([tileA, tileB]);
             return;
@@ -593,7 +587,6 @@ export class Game extends Scene {
             }
         }
 
-    
         for (const group of matches) {
             for (const tile of group) {
                 if (handled.has(tile)) continue;
@@ -609,7 +602,7 @@ export class Game extends Scene {
                     if (tilesJustDamagedInFirstPass.has(tile)) {
                         continue;
                     }
-                
+
                     if (ice.strength > 1) {
                         ice.strength--;
                         if (iceSprite) iceSprite.setTexture("ice_cracked");
@@ -619,7 +612,7 @@ export class Game extends Scene {
                         tile.setData("iceSprite", null);
                     }
                     damagedTiles.add(tile);
-                    continue; 
+                    continue;
                 }
 
                 if (this.grid[y][x] === tile) {
@@ -663,9 +656,8 @@ export class Game extends Scene {
         const y = tile.getData("gridY");
 
         if (goal) {
-            
             tile.setVisible(false);
-            
+
             const clone = this.add.sprite(
                 tile.x,
                 tile.y,
@@ -673,7 +665,7 @@ export class Game extends Scene {
             );
             clone.setDisplaySize(size, size);
             clone.setDepth(1000);
-           
+
             const targetX = goal.icon.x;
             const targetY = goal.icon.y;
             this.spawnTileParticles(tile.x, tile.y, type);
@@ -701,7 +693,6 @@ export class Game extends Scene {
                 })
             );
         } else {
-            
             tile.setVisible(true);
             tile.setAlpha(1);
             tile.setDisplaySize(size, size);
@@ -743,9 +734,17 @@ export class Game extends Scene {
         }
     }
 
-
-
     spawnTileParticles(x: number, y: number, type: string) {
+        const blackParticlesGraphics = this.make.graphics({
+            x: 0,
+            y: 0,
+            add: false,
+        });
+        blackParticlesGraphics.fillStyle(0x000000, 1);
+        blackParticlesGraphics.fillCircle(2, 2, 2);
+        blackParticlesGraphics.generateTexture(`particle_black`, 8, 8);
+        blackParticlesGraphics.destroy();
+
         const textureKey = `particle_${type}`;
 
         const particles = this.add.particles(0, 0, textureKey, {
@@ -761,10 +760,27 @@ export class Game extends Scene {
             blendMode: "NORMAL", // сохраняем цвет
         });
 
+        const blackParticles = this.add.particles(0, 0, `particle_black`, {
+            x: { min: -12, max: 12 },
+            y: { min: -12, max: 12 },
+            speed: { min: 10, max: 15 },
+            angle: { min: 0, max: 360 },
+            scale: { start: 0.8, end: 0 },
+            alpha: { start: 0.8, end: 0 },
+            lifespan: 10,
+            gravityY: 50,
+            quantity: 3,
+            blendMode: "NORMAL", // сохраняем цвет
+        });
+
+        blackParticles.setPosition(x, y);
+        blackParticles.setDepth(1000);
+
         particles.setPosition(x, y);
         particles.setDepth(1000);
 
         this.time.delayedCall(500, () => {
+            blackParticles.destroy();
             particles.destroy();
         });
     }
@@ -779,7 +795,6 @@ export class Game extends Scene {
     ): Promise<void> {
         const { tileA: oldA, tileB: oldB } = coords;
 
-       
         this.grid[oldA.y][oldA.x] = tileA;
         this.grid[oldB.y][oldB.x] = tileB;
 
@@ -827,16 +842,13 @@ export class Game extends Scene {
         const width = this.grid[0].length;
 
         for (let x = 0; x < width; x++) {
-           
             const col: (Phaser.GameObjects.Sprite | null)[] = [];
             for (let y = 0; y < height; y++) {
                 col.push(this.grid[y][x]);
             }
 
-           
             const newCol = Array(height).fill(null);
 
-            
             let insertY = height - 1;
 
             for (let y = height - 1; y >= 0; y--) {
@@ -844,7 +856,6 @@ export class Game extends Scene {
                 const currentKey = `${x},${y}`;
 
                 if (tile && !this.holePositions.has(currentKey)) {
-                    
                     while (
                         insertY >= 0 &&
                         this.holePositions.has(`${x},${insertY}`)
@@ -911,7 +922,6 @@ export class Game extends Scene {
         const tweenPromises: Promise<void>[] = [];
 
         for (let y = 0; y < this.rows; y++) {
-
             for (let x = 0; x < this.cols; x++) {
                 const posKey = `${x},${y}`;
                 if (!this.grid[y][x] && !this.holePositions.has(posKey)) {
@@ -1054,17 +1064,15 @@ export class Game extends Scene {
         } else if (type === "horizontalHelper") {
             sprite = this.createDoubleRocketHorizontal(posX, posY, 10);
         } else if (type === "discoball") {
-           
             const from = this.cellSize;
             const to = this.cellSize - 10;
 
             sprite = this.add.sprite(posX, posY, type);
             sprite.setOrigin(0.5);
-            sprite.setDisplaySize(from, from); 
+            sprite.setDisplaySize(from, from);
             sprite.setInteractive();
             sprite.setDepth(5);
 
-           
             await tweenPromise(this, {
                 targets: sprite,
                 duration: 300,
@@ -1081,7 +1089,6 @@ export class Game extends Scene {
                 },
             });
         } else {
-          
             sprite = this.add.sprite(posX, posY, type);
             sprite.setOrigin(0.5);
             sprite.setDisplaySize(cellSize * 0.6, cellSize * 0.6); // начальный размер
@@ -1089,7 +1096,6 @@ export class Game extends Scene {
             sprite.setDepth(5);
         }
 
-        
         sprite.setData("gridX", x);
         sprite.setData("gridY", y);
         sprite.setData("type", type);
@@ -1099,7 +1105,6 @@ export class Game extends Scene {
         this.setupPointerEvents(sprite);
         this.grid[y][x] = sprite;
 
-        
         if (sprite instanceof Phaser.GameObjects.Container) {
             const targets = sprite.list.filter(
                 (child) => "setDisplaySize" in child
@@ -1120,7 +1125,6 @@ export class Game extends Scene {
 
             await delayPromise(this, 200);
         } else if (type !== "discoball") {
-           
             const from = cellSize * 0.6;
             const to = cellSize;
 
@@ -1172,12 +1176,10 @@ export class Game extends Scene {
         tile?: Phaser.GameObjects.Sprite,
         triggerChain?: Set<Phaser.GameObjects.Sprite>
     ): Promise<void> {
-       
         if (this.remainingMoves >= 0) {
             this.remainingMoves--;
             this.updateMovesUI();
         }
-
 
         this.cameras.main.flash(150, 200, 220, 255);
 
@@ -1257,7 +1259,7 @@ export class Game extends Scene {
                             this.updateGoalProgress(
                                 tile.getData("type") + "_full"
                             );
-                            this.checkWin(); 
+                            this.checkWin();
                             tile.destroy();
                         },
                     });
@@ -1346,9 +1348,6 @@ export class Game extends Scene {
         this.checkWin();
     }
 
-
-
-
     async launchHorizontalRocketWithDamage(
         origin: Phaser.GameObjects.Container,
         col: number,
@@ -1361,10 +1360,10 @@ export class Game extends Scene {
         const cellSize = this.cellSize;
         const spacing = this.gap;
         const baseY = this.offsetY + row * (cellSize + spacing) + cellSize / 2;
-    
+
         const tweens: Promise<void>[] = [];
         const tilesToDestroyLater: Phaser.GameObjects.Sprite[] = [];
-    
+
         await tweenPromise(this, {
             targets: origin,
             duration: 100,
@@ -1379,45 +1378,45 @@ export class Game extends Scene {
                 origin.setAlpha(1 - progress); // исчезновение
             },
         });
-    
+
         origin.setAlpha(0);
-    
+
         const launchRocket = async (startX: number, direction: number) => {
             const rocket = this.add.sprite(startX, baseY, "rocket");
             rocket.setDisplaySize(37, 17);
             rocket.setOrigin(0.5);
             rocket.setAngle(direction < 0 ? 0 : 180);
             rocket.setDepth(999);
-    
+
             let x = col;
-    
+
             while (x >= 0 && x < this.grid[0].length) {
                 const targetX =
                     this.offsetX + x * (cellSize + spacing) + cellSize / 2;
-    
+
                 await tweenPromise(this, {
                     targets: rocket,
                     x: targetX,
                     duration: 20,
                     ease: "Linear",
                 });
-    
+
                 const tile = this.grid[row][x];
                 if (tile && tile !== origin) {
                     const tx = tile.getData("gridX");
                     const ty = tile.getData("gridY");
-    
+
                     const boxWasDamaged = damageBoxAt(tx, ty);
                     const iceWasDamaged = damageIceAt(tx, ty);
                     const stillHasBox = tile.getData("box");
                     const stillHasIce = tile.getData("ice");
-    
+
                     const canRemove =
                         !boxWasDamaged &&
                         !iceWasDamaged &&
                         !stillHasBox &&
                         !stillHasIce;
-    
+
                     if (canRemove) {
                         if (tile.getData("isHelper")) {
                             triggerHelper(tile);
@@ -1431,9 +1430,8 @@ export class Game extends Scene {
                                     : this.levelConfig.goals.some(
                                           (goal) => goal.type === type
                                       );
-                            
+
                             if (isTarget && !tile.getData("removing")) {
-                               
                                 await this.animateAndRemoveMatchesGoals(
                                     tile,
                                     this.cellSize * this.scaleFactor - 5,
@@ -1473,13 +1471,13 @@ export class Game extends Scene {
                         }
                     }
                 }
-    
+
                 x += direction;
             }
-    
+
             rocket.destroy();
         };
-    
+
         await Promise.all([
             launchRocket(
                 this.offsetX + col * (cellSize + spacing) + cellSize / 2,
@@ -1490,16 +1488,13 @@ export class Game extends Scene {
                 1
             ),
         ]);
-    
-      
+
         await Promise.all(tweens);
-    
-       
+
         for (const tile of tilesToDestroyLater) {
             tile.destroy();
         }
     }
-    
 
     async launchVerticalRocketWithDamage(
         origin: Phaser.GameObjects.Container,
@@ -1513,11 +1508,10 @@ export class Game extends Scene {
         const cellSize = this.cellSize;
         const spacing = this.gap;
         const baseX = this.offsetX + col * (cellSize + spacing) + cellSize / 2;
-    
+
         const tweens: Promise<void>[] = [];
         const tilesToDestroyLater: Phaser.GameObjects.Sprite[] = [];
-    
-      
+
         await tweenPromise(this, {
             targets: origin,
             duration: 100,
@@ -1527,46 +1521,46 @@ export class Game extends Scene {
                 origin.setAlpha(1 - progress);
             },
         });
-    
+
         origin.setAlpha(0);
-    
+
         const launchRocket = async (startY: number, direction: number) => {
             const rocket = this.add.sprite(baseX, startY, "rocket");
             rocket.setOrigin(0.5);
             rocket.setDisplaySize(37, 17);
-    
+
             rocket.setAngle(direction < 0 ? 90 : -90);
             rocket.setDepth(999);
-    
+
             let y = row;
-    
+
             while (y >= 0 && y < this.grid.length) {
                 const targetY =
                     this.offsetY + y * (cellSize + spacing) + cellSize / 2;
-    
+
                 await tweenPromise(this, {
                     targets: rocket,
                     y: targetY,
                     duration: 20,
                     ease: "Linear",
                 });
-    
+
                 const tile = this.grid[y][col];
                 if (tile && tile !== origin) {
                     const tx = tile.getData("gridX");
                     const ty = tile.getData("gridY");
-    
+
                     const boxWasDamaged = damageBoxAt(tx, ty);
                     const iceWasDamaged = damageIceAt(tx, ty);
                     const stillHasBox = tile.getData("box");
                     const stillHasIce = tile.getData("ice");
-    
+
                     const canRemove =
                         !boxWasDamaged &&
                         !iceWasDamaged &&
                         !stillHasBox &&
                         !stillHasIce;
-    
+
                     if (canRemove) {
                         if (tile.getData("isHelper")) {
                             triggerHelper(tile);
@@ -1580,7 +1574,7 @@ export class Game extends Scene {
                                     : this.levelConfig.goals.some(
                                           (goal) => goal.type === type
                                       );
-    
+
                             if (isTarget && !tile.getData("removing")) {
                                 await this.animateAndRemoveMatchesGoals(
                                     tile,
@@ -1621,13 +1615,13 @@ export class Game extends Scene {
                         }
                     }
                 }
-    
+
                 y += direction;
             }
-    
+
             rocket.destroy();
         };
-    
+
         await Promise.all([
             launchRocket(
                 this.offsetY + row * (cellSize + spacing) + cellSize / 2,
@@ -1638,16 +1632,13 @@ export class Game extends Scene {
                 1
             ),
         ]);
-    
-        
+
         await Promise.all(tweens);
-    
-       
+
         for (const tile of tilesToDestroyLater) {
             tile.destroy();
         }
     }
-    
 
     async activateDiscoballWithRandomNeighbor(
         sprite: Phaser.GameObjects.Sprite
@@ -1696,7 +1687,6 @@ export class Game extends Scene {
         if (neighbors.length > 0) {
             selectedTile = Phaser.Math.RND.pick(neighbors);
         } else {
-           
             const candidates: Phaser.GameObjects.Sprite[] = [];
             for (let row of this.grid) {
                 for (let tile of row) {
@@ -1729,7 +1719,6 @@ export class Game extends Scene {
                 yoyo: true,
             });
 
-            
             selectedTile.setDisplaySize(cellSize, cellSize);
 
             const finalTypeToRemove = selectedTile.getData("type");
@@ -1896,7 +1885,6 @@ export class Game extends Scene {
             this.animateAndRemoveMatchesGoals(tile, targetSize, tweenPromises);
         });
 
-       
         this.grid[centerY][centerX] = null;
 
         tweenPromises.push(
@@ -2049,7 +2037,6 @@ export class Game extends Scene {
                         continue;
                     }
 
-                    
                     const tween = new Promise<void>((resolve) => {
                         this.tweens.add({
                             targets: tile,
@@ -2069,7 +2056,7 @@ export class Game extends Scene {
                 }
             }
 
-            await Promise.all(tweenPromises); 
+            await Promise.all(tweenPromises);
             await this.dropTiles();
             await this.fillEmptyTiles();
         }
@@ -2221,10 +2208,8 @@ export class Game extends Scene {
         const panelHeight = 50;
         const cornerRadius = 16;
 
-
         const bgKey = `goalsPanelBg_${goals.length}`;
 
-      
         if (!this.textures.exists(bgKey)) {
             const graphics = this.make.graphics({ x: 0, y: 0, add: false });
             graphics.fillStyle(0x2ac5fc, 0.85);
@@ -2246,12 +2231,10 @@ export class Game extends Scene {
             graphics.destroy();
         }
 
-     
         const background = this.add.image(centerX, panelY, bgKey);
         background.setOrigin(0.5);
         background.setDepth(10);
 
-       
         const iconSpacing = 50;
         const totalWidth = (goals.length - 1) * iconSpacing;
         const startX = centerX - totalWidth / 2;
@@ -2311,7 +2294,6 @@ export class Game extends Scene {
         const remaining = Math.max(0, goal.target - goal.current);
         goal.text.setText(remaining.toString());
 
-        
         this.tweens.add({
             targets: goal.circle,
             scale: 1.2,
@@ -2404,7 +2386,7 @@ export class Game extends Scene {
             const graphics = this.make.graphics({ x: 0, y: 0, add: false });
             graphics.fillStyle(colorHex, 1);
             graphics.fillCircle(4, 4, 4);
-            graphics.generateTexture(`particle_${type}`, 8, 8); 
+            graphics.generateTexture(`particle_${type}`, 8, 8);
             graphics.destroy();
         }
 
@@ -2448,7 +2430,6 @@ export class Game extends Scene {
             availableHeight / gridHeight
         );
         this.scaleFactor = scaleFactor;
-       
 
         this.offsetX = (this.cameras.main.width / scaleFactor - gridWidth) / 2;
         this.offsetY =
@@ -2592,7 +2573,6 @@ export class Game extends Scene {
                 cols: this.cols,
             });
             this.scene.pause("Game");
-            
         });
 
         this.createGoalsPanel(this.levelConfig.goals);
@@ -2618,7 +2598,5 @@ export class Game extends Scene {
         this.offsetY = 0;
     }
 
-preload(){
-
-}
+    preload() {}
 }
