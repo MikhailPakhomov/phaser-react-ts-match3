@@ -126,7 +126,7 @@ export class WinScene extends Scene {
     private showLevelTile(centerX: number, centerY: number) {
         // 🔢 Плитка с номером уровня
         const tileSprite = this.add.sprite(0, 0, this.difficult);
-        tileSprite.setDisplaySize(172, 192);
+        tileSprite.setScale(1)
         tileSprite.setOrigin(0.5);
 
         const levelTextColor: ILevelTextColor = {
@@ -178,9 +178,9 @@ export class WinScene extends Scene {
                             centerY - 100,
                             `puzzle_${this.levelId}`
                         );
-                        this.backPiece.setDisplaySize(172, 192);
+                       
                         this.backPiece.setOrigin(0.5);
-                        this.backPiece.setScale(0, 1);
+                        this.backPiece.setScale(0,1);
                         this.backPiece.setVisible(true);
 
                         this.tweens.add({
@@ -358,7 +358,7 @@ export class WinScene extends Scene {
 
         const copyText = this.add.text(-50, 10, "Скопировать промокод", {
             font: "600 12px Nunito",
-            color: "#ffffff",
+            color: "#0083C4",
         });
         copyText.setOrigin(0.5);
         copyText.setResolution(2);
@@ -366,7 +366,7 @@ export class WinScene extends Scene {
         const promoText = this.add
             .text(-65, -10, code, {
                 font: "800 20px Nunito",
-                color: "#ffffff",
+                color: "#0083C4",
             })
             .setOrigin(0.5)
             .setResolution(2);

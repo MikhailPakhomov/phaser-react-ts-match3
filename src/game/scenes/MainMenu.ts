@@ -10,6 +10,7 @@ interface CoordLevel {
     label: GameObjects.Text;
 }
 export class MainMenu extends Scene {
+    mainMenuTitle: Phaser.GameObjects.Text;
     isFirstLevelPlay!: boolean;
     isFirstLaunch!: boolean;
     isShowInfo!: boolean;
@@ -78,7 +79,7 @@ export class MainMenu extends Scene {
         const cols = 5;
         const rows = 5;
         const cellWidth = 64;
-        const cellHeight = 72;
+        const cellHeight = 66;
         const spacing = 0;
 
         const gridWidth = cols * cellWidth + (cols - 1) * spacing;
@@ -97,28 +98,27 @@ export class MainMenu extends Scene {
 
         this.cameras.main.setZoom(scaleFactor);
 
-        this.add
-            .text(centerX, startY - 140, "Выбери уровень", {
-                font: "800 28px Nunito",
-                color: "#ffffff",
-                fontStyle: "bold",
-            })
-            .setResolution(2)
-            .setOrigin(0.5);
+        // this.add
+        //     .text(centerX, startY - 140, "Выбери уровень", {
+        //         font: "800 28px Nunito",
+        //         color: "#ffffff",
+        //         fontStyle: "bold",
+        //     })
+        //     .setResolution(2)
+        //     .setOrigin(0.5);
 
-        this.add
-            .text(centerX, startY - 100, "Пройди все уровни, чтобы", {
-                font: "600 18px Nunito",
-                color: "#ffffff",
-            })
-            .setResolution(2)
-            .setOrigin(0.5);
-
-        this.add
-            .text(centerX, startY - 75, "собрать пазл", {
-                font: "600 18px Nunito",
-                color: "#ffffff",
-            })
+        this.mainMenuTitle = this.add
+            .text(
+                centerX,
+                startY - 70,
+                "Пройди все уровни, чтобы собрать пазл",
+                {
+                    font: "600 18px Nunito",
+                    color: "#ffffff",
+                    align: "center",
+                    wordWrap: { width: 278 },
+                }
+            )
             .setResolution(2)
             .setOrigin(0.5);
 
@@ -155,8 +155,8 @@ export class MainMenu extends Scene {
                 .setDisplaySize(cellWidth, cellHeight);
 
             if (isCompleted) {
-                tile.setPosition(x, y - 2);
-                tile.setScale(0.344);
+                tile.setPosition(x, y);
+                tile.setDisplaySize(cellWidth, cellHeight);
             }
 
             let label: Phaser.GameObjects.Text | undefined;
@@ -173,16 +173,16 @@ export class MainMenu extends Scene {
                                 currentLevel: level,
                             });
                         } else {
-                            this.scene.stop("MainMenu");
-                            this.scene.start("Game", {
-                                config: level,
-                            });
+                            // this.scene.stop("MainMenu");
+                            // this.scene.start("Game", {
+                            //     config: level,
+                            // });
 
                             //Тест экрана победы
-                            // this.scene.start("WinScene", {
-                            //     levelId: level.id,
-                            //     difficult: level.difficult,
-                            // });
+                            this.scene.start("WinScene", {
+                                levelId: level.id,
+                                difficult: level.difficult,
+                            });
 
                             //Тест экрана промокода
                             // this.scene.start("WinScene", {
@@ -304,105 +304,106 @@ export class MainMenu extends Scene {
         }
 
         if (this.gameOver) {
-            this.puzzleFull = this.add.image(centerX, centerY, "puzzle_full");
-            this.puzzleFull.setDisplaySize(320, 360);
-            this.puzzleFull.setOrigin(0.5);
-            this.puzzleFull.setDepth(20);
-            this.puzzleFull.setAlpha(0);
+            this.mainMenuTitle.destroy();
+            // this.puzzleFull = this.add.image(centerX, centerY, "puzzle_full");
+            // this.puzzleFull.setDisplaySize(320, 360);
+            // this.puzzleFull.setOrigin(0.5);
+            // this.puzzleFull.setDepth(20);
+            // this.puzzleFull.setAlpha(0);
 
-            this.tweens.add({
-                targets: this.puzzleFull,
-                alpha: 1,
-                duration: 1200,
-                ease: "Cubic.easeInOut",
-                onComplete: () => {
-                    setTimeout(() => {
-                        const overlay = this.add.image(
-                            this.cameras.main.centerX,
-                            this.cameras.main.centerY,
-                            "tutorial_overlay"
-                        );
-                        overlay.setDisplaySize(
-                            this.cameras.main.width + 10,
-                            this.cameras.main.height + 10
-                        );
-                        overlay.setOrigin(0.5);
-                        overlay.setDepth(100);
+            // this.tweens.add({
+            //     targets: this.puzzleFull,
+            //     alpha: 1,
+            //     duration: 1200,
+            //     ease: "Cubic.easeInOut",
+            //     onComplete: () => {
+            //         setTimeout(() => {
+            //             const overlay = this.add.image(
+            //                 this.cameras.main.centerX,
+            //                 this.cameras.main.centerY,
+            //                 "tutorial_overlay"
+            //             );
+            //             overlay.setDisplaySize(
+            //                 this.cameras.main.width + 10,
+            //                 this.cameras.main.height + 10
+            //             );
+            //             overlay.setOrigin(0.5);
+            //             overlay.setDepth(100);
 
-                        const bgInfo = this.add.image(
-                            this.cameras.main.centerX,
-                            this.cameras.main.centerY - 20,
-                            "info_promo_bg"
-                        );
-                        bgInfo.setDisplaySize(300, 512);
-                        bgInfo.setOrigin(0.5);
-                        bgInfo.setDepth(1001);
+            //             const bgInfo = this.add.image(
+            //                 this.cameras.main.centerX,
+            //                 this.cameras.main.centerY - 20,
+            //                 "info_promo_bg"
+            //             );
+            //             bgInfo.setDisplaySize(300, 512);
+            //             bgInfo.setOrigin(0.5);
+            //             bgInfo.setDepth(1001);
 
-                        const infoPromoTitle = this.add.text(
-                            this.cameras.main.centerX,
-                            this.cameras.main.centerY - 230,
-                            "Инструкция по активации промокода",
-                            {
-                                font: "800 20px Nunito",
-                                color: "#ffffff",
-                                align: "center",
-                                wordWrap: { width: 252 },
-                            }
-                        );
-                        infoPromoTitle.setOrigin(0.5);
-                        infoPromoTitle.setDepth(1001);
-                        infoPromoTitle.setResolution(2);
+            //             const infoPromoTitle = this.add.text(
+            //                 this.cameras.main.centerX,
+            //                 this.cameras.main.centerY - 230,
+            //                 "Инструкция по активации промокода",
+            //                 {
+            //                     font: "800 20px Nunito",
+            //                     color: "#ffffff",
+            //                     align: "center",
+            //                     wordWrap: { width: 252 },
+            //                 }
+            //             );
+            //             infoPromoTitle.setOrigin(0.5);
+            //             infoPromoTitle.setDepth(1001);
+            //             infoPromoTitle.setResolution(2);
 
-                        const infoPromoText = this.add.text(
-                            this.cameras.main.centerX,
-                            this.cameras.main.centerY - 70,
-                            "1. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. \n2. Aenean commodo ligula eget dolor. Aenean massa. \n3. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.\n4. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim.\n5. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu.",
-                            {
-                                font: "600 16px Nunito",
-                                color: "#ffffff",
-                                wordWrap: { width: 252 },
-                            }
-                        );
+            //             const infoPromoText = this.add.text(
+            //                 this.cameras.main.centerX,
+            //                 this.cameras.main.centerY - 70,
+            //                 "1. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. \n2. Aenean commodo ligula eget dolor. Aenean massa. \n3. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.\n4. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim.\n5. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu.",
+            //                 {
+            //                     font: "600 16px Nunito",
+            //                     color: "#ffffff",
+            //                     wordWrap: { width: 252 },
+            //                 }
+            //             );
 
-                        infoPromoText.setOrigin(0.5);
-                        infoPromoText.setDepth(1001);
-                        infoPromoText.setResolution(2);
+            //             infoPromoText.setOrigin(0.5);
+            //             infoPromoText.setDepth(1001);
+            //             infoPromoText.setResolution(2);
 
-                        const activateBtn = this.add.image(
-                            this.cameras.main.centerX,
-                            this.cameras.main.centerY + 120,
-                            "activate_btn"
-                        );
-                        console.log(this.isInputLocked);
-                        activateBtn.setOrigin(0.5);
-                        activateBtn.setDepth(1001);
-                        activateBtn.setScale(0.333);
-                        activateBtn.setInteractive({ useHandCursor: true });
-                        activateBtn.on("pointerdown", () => {
-                            console.log(111);
-                            window.open("https://www.yota.ru/");
-                        });
+            //             const activateBtn = this.add.image(
+            //                 this.cameras.main.centerX,
+            //                 this.cameras.main.centerY + 120,
+            //                 "activate_btn"
+            //             );
+            //             console.log(this.isInputLocked);
+            //             activateBtn.setOrigin(0.5);
+            //             activateBtn.setDepth(1001);
+            //             activateBtn.setScale(0.333);
+            //             activateBtn.setInteractive({ useHandCursor: true });
+            //             activateBtn.on("pointerdown", () => {
+            //                 console.log(111);
+            //                 window.open("https://www.yota.ru/");
+            //             });
 
-                        const toMainBtn = this.add.image(
-                            this.cameras.main.centerX,
-                            this.cameras.main.centerY + 180,
-                            "main_menu_btn"
-                        );
-                        toMainBtn.setOrigin(0.5);
-                        toMainBtn.setScale(0.333);
-                        toMainBtn.setDepth(1001);
-                        toMainBtn.setInteractive({ useHandCursor: true });
-                        toMainBtn.on("pointerdown", () => {
-                            overlay.destroy();
-                            bgInfo.destroy();
-                            infoPromoTitle.destroy();
-                            infoPromoText.destroy();
-                            activateBtn.destroy();
-                            toMainBtn.destroy();
-                        });
-                    }, 2000);
-                },
-            });
+            //             const toMainBtn = this.add.image(
+            //                 this.cameras.main.centerX,
+            //                 this.cameras.main.centerY + 180,
+            //                 "main_menu_btn"
+            //             );
+            //             toMainBtn.setOrigin(0.5);
+            //             toMainBtn.setScale(0.333);
+            //             toMainBtn.setDepth(1001);
+            //             toMainBtn.setInteractive({ useHandCursor: true });
+            //             toMainBtn.on("pointerdown", () => {
+            //                 overlay.destroy();
+            //                 bgInfo.destroy();
+            //                 infoPromoTitle.destroy();
+            //                 infoPromoText.destroy();
+            //                 activateBtn.destroy();
+            //                 toMainBtn.destroy();
+            //             });
+            //         }, 2000);
+            //     },
+            // });
             return;
         }
 
@@ -429,11 +430,12 @@ export class MainMenu extends Scene {
             this.tweens.add({
                 targets: this.puzzle,
                 x: currentLevelcoords?.x,
-                y: currentLevelcoords?.y - 2,
-                scale: 0.345,
+                y: currentLevelcoords?.y,
+                scale: 0.3,
                 duration: 700,
                 ease: "Cubic.easeInOut",
                 onComplete: () => {
+                    this.puzzle.setDisplaySize(cellWidth, cellHeight);
                     currentLevelcoords?.tile.destroy();
                     this.coordsLevels = this.coordsLevels.filter(
                         (entry) => entry.id !== this.levelId

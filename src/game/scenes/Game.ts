@@ -314,7 +314,6 @@ export class Game extends Scene {
 
         const matches = this.findMatches?.();
         if (matches && matches.length > 0) {
-
             this.remainingMoves--;
             this.updateMovesUI();
             this.checkWin();
@@ -514,7 +513,6 @@ export class Game extends Scene {
             { dx: 0, dy: -1 },
             { dx: 0, dy: 1 },
         ];
-
 
         for (const group of matches) {
             for (const tile of group) {
@@ -767,21 +765,21 @@ export class Game extends Scene {
             angle: { min: 0, max: 360 },
             scale: { start: 0.8, end: 0 },
             alpha: { start: 0.8, end: 0 },
-            lifespan: 10,
+            lifespan: 50,
             gravityY: 50,
             quantity: 3,
             blendMode: "NORMAL",
         });
 
         blackParticles.setPosition(x, y);
-        blackParticles.setDepth(1000);
+        blackParticles.setDepth(999);
 
         particles.setPosition(x, y);
         particles.setDepth(1000);
 
         this.time.delayedCall(300, () => {
-            blackParticles.destroy();
             particles.destroy();
+            blackParticles.destroy();
         });
     }
 
@@ -1389,17 +1387,21 @@ export class Game extends Scene {
             rocket.setDepth(999);
 
             const rocketTrail = this.add.particles(0, 0, "rocketTrail", {
-                speed: { min: -20, max: -40 },
-                angle: direction < 0 ? 180 : 0,
-                lifespan: 300,
+                speed: 0, 
+                lifespan: 400,
                 frequency: 30,
                 quantity: 1,
-                scale: { start: 0.6, end: 0 },
+                scale: { start: 1.3, end: 0 },
                 alpha: { start: 1, end: 0 },
                 blendMode: "ADD",
+            
+                rotate: direction < 0 ? 0 : 180, 
+                angle: direction < 0 ? 180 : 0   
             });
-            rocketTrail.setDepth(998);
+            rocketTrail.setDepth(1000);
             rocketTrail.startFollow(rocket);
+            
+            
 
             let x = col;
 
@@ -1548,15 +1550,18 @@ export class Game extends Scene {
             rocket.setDepth(999);
 
             const rocketTrail = this.add.particles(0, 0, "rocketTrail", {
-                speed: { min: -20, max: -40 },
-                angle: direction < 0 ? 90 : -90,
+                speed: 0, 
                 lifespan: 300,
                 frequency: 30,
                 quantity: 1,
-                scale: { start: 0.6, end: 0 },
+                scale: { start: 1, end: 0 },
                 alpha: { start: 1, end: 0 },
                 blendMode: "ADD",
+        
+                
+                rotate: direction < 0 ? 90 : 270
             });
+        
             rocketTrail.setDepth(998);
             rocketTrail.startFollow(rocket);
 
@@ -2274,12 +2279,10 @@ export class Game extends Scene {
         goals.forEach((goal, index) => {
             const iconX = startX + index * iconSpacing;
 
-
             const icon = this.add.sprite(iconX, panelY, goal.type);
             icon.setDisplaySize(42, 42);
             icon.setOrigin(0.5);
             icon.setDepth(11);
-
 
             const circle = this.add.graphics();
             const radius = 12;
@@ -2290,7 +2293,6 @@ export class Game extends Scene {
             circle.fillCircle(radius, radius, radius);
             circle.setPosition(circleX - radius, circleY - radius);
             circle.setDepth(12);
-
 
             const text = this.add.text(
                 circleX,
@@ -2304,7 +2306,6 @@ export class Game extends Scene {
             text.setOrigin(0.5);
             text.setDepth(13);
             text.setResolution(2);
-
 
             this.goalIcons[goal.type] = {
                 icon,
@@ -2364,7 +2365,6 @@ export class Game extends Scene {
             }
             return;
         }
-
 
         await this.waitForProcessingComplete();
 
