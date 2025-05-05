@@ -314,7 +314,7 @@ export class Game extends Scene {
 
         const matches = this.findMatches?.();
         if (matches && matches.length > 0) {
-            // Отнимаем ход
+
             this.remainingMoves--;
             this.updateMovesUI();
             this.checkWin();
@@ -515,7 +515,7 @@ export class Game extends Scene {
             { dx: 0, dy: 1 },
         ];
 
-        // Сначала обрабатываем соседние с матчами тайлы — лёд и коробки
+
         for (const group of matches) {
             for (const tile of group) {
                 const x = tile.getData("gridX");
@@ -757,7 +757,7 @@ export class Game extends Scene {
             lifespan: 200,
             gravityY: 50,
             quantity: 5,
-            blendMode: "NORMAL", // сохраняем цвет
+            blendMode: "NORMAL",
         });
 
         const blackParticles = this.add.particles(0, 0, `particle_black`, {
@@ -770,7 +770,7 @@ export class Game extends Scene {
             lifespan: 10,
             gravityY: 50,
             quantity: 3,
-            blendMode: "NORMAL", // сохраняем цвет
+            blendMode: "NORMAL",
         });
 
         blackParticles.setPosition(x, y);
@@ -779,7 +779,7 @@ export class Game extends Scene {
         particles.setPosition(x, y);
         particles.setDepth(1000);
 
-        this.time.delayedCall(500, () => {
+        this.time.delayedCall(300, () => {
             blackParticles.destroy();
             particles.destroy();
         });
@@ -1085,7 +1085,7 @@ export class Game extends Scene {
                 },
                 onComplete: () => {
                     sprite.setAngle(0);
-                    sprite.setDisplaySize(to, to); // финальный размер
+                    sprite.setDisplaySize(to, to);
                 },
             });
         } else {
@@ -1375,7 +1375,7 @@ export class Game extends Scene {
                     cellSize * 1.2,
                     Math.sin(progress * Math.PI)
                 );
-                origin.setAlpha(1 - progress); // исчезновение
+                origin.setAlpha(1 - progress);
             },
         });
 
@@ -1387,6 +1387,19 @@ export class Game extends Scene {
             rocket.setOrigin(0.5);
             rocket.setAngle(direction < 0 ? 0 : 180);
             rocket.setDepth(999);
+
+            const rocketTrail = this.add.particles(0, 0, "rocketTrail", {
+                speed: { min: -20, max: -40 },
+                angle: direction < 0 ? 180 : 0,
+                lifespan: 300,
+                frequency: 30,
+                quantity: 1,
+                scale: { start: 0.6, end: 0 },
+                alpha: { start: 1, end: 0 },
+                blendMode: "ADD",
+            });
+            rocketTrail.setDepth(998);
+            rocketTrail.startFollow(rocket);
 
             let x = col;
 
@@ -1475,6 +1488,8 @@ export class Game extends Scene {
                 x += direction;
             }
 
+            rocketTrail.stop();
+            this.time.delayedCall(300, () => rocketTrail.destroy());
             rocket.destroy();
         };
 
@@ -1531,6 +1546,19 @@ export class Game extends Scene {
 
             rocket.setAngle(direction < 0 ? 90 : -90);
             rocket.setDepth(999);
+
+            const rocketTrail = this.add.particles(0, 0, "rocketTrail", {
+                speed: { min: -20, max: -40 },
+                angle: direction < 0 ? 90 : -90,
+                lifespan: 300,
+                frequency: 30,
+                quantity: 1,
+                scale: { start: 0.6, end: 0 },
+                alpha: { start: 1, end: 0 },
+                blendMode: "ADD",
+            });
+            rocketTrail.setDepth(998);
+            rocketTrail.startFollow(rocket);
 
             let y = row;
 
@@ -1619,6 +1647,8 @@ export class Game extends Scene {
                 y += direction;
             }
 
+            rocketTrail.stop();
+            this.time.delayedCall(300, () => rocketTrail.destroy());
             rocket.destroy();
         };
 
@@ -2244,13 +2274,13 @@ export class Game extends Scene {
         goals.forEach((goal, index) => {
             const iconX = startX + index * iconSpacing;
 
-            // Иконка
+
             const icon = this.add.sprite(iconX, panelY, goal.type);
             icon.setDisplaySize(42, 42);
             icon.setOrigin(0.5);
             icon.setDepth(11);
 
-            // Кружок под счётчиком
+
             const circle = this.add.graphics();
             const radius = 12;
             const circleX = iconX + 12;
@@ -2261,7 +2291,7 @@ export class Game extends Scene {
             circle.setPosition(circleX - radius, circleY - radius);
             circle.setDepth(12);
 
-            // Текст-счётчик
+
             const text = this.add.text(
                 circleX,
                 circleY,
@@ -2275,7 +2305,7 @@ export class Game extends Scene {
             text.setDepth(13);
             text.setResolution(2);
 
-            // Сохраняем для обновления прогресса
+
             this.goalIcons[goal.type] = {
                 icon,
                 circle,
@@ -2335,7 +2365,7 @@ export class Game extends Scene {
             return;
         }
 
-        // Осталось 0 ходов — ждём завершения всех действий
+
         await this.waitForProcessingComplete();
 
         if (this.checkGoalsCompleted()) {

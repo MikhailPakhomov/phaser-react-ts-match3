@@ -204,7 +204,11 @@ export class Preloader extends Scene {
         this.load.image("info_promo_bg", "info_promo_bg.png");
        
         this.load.image("activate_btn", "activate_btn.png");
+
+        this.load.image('rocketTrail', 'rocket_trail.png');
     }
+
+
 
     create() {
         this.scene.start("MainMenu");
