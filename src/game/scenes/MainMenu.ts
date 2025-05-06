@@ -173,16 +173,16 @@ export class MainMenu extends Scene {
                                 currentLevel: level,
                             });
                         } else {
-                            // this.scene.stop("MainMenu");
-                            // this.scene.start("Game", {
-                            //     config: level,
-                            // });
+                            this.scene.stop("MainMenu");
+                            this.scene.start("Game", {
+                                config: level,
+                            });
 
                             //Тест экрана победы
-                            this.scene.start("WinScene", {
-                                levelId: level.id,
-                                difficult: level.difficult,
-                            });
+                            // this.scene.start("WinScene", {
+                            //     levelId: level.id,
+                            //     difficult: level.difficult,
+                            // });
 
                             //Тест экрана промокода
                             // this.scene.start("WinScene", {
