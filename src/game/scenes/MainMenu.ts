@@ -85,7 +85,7 @@ export class MainMenu extends Scene {
         const gridWidth = cols * cellWidth + (cols - 1) * spacing;
         const gridHeight = rows * cellHeight + (rows - 1) * spacing;
         const startX = centerX - gridWidth / 2 + cellWidth / 2;
-        const startY = centerY - gridHeight / 2 + cellHeight / 2;
+        let startY = centerY - gridHeight / 2 + cellHeight / 2;
 
         const padding = 20; // запас по краям
         const availableWidth = this.cameras.main.width - padding;
@@ -97,15 +97,6 @@ export class MainMenu extends Scene {
         );
 
         this.cameras.main.setZoom(scaleFactor);
-
-        // this.add
-        //     .text(centerX, startY - 140, "Выбери уровень", {
-        //         font: "800 28px Nunito",
-        //         color: "#ffffff",
-        //         fontStyle: "bold",
-        //     })
-        //     .setResolution(2)
-        //     .setOrigin(0.5);
 
         this.mainMenuTitle = this.add
             .text(
@@ -134,6 +125,186 @@ export class MainMenu extends Scene {
             medium: "#ffffff",
             hard: "#FFFFFF",
         };
+
+        if (this.gameOver) {
+            this.mainMenuTitle.destroy();
+            startY = startY - 130;
+
+            const showInfoText = this.add.text(
+                this.cameras.main.centerX - 130,
+                this.cameras.main.centerY + 60,
+                "Инструкция по активации промокода",
+                {
+                    font: "600 14px Nunito",
+                    color: "#ffffff",
+                    align: "center",
+                }
+            );
+            showInfoText.setInteractive({ useHandCursor: true });
+            showInfoText.setResolution(2);
+            showInfoText.on("pointerdown", () => {
+                this.scene.start("PromoInfo");
+            });
+
+            const copyBg = this.add.image(0, 0, "copy_bg");
+            copyBg.setDisplaySize(278, 68);
+            copyBg.setOrigin(0.5);
+
+            const copyButton = this.add.image(110, 0, "copy_btn");
+            copyButton.setDisplaySize(28, 28);
+            copyButton.setOrigin(0.5);
+
+            const copyText = this.add.text(-50, 10, "Скопировать промокод", {
+                font: "600 12px Nunito",
+                color: "#0083C4",
+            });
+            copyText.setOrigin(0.5);
+            copyText.setResolution(2);
+
+            const promoText = this.add
+                .text(-65, -10, "YOTA2025", {
+                    font: "800 20px Nunito",
+                    color: "#0083C4",
+                })
+                .setOrigin(0.5)
+                .setResolution(2);
+
+            const copyContainer = this.add.container(centerX, centerY + 140, [
+                copyBg,
+                copyButton,
+                copyText,
+                promoText,
+            ]);
+
+            copyContainer.setDisplaySize(278, 68);
+            copyContainer.setScale(1);
+
+            copyContainer
+                .setInteractive(
+                    new Phaser.Geom.Rectangle(-140, -35, 278, 68),
+                    Phaser.Geom.Rectangle.Contains
+                )
+                .on("pointerover", () => this.input.setDefaultCursor("pointer"))
+                .on("pointerout", () => this.input.setDefaultCursor("default"))
+                .on("pointerdown", () => {
+                    navigator.clipboard
+                        .writeText("YOTA2025")
+                        .then(() => {
+
+                            copyText.setText("Скопировано");
+                            copyText.setPosition(-75, 10);
+                            copyText.setOrigin(0.5);
+
+                            setTimeout(() => {
+                                copyText.setText("Скопировать промокод");
+                                copyText.setPosition(-50, 10);
+                            }, 3000);
+                        })
+                        .catch((err) => {
+                            console.error("Ошибка копирования:", err);
+                            copyText.setText("Ошибка ❌");
+                        });
+                });
+            // this.puzzleFull = this.add.image(centerX, centerY, "puzzle_full");
+            // this.puzzleFull.setDisplaySize(320, 360);
+            // this.puzzleFull.setOrigin(0.5);
+            // this.puzzleFull.setDepth(20);
+            // this.puzzleFull.setAlpha(0);
+
+            // this.tweens.add({
+            //     targets: this.puzzleFull,
+            //     alpha: 1,
+            //     duration: 1200,
+            //     ease: "Cubic.easeInOut",
+            //     onComplete: () => {
+            //         setTimeout(() => {
+            //             const overlay = this.add.image(
+            //                 this.cameras.main.centerX,
+            //                 this.cameras.main.centerY,
+            //                 "tutorial_overlay"
+            //             );
+            //             overlay.setDisplaySize(
+            //                 this.cameras.main.width + 10,
+            //                 this.cameras.main.height + 10
+            //             );
+            //             overlay.setOrigin(0.5);
+            //             overlay.setDepth(100);
+
+            //             const bgInfo = this.add.image(
+            //                 this.cameras.main.centerX,
+            //                 this.cameras.main.centerY - 20,
+            //                 "info_promo_bg"
+            //             );
+            //             bgInfo.setDisplaySize(300, 512);
+            //             bgInfo.setOrigin(0.5);
+            //             bgInfo.setDepth(1001);
+
+            //             const infoPromoTitle = this.add.text(
+            //                 this.cameras.main.centerX,
+            //                 this.cameras.main.centerY - 230,
+            //                 "Инструкция по активации промокода",
+            //                 {
+            //                     font: "800 20px Nunito",
+            //                     color: "#ffffff",
+            //                     align: "center",
+            //                     wordWrap: { width: 252 },
+            //                 }
+            //             );
+            //             infoPromoTitle.setOrigin(0.5);
+            //             infoPromoTitle.setDepth(1001);
+            //             infoPromoTitle.setResolution(2);
+
+            //             const infoPromoText = this.add.text(
+            //                 this.cameras.main.centerX,
+            //                 this.cameras.main.centerY - 70,
+            //                 "1. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. \n2. Aenean commodo ligula eget dolor. Aenean massa. \n3. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.\n4. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim.\n5. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu.",
+            //                 {
+            //                     font: "600 16px Nunito",
+            //                     color: "#ffffff",
+            //                     wordWrap: { width: 252 },
+            //                 }
+            //             );
+
+            //             infoPromoText.setOrigin(0.5);
+            //             infoPromoText.setDepth(1001);
+            //             infoPromoText.setResolution(2);
+
+            //             const activateBtn = this.add.image(
+            //                 this.cameras.main.centerX,
+            //                 this.cameras.main.centerY + 120,
+            //                 "activate_btn"
+            //             );
+            //             console.log(this.isInputLocked);
+            //             activateBtn.setOrigin(0.5);
+            //             activateBtn.setDepth(1001);
+            //             activateBtn.setScale(0.333);
+            //             activateBtn.setInteractive({ useHandCursor: true });
+            //             activateBtn.on("pointerdown", () => {
+            //                 console.log(111);
+            //                 window.open("https://www.yota.ru/");
+            //             });
+
+            //             const toMainBtn = this.add.image(
+            //                 this.cameras.main.centerX,
+            //                 this.cameras.main.centerY + 180,
+            //                 "main_menu_btn"
+            //             );
+            //             toMainBtn.setOrigin(0.5);
+            //             toMainBtn.setScale(0.333);
+            //             toMainBtn.setDepth(1001);
+            //             toMainBtn.setInteractive({ useHandCursor: true });
+            //             toMainBtn.on("pointerdown", () => {
+            //                 overlay.destroy();
+            //                 bgInfo.destroy();
+            //                 infoPromoTitle.destroy();
+            //                 infoPromoText.destroy();
+            //                 activateBtn.destroy();
+            //                 toMainBtn.destroy();
+            //             });
+            //         }, 2000);
+            //     },
+            // });
+        }
 
         this.levelsArray.forEach((level, index) => {
             const col = index % cols;
@@ -303,110 +474,6 @@ export class MainMenu extends Scene {
             return;
         }
 
-        if (this.gameOver) {
-            this.mainMenuTitle.destroy();
-            // this.puzzleFull = this.add.image(centerX, centerY, "puzzle_full");
-            // this.puzzleFull.setDisplaySize(320, 360);
-            // this.puzzleFull.setOrigin(0.5);
-            // this.puzzleFull.setDepth(20);
-            // this.puzzleFull.setAlpha(0);
-
-            // this.tweens.add({
-            //     targets: this.puzzleFull,
-            //     alpha: 1,
-            //     duration: 1200,
-            //     ease: "Cubic.easeInOut",
-            //     onComplete: () => {
-            //         setTimeout(() => {
-            //             const overlay = this.add.image(
-            //                 this.cameras.main.centerX,
-            //                 this.cameras.main.centerY,
-            //                 "tutorial_overlay"
-            //             );
-            //             overlay.setDisplaySize(
-            //                 this.cameras.main.width + 10,
-            //                 this.cameras.main.height + 10
-            //             );
-            //             overlay.setOrigin(0.5);
-            //             overlay.setDepth(100);
-
-            //             const bgInfo = this.add.image(
-            //                 this.cameras.main.centerX,
-            //                 this.cameras.main.centerY - 20,
-            //                 "info_promo_bg"
-            //             );
-            //             bgInfo.setDisplaySize(300, 512);
-            //             bgInfo.setOrigin(0.5);
-            //             bgInfo.setDepth(1001);
-
-            //             const infoPromoTitle = this.add.text(
-            //                 this.cameras.main.centerX,
-            //                 this.cameras.main.centerY - 230,
-            //                 "Инструкция по активации промокода",
-            //                 {
-            //                     font: "800 20px Nunito",
-            //                     color: "#ffffff",
-            //                     align: "center",
-            //                     wordWrap: { width: 252 },
-            //                 }
-            //             );
-            //             infoPromoTitle.setOrigin(0.5);
-            //             infoPromoTitle.setDepth(1001);
-            //             infoPromoTitle.setResolution(2);
-
-            //             const infoPromoText = this.add.text(
-            //                 this.cameras.main.centerX,
-            //                 this.cameras.main.centerY - 70,
-            //                 "1. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. \n2. Aenean commodo ligula eget dolor. Aenean massa. \n3. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.\n4. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim.\n5. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu.",
-            //                 {
-            //                     font: "600 16px Nunito",
-            //                     color: "#ffffff",
-            //                     wordWrap: { width: 252 },
-            //                 }
-            //             );
-
-            //             infoPromoText.setOrigin(0.5);
-            //             infoPromoText.setDepth(1001);
-            //             infoPromoText.setResolution(2);
-
-            //             const activateBtn = this.add.image(
-            //                 this.cameras.main.centerX,
-            //                 this.cameras.main.centerY + 120,
-            //                 "activate_btn"
-            //             );
-            //             console.log(this.isInputLocked);
-            //             activateBtn.setOrigin(0.5);
-            //             activateBtn.setDepth(1001);
-            //             activateBtn.setScale(0.333);
-            //             activateBtn.setInteractive({ useHandCursor: true });
-            //             activateBtn.on("pointerdown", () => {
-            //                 console.log(111);
-            //                 window.open("https://www.yota.ru/");
-            //             });
-
-            //             const toMainBtn = this.add.image(
-            //                 this.cameras.main.centerX,
-            //                 this.cameras.main.centerY + 180,
-            //                 "main_menu_btn"
-            //             );
-            //             toMainBtn.setOrigin(0.5);
-            //             toMainBtn.setScale(0.333);
-            //             toMainBtn.setDepth(1001);
-            //             toMainBtn.setInteractive({ useHandCursor: true });
-            //             toMainBtn.on("pointerdown", () => {
-            //                 overlay.destroy();
-            //                 bgInfo.destroy();
-            //                 infoPromoTitle.destroy();
-            //                 infoPromoText.destroy();
-            //                 activateBtn.destroy();
-            //                 toMainBtn.destroy();
-            //             });
-            //         }, 2000);
-            //     },
-            // });
-            return;
-        }
-
         if (this.levelId) {
             console.log(this.levelId);
             this.puzzle = this.add.image(
@@ -481,15 +548,15 @@ export class MainMenu extends Scene {
             this.isShowInfoPromo = data.isShowInfoPromo;
         }
 
-        if (data.isShowInfoPromo) {
-            this.isFinal = false;
-        } else {
-            this.isFinal = JSON.parse(window.localStorage.getItem("isFinal"));
-            if (this.isFinal === null) {
-                this.isFinal = false;
-                window.localStorage.setItem("isFinal", JSON.stringify(false));
-            }
-        }
+        // if (data.isShowInfoPromo) {
+        //     this.isFinal = false;
+        // } else {
+        //     this.isFinal = JSON.parse(window.localStorage.getItem("isFinal"));
+        //     if (this.isFinal === null) {
+        //         this.isFinal = false;
+        //         window.localStorage.setItem("isFinal", JSON.stringify(false));
+        //     }
+        // }
 
         this.isFirstLaunch = JSON.parse(
             window.localStorage.getItem("isFirstLaunch")

@@ -206,6 +206,7 @@ export class Preloader extends Scene {
         this.load.image("activate_btn", "activate_btn.png");
 
         this.load.image('rocketTrail', 'rocket_trail.png');
+        this.load.image('close_btn', 'close_btn.png');
     }
 
 

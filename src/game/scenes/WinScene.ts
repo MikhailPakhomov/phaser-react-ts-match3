@@ -114,7 +114,6 @@ export class WinScene extends Scene {
             this.scene.stop("WinScene");
             this.scene.start("MainMenu", { isShowInfoPromo: true });
             window.localStorage.setItem("gameOver", JSON.stringify(true));
-            window.localStorage.setItem("isFinal", JSON.stringify(true));
         } else {
             this.scene.stop("WinScene");
             this.scene.start("MainMenu", {
@@ -200,7 +199,7 @@ export class WinScene extends Scene {
         rays: Phaser.GameObjects.Sprite,
         code?: string
     ) {
-        // 🧧 Шаг 1 — Подарок
+
 
         rays.setPosition(centerX, centerY - 160)
             .setAlpha(0.9)

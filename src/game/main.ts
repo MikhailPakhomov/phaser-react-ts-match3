@@ -9,6 +9,7 @@ import { LoseScene } from "./scenes/LoseScene";
 import { Onboarding } from "./scenes/Onboarding";
 import { Tutorial } from "./scenes/Tutorial";
 import { Pause } from "./scenes/Pause";
+import { PromoInfo } from "./scenes/PromoInfo";
 
 //  Find out more information about the Game Config at:
 //  https://newdocs.phaser.io/docs/3.70.0/Phaser.Types.Core.GameConfig
@@ -27,16 +28,16 @@ const config: Phaser.Types.Core.GameConfig = {
     resolution: window.devicePixelRatio, // 📱 Чёткая отрисовка на retina и мобилках
 
     scale: {
-        mode: Phaser.Scale.FIT, // 📐 Подгоняем под экран
+        mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
         width: deviceWidth,
         height: deviceHeight,
     },
 
     render: {
-        antialias: true, // ✅ Сглаживание для WebGL и Canvas
-        pixelArt: false, // 🚫 Не пиксельарт
-        roundPixels: false, // 🚫 Не округлять координаты — сохраняем мягкость
+        antialias: true,
+        pixelArt: false,
+        roundPixels: false,
     },
 
     scene: [
@@ -49,16 +50,14 @@ const config: Phaser.Types.Core.GameConfig = {
         Onboarding,
         Tutorial,
         Pause,
+        PromoInfo,
     ],
 };
 
 const StartGame = (parent: string) => {
     (async () => {
-        // Подгружаем нужный вес, размер и шрифт
         await document.fonts.load("24px 'Nunito'");
         await document.fonts.load("800 24px 'Nunito'");
-
-        // Только после загрузки шрифта запускаем игру
 
         return new Game({
             ...config,
