@@ -1,8 +1,7 @@
 import { Boot } from "./scenes/Boot";
-import { GameOver } from "./scenes/GameOver";
 import { Game as MainGame } from "./scenes/Game";
 import { MainMenu } from "./scenes/MainMenu";
-import { AUTO, Game } from "phaser";
+import { Game } from "phaser";
 import { Preloader } from "./scenes/Preloader";
 import { WinScene } from "./scenes/WinScene";
 import { LoseScene } from "./scenes/LoseScene";
@@ -10,9 +9,6 @@ import { Onboarding } from "./scenes/Onboarding";
 import { Tutorial } from "./scenes/Tutorial";
 import { Pause } from "./scenes/Pause";
 import { PromoInfo } from "./scenes/PromoInfo";
-
-//  Find out more information about the Game Config at:
-//  https://newdocs.phaser.io/docs/3.70.0/Phaser.Types.Core.GameConfig
 
 const deviceWidth = window.innerWidth;
 const deviceHeight = window.innerHeight;
@@ -22,24 +18,13 @@ const config: Phaser.Types.Core.GameConfig = {
     parent: "game-container",
     backgroundColor: "#00adef",
 
-    width: deviceWidth,
-    height: deviceHeight,
-
-    resolution: window.devicePixelRatio, // 📱 Чёткая отрисовка на retina и мобилках
-
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
-        width: deviceWidth,
-        height: deviceHeight,
+        width: deviceWidth*window.devicePixelRatio,
+        height: deviceHeight*window.devicePixelRatio,
     },
-
-    render: {
-        antialias: true,
-        pixelArt: false,
-        roundPixels: false,
-    },
-
+   
     scene: [
         Boot,
         Preloader,
@@ -56,15 +41,39 @@ const config: Phaser.Types.Core.GameConfig = {
 
 const StartGame = (parent: string) => {
     (async () => {
-        await document.fonts.load("24px 'Nunito'");
-        await document.fonts.load("800 24px 'Nunito'");
 
-        return new Game({
+        const game = new Game({
             ...config,
             parent,
-            resolution: window.devicePixelRatio > 1 ? 2 : 1,
-        } as Phaser.Types.Core.GameConfig & { resolution: number });
+        });
+        window.game = game;
+
+        const resize = () => {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            const scale = Math.min(
+                width / config.scale!.width!,
+                height / config.scale!.height!
+            );
+
+            const canvas = game.canvas;
+            canvas.style.width = config.scale!.width! * scale + "px";
+            canvas.style.height = config.scale!.height! * scale + "px";
+
+            canvas.style.margin = "auto";
+            canvas.style.position = "absolute";
+            canvas.style.top = "0";
+            canvas.style.left = "0";
+            canvas.style.bottom = "0";
+            canvas.style.right = "0";
+        };
+
+        resize();
+        window.addEventListener("resize", resize);
+
     })();
 };
+
 
 export default StartGame;

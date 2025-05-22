@@ -1,0 +1,51 @@
+stages:
+  - build
+  - deploy
+
+.base_deploy: &base_deploy
+  image:
+    name: docker:latest
+    entrypoint: [""]
+  script: |
+    export DOCKER_HOST
+    docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}
+    docker rm --force ${APP_NAME} > /dev/null || echo "${APP_NAME} not running"
+    docker run -itd \
+      --restart=always \
+      --name ${APP_NAME} \
+      -p 127.0.0.1:${APP_PORT}:80/tcp \
+      ${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}
+  tags:
+    - docker-executor
+
+build_image:
+  stage: build
+  image:
+    name: help4ds/kaniko-alpine:latest
+    entrypoint: [""]
+  script: |
+    mkdir -p /kaniko/.docker
+    echo "{\"auths\":{\"${CI_REGISTRY}\":{\"auth\":\"$(echo -n ${CI_REGISTRY_USER}:${CI_REGISTRY_PASSWORD} | base64)\"}}}" > /kaniko/.docker/config.json
+    /usr/local/bin/executor \
+      --context ${CI_PROJECT_DIR} \
+      --dockerfile ${CI_PROJECT_DIR}/.infra/docker/Dockerfile \
+      --destination ${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA} \
+      --destination ${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_SLUG}-latest
+  tags:
+    - docker-executor
+
+deploy_to_dev:
+  <<: *base_deploy
+  stage: deploy
+  only:
+    - dev
+  environment:
+    name: Development
+
+deploy_to_prod:
+  <<: *base_deploy
+  stage: deploy
+  only:
+    - main
+  environment:
+    name: Production

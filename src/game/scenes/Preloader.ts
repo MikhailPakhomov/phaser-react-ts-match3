@@ -1,5 +1,7 @@
 import { Scene } from "phaser";
 
+const dpr = window.devicePixelRatio || 1;
+console;
 export class Preloader extends Scene {
     constructor() {
         super("Preloader");
@@ -8,68 +10,76 @@ export class Preloader extends Scene {
     init() {
         const { width, height } = this.scale;
 
-        const logo = this.add.image(this.cameras.main.centerX, 50, "logo");
+        const logo = this.add.image(
+            this.cameras.main.centerX,
+            70 * dpr,
+            "logo"
+        );
 
         logo.setOrigin(0.5);
         logo.setDepth(10);
+        logo.setScale(0.333 * dpr);
 
         const title = this.add.text(
             this.cameras.main.centerX,
-            140,
+            170 * dpr,
             "НАЗВАНИЕ ИГРЫ",
             {
-                font: "800 56px Nunito",
+                font: `900 ${56 * dpr}px Nunito`,
                 color: "#ffffff",
                 align: "center",
-                wordWrap: { width: 325 },
+                wordWrap: { width: 325 * dpr },
             }
         );
         title.setOrigin(0.5);
-        title.setResolution(2);
+        title.setResolution(dpr < 2 ? 2 : dpr);
 
         const energy = this.add.image(
-            this.cameras.main.centerX - 90,
-            this.cameras.main.centerY - 30,
+            this.cameras.main.centerX - 90 * dpr,
+            this.cameras.main.centerY - 30 * dpr,
             "preloader_energy"
         );
         energy.setOrigin(0.5);
-        energy.setScale(0.333);
+        energy.setScale(0.333 * dpr);
         energy.setDepth(2);
 
         const smartphone = this.add.image(
-            this.cameras.main.centerX + 55,
-            this.cameras.main.centerY + 15,
+            this.cameras.main.centerX + 55 * dpr,
+            this.cameras.main.centerY + 15 * dpr,
             "preloader_smartphone"
         );
         smartphone.setOrigin(0.5);
-        smartphone.setScale(0.333);
+        smartphone.setScale(0.333 * dpr);
         smartphone.setDepth(2);
 
         const sim = this.add.image(
-            this.cameras.main.centerX - 70,
-            this.cameras.main.centerY + 140,
+            this.cameras.main.centerX - 70 * dpr,
+            this.cameras.main.centerY + 140 * dpr,
             "preloader_sim"
         );
         sim.setOrigin(0.5);
-        sim.setScale(0.333);
+        sim.setScale(0.333 * dpr);
         sim.setDepth(2);
 
         const rays = this.add.image(
-            this.cameras.main.centerX + 50,
+            this.cameras.main.centerX + 50 * dpr,
             this.cameras.main.centerY,
             "win_bg"
         );
+        rays.setOrigin(0.5);
+        rays.setScale(1);
+
         const barBg = this.add.image(
             this.cameras.main.centerX,
-            this.cameras.main.height - 80,
+            this.cameras.main.height - 80 * dpr,
             "preloader_bar_bg"
         );
         barBg.setOrigin(0.5);
-        barBg.setDisplaySize(240, 28);
+        barBg.setDisplaySize(240 * dpr, 28 * dpr);
 
-        const totalBarWidth = 240;
-        const barHeight = 28;
-        const barRadius = 15;
+        const totalBarWidth = 240 * dpr;
+        const barHeight = 28 * dpr;
+        const barRadius = 15 * dpr;
 
         const barGraphics = this.add.graphics();
         barGraphics.setDepth(2);
@@ -86,7 +96,7 @@ export class Preloader extends Scene {
             const safeWidth = Math.max(currentProgressWidth, barRadius * 2);
 
             const barX = width / 2 - totalBarWidth / 2;
-            const barY = height - 80 - barHeight / 2;
+            const barY = height - 80 * dpr - barHeight / 2;
 
             barGraphics.fillRoundedRect(
                 barX,
@@ -99,12 +109,13 @@ export class Preloader extends Scene {
 
         const progressText = this.add.text(
             this.cameras.main.centerX,
-            this.cameras.main.height - 80,
+            this.cameras.main.height - 80 * dpr,
             "0%",
-            { font: "800 16px Nunito" }
+            { font: `800 ${16 * dpr}px Nunito` }
         );
         progressText.setOrigin(0.5);
         progressText.setDepth(3);
+        progressText.setResolution(dpr < 2 ? 2 : dpr);
 
         // Подписываемся на событие загрузки
         this.load.on("progress", (progress: number) => {
@@ -116,11 +127,28 @@ export class Preloader extends Scene {
                 progressText.setColor("#dbeeff");
             }
             drawProgressBar(progress);
+            if (percent === 100) {
+                barGraphics.destroy();
+                barBg.destroy();
+                progressText.destroy();
+            }
         });
     }
 
     preload() {
         this.load.setPath("assets");
+        this.load.audio("background", "sounds/background/background.mp3");
+        this.load.audio("box", "sounds/fx/box.mp3");
+        this.load.audio("click", "sounds/fx/click.mp3");
+        this.load.audio("discoball", "sounds/fx/discoball.mp3");
+        this.load.audio("full_puzzle", "sounds/fx/full_puzzle.mp3");
+        this.load.audio("ice", "sounds/fx/ice.mp3");
+        this.load.audio("lose", "sounds/fx/lose.mp3");
+        this.load.audio("move_tile", "sounds/fx/move_tile.mp3");
+        this.load.audio("remove_tile", "sounds/fx/remove_tile.mp3");
+        this.load.audio("rocket", "sounds/fx/rocket.mp3");
+        this.load.audio("move_puzzle", "sounds/fx/move_puzzle.mp3");
+        this.load.audio("win", "sounds/fx/win.mp3");
         this.load.image("tile_bg", "tile_bg.png");
         this.load.image("phone", "phone.png");
         this.load.image("smartphone", "smartphone.png");
@@ -135,7 +163,6 @@ export class Preloader extends Scene {
         this.load.image("rocket", "rocket.png");
         this.load.image("moves_bg", "moves_bg.png");
         this.load.image("pause", "pause.png");
-        this.load.image("close", "close.png");
         this.load.image("gameover_btn", "gameover_btn.png");
         this.load.image("sound_off", "sound_off.png");
         this.load.image("sound_on", "sound_on.png");
@@ -175,6 +202,7 @@ export class Preloader extends Scene {
         this.load.image("later_btn", "later_btn.png");
         this.load.image("replay_btn", "replay_btn.png");
         this.load.image("main_menu_btn", "main_menu_btn.png");
+        this.load.image("main_menu_btn_blue", "main_menu_btn_blue.png");
         this.load.image("promo", "promo.png");
         this.load.image("copy_bg", "copy_bg.png");
         this.load.image("copy_btn", "copy_btn.png");
@@ -202,16 +230,32 @@ export class Preloader extends Scene {
         this.load.image("info_btn", "info_btn.png");
 
         this.load.image("info_promo_bg", "info_promo_bg.png");
-       
         this.load.image("activate_btn", "activate_btn.png");
-
-        this.load.image('rocketTrail', 'rocket_trail.png');
-        this.load.image('close_btn', 'close_btn.png');
+        this.load.image("rocketTrail", "rocket_trail.png");
+        this.load.image("close_btn", "close_btn.png");
     }
 
-
-
     create() {
-        this.scene.start("MainMenu");
+        const startBtn = this.add.image(
+            this.cameras.main.centerX,
+            this.cameras.main.height - 80 * dpr,
+            "play_btn"
+        );
+        startBtn.setScale(0.333 * dpr);
+        startBtn.setDepth(3);
+        startBtn.setInteractive({ useHandCursor: true });
+
+        startBtn.on("pointerdown", () => {
+            this.sound.unlock();
+            const context = (this.sound as Phaser.Sound.WebAudioSoundManager)
+                .context;
+            if (context && context.state === "suspended") {
+                context.resume();
+            }
+
+            this.sound.add("click").play();
+            this.scene.stop("Preloader");
+            this.scene.start("MainMenu");
+        });
     }
 }

@@ -2,6 +2,7 @@ import { Scene } from "phaser";
 import { EventBus } from "../EventBus";
 import { delayPromise } from "../utils/tween-utils";
 
+const dpr = window.devicePixelRatio || 1;
 export class WinScene extends Scene {
     private step: number = 0;
     private continueButton!: Phaser.GameObjects.Text;
@@ -23,6 +24,9 @@ export class WinScene extends Scene {
     }
 
     create() {
+        setTimeout(() => {
+            this.sound.add("win").play();
+        }, 500);
         this.game.renderer.config.antialias = true;
 
         const ctx = this.game.canvas.getContext("2d");
@@ -36,7 +40,8 @@ export class WinScene extends Scene {
         const centerX = this.cameras.main.centerX;
         const centerY = this.cameras.main.centerY;
 
-        const rays = this.add.sprite(centerX, centerY - 120, "win_bg");
+        const rays = this.add.sprite(centerX, centerY - 120*dpr, "win_bg");
+        rays.setScale(0.333 * dpr);
         rays.setAlpha(0.9);
         rays.setOrigin(0.5);
 
@@ -57,7 +62,7 @@ export class WinScene extends Scene {
 
         this.tweens.add({
             targets: rays,
-            scale: { from: 1, to: 1.2 },
+            scale: { from: 0.333*dpr, to: 0.444*dpr },
             duration: 2000,
             yoyo: true,
             ease: "Sine.easeInOut",
@@ -72,48 +77,52 @@ export class WinScene extends Scene {
         this.showLevelTile(centerX, centerY);
 
         this.add
-            .text(centerX, centerY + 80, "Поздравляем!", {
-                font: "800 28px Nunito",
+            .text(centerX, centerY + 80*dpr, "Поздравляем!", {
+                font: `800 ${28*dpr}px Nunito`,
                 color: "#ffffff",
             })
             .setOrigin(0.5)
-            .setResolution(2);
+            .setResolution(dpr < 2 ? 2 : dpr);
 
         this.add
             .text(
                 centerX,
-                centerY + 120,
+                centerY + 120*dpr,
                 `Уровень ${this.levelId} пройден, вы открыли`,
                 {
-                    font: "600 18px Nunito",
+                    font: `600 ${18*dpr}px Nunito`,
                     color: "#ffffff",
                 }
             )
             .setOrigin(0.5)
-            .setResolution(2);
+            .setResolution(dpr < 2 ? 2 : dpr);
         this.add
-            .text(centerX + 10, centerY + 140, `один фрагмент пазла `, {
-                font: "600 18px Nunito",
+            .text(centerX + 10*dpr, centerY + 140*dpr, `один фрагмент пазла `, {
+                font: `600 ${18*dpr}px Nunito`,
                 color: "#ffffff",
             })
             .setOrigin(0.5)
-            .setResolution(2);
+            .setResolution(dpr < 2 ? 2 : dpr);
 
         this.continueButton = this.add
-            .image(centerX, centerY + 250, "later_btn")
+            .image(centerX, centerY + 250*dpr, "later_btn")
             .setOrigin(0.5)
-            .setDisplaySize(176, 48)
+            .setDisplaySize(176*dpr, 48*dpr)
             .setInteractive({ useHandCursor: true })
-            .on("pointerdown", () => this.nextStep());
+            .on("pointerdown", () => {
+                this.sound.add("click").play();
+                this.nextStep();
+            });
 
         EventBus.emit("current-scene-ready", this);
     }
 
     private nextStep() {
         if (this.isFinal) {
-            this.scene.stop("WinScene");
-            this.scene.start("MainMenu", { isShowInfoPromo: true });
             window.localStorage.setItem("gameOver", JSON.stringify(true));
+            this.scene.stop("WinScene");
+            this.scene.start("MainMenu");
+            return;
         } else {
             this.scene.stop("WinScene");
             this.scene.start("MainMenu", {
@@ -123,9 +132,8 @@ export class WinScene extends Scene {
     }
 
     private showLevelTile(centerX: number, centerY: number) {
-        // 🔢 Плитка с номером уровня
         const tileSprite = this.add.sprite(0, 0, this.difficult);
-        tileSprite.setScale(1)
+        tileSprite.setScale(1*dpr);
         tileSprite.setOrigin(0.5);
 
         const levelTextColor: ILevelTextColor = {
@@ -136,15 +144,14 @@ export class WinScene extends Scene {
 
         const levelText = this.add
             .text(0, 0, `${this.levelId}`, {
-                font: "800 112px Nunito",
+                font: `800 ${112*dpr}px Nunito`,
                 color: levelTextColor[this.difficult],
                 fontStyle: "bold",
             })
             .setOrigin(0.5)
-            .setResolution(2);
+            .setResolution(dpr < 2 ? 2 : dpr);
 
-        // 📦 Контейнер с плиткой и номером
-        const tileContainer = this.add.container(centerX, centerY - 100, [
+        const tileContainer = this.add.container(centerX, centerY - 100*dpr, [
             tileSprite,
             levelText,
         ]);
@@ -152,7 +159,6 @@ export class WinScene extends Scene {
         tileContainer.setScale(0);
         tileContainer.setAngle(0);
 
-        // 🌟 Плавное появление и вращение
         this.tweens.add({
             targets: tileContainer,
             scale: 1,
@@ -174,17 +180,17 @@ export class WinScene extends Scene {
 
                         this.backPiece = this.add.image(
                             centerX,
-                            centerY - 100,
+                            centerY - 100*dpr,
                             `puzzle_${this.levelId}`
                         );
-                       
+
                         this.backPiece.setOrigin(0.5);
-                        this.backPiece.setScale(0,1);
+                        this.backPiece.setScale(0, 1*dpr);
                         this.backPiece.setVisible(true);
 
                         this.tweens.add({
                             targets: this.backPiece,
-                            scaleX: 1,
+                            scaleX: 1*dpr,
                             duration: 300,
                             ease: "Cubic.easeOut",
                         });
@@ -199,31 +205,29 @@ export class WinScene extends Scene {
         rays: Phaser.GameObjects.Sprite,
         code?: string
     ) {
-
-
-        rays.setPosition(centerX, centerY - 160)
+        rays.setPosition(centerX, centerY - 160*dpr)
             .setAlpha(0.9)
             .setOrigin(0.5);
 
-        const gift = this.add.sprite(centerX - 60, centerY - 200, "gift");
+        const gift = this.add.sprite(centerX - 60*dpr, centerY - 200*dpr, "gift");
         gift.setScale(0);
 
         this.tweens.add({
             targets: gift,
-            scale: 0.3,
+            scale: 0.333*dpr,
             duration: 1000,
             ease: "Cubic.easeInOut",
             onComplete: () => {
                 const promo = this.add.sprite(
-                    centerX + 30,
-                    centerY - 130,
+                    centerX + 30*dpr,
+                    centerY - 130*dpr,
                     "promo"
                 );
                 promo.setScale(0);
 
                 this.tweens.add({
                     targets: promo,
-                    scale: 0.3,
+                    scale: 0.333*dpr,
                     duration: 1000,
                     ease: "Cubic.easeInOut",
                 });
@@ -238,18 +242,18 @@ export class WinScene extends Scene {
                 });
 
                 const energy1 = this.add.sprite(
-                    centerX + 55,
-                    centerY - 250,
+                    centerX + 55*dpr,
+                    centerY - 250*dpr,
                     "energy"
                 );
                 const energy2 = this.add.sprite(
-                    centerX - 85,
-                    centerY - 80,
+                    centerX - 85*dpr,
+                    centerY - 80*dpr,
                     "energy"
                 );
                 const energy3 = this.add.sprite(
-                    centerX + 85,
-                    centerY - 70,
+                    centerX + 85*dpr,
+                    centerY - 70*dpr,
                     "energy"
                 );
                 energy1.setScale(0);
@@ -262,13 +266,13 @@ export class WinScene extends Scene {
 
                 this.tweens.add({
                     targets: energy1,
-                    scale: 0.29,
+                    scale: 0.29*dpr,
                     duration: 1000,
                     ease: "Cubic.easeInOut",
                     onComplete: () => {
                         this.tweens.add({
                             targets: energy1,
-                            scale: { from: 0.29, to: 0.44 },
+                            scale: { from: 0.29*dpr, to: 0.44*dpr },
                             angle: { from: 20, to: 40 },
                             repeat: -1,
                             yoyo: true,
@@ -279,13 +283,13 @@ export class WinScene extends Scene {
                 });
                 this.tweens.add({
                     targets: energy2,
-                    scale: 0.25,
+                    scale: 0.25*dpr,
                     duration: 1000,
                     ease: "Cubic.easeInOut",
                     onComplete: () => {
                         this.tweens.add({
                             targets: energy2,
-                            scale: { from: 0.25, to: 0.33 },
+                            scale: { from: 0.25*dpr, to: 0.333*dpr },
                             angle: { from: -20, to: -40 },
                             duration: 2000,
                             repeat: -1,
@@ -296,13 +300,13 @@ export class WinScene extends Scene {
                 });
                 this.tweens.add({
                     targets: energy3,
-                    scale: 0.18,
+                    scale: 0.18*dpr,
                     duration: 1000,
                     ease: "Cubic.easeInOut",
                     onComplete: () => {
                         this.tweens.add({
                             targets: energy3,
-                            scale: { from: 0.18, to: 0.28 },
+                            scale: { from: 0.18*dpr, to: 0.28*dpr },
                             angle: { from: 20, to: 40 },
                             duration: 2000,
                             repeat: -1,
@@ -324,65 +328,65 @@ export class WinScene extends Scene {
         });
 
         this.add
-            .text(centerX, centerY + 10, "Победа!", {
-                font: "800 28px Nunito",
+            .text(centerX, centerY + 10*dpr, "Победа!", {
+                font: `800 ${28*dpr}px Nunito`,
                 color: "#ffffff",
                 fontStyle: "bold",
             })
             .setOrigin(0.5)
-            .setResolution(2);
+            .setResolution(dpr < 2 ? 2 : dpr);
 
         this.add
             .text(
                 centerX,
-                centerY + 55,
+                centerY + 55*dpr,
                 "Получи крутой промокод за полное прохождение игры",
                 {
-                    font: "600 18px Nunito",
+                    font: `600 ${18*dpr}px Nunito`,
                     color: "#ffffff",
                     align: "center",
-                    wordWrap: { width: 278 },
+                    wordWrap: { width: 278*dpr },
                 }
             )
             .setOrigin(0.5)
-            .setResolution(2);
+            .setResolution(dpr < 2 ? 2 : dpr);
 
         const copyBg = this.add.image(0, 0, "copy_bg");
-        copyBg.setDisplaySize(278, 68);
+        copyBg.setDisplaySize(278*dpr, 68*dpr);
         copyBg.setOrigin(0.5);
 
-        const copyButton = this.add.image(110, 0, "copy_btn");
-        copyButton.setDisplaySize(28, 28);
+        const copyButton = this.add.image(110*dpr, 0, "copy_btn");
+        copyButton.setDisplaySize(28*dpr, 28*dpr);
         copyButton.setOrigin(0.5);
 
-        const copyText = this.add.text(-50, 10, "Скопировать промокод", {
-            font: "600 12px Nunito",
+        const copyText = this.add.text(-50*dpr, 10*dpr, "Скопировать промокод", {
+            font: `600 ${12*dpr}px Nunito`,
             color: "#0083C4",
         });
         copyText.setOrigin(0.5);
-        copyText.setResolution(2);
+        copyText.setResolution(dpr < 2 ? 2 : dpr);
 
         const promoText = this.add
-            .text(-65, -10, code, {
-                font: "800 20px Nunito",
+            .text(-65*dpr, -10*dpr, code, {
+                font: `800 ${20*dpr}px Nunito`,
                 color: "#0083C4",
             })
             .setOrigin(0.5)
-            .setResolution(2);
+            .setResolution(dpr < 2 ? 2 : dpr);
 
-        const copyContainer = this.add.container(centerX, centerY + 140, [
+        const copyContainer = this.add.container(centerX, centerY + 120*dpr, [
             copyBg,
             copyButton,
             copyText,
             promoText,
         ]);
 
-        copyContainer.setDisplaySize(278, 68);
+        copyContainer.setDisplaySize(278*dpr, 68*dpr);
         copyContainer.setScale(1);
 
         copyContainer
             .setInteractive(
-                new Phaser.Geom.Rectangle(-140, -35, 278, 68),
+                new Phaser.Geom.Rectangle(-140*dpr, -35*dpr, 278*dpr, 68*dpr),
                 Phaser.Geom.Rectangle.Contains
             )
             .on("pointerover", () => this.input.setDefaultCursor("pointer"))
@@ -393,12 +397,12 @@ export class WinScene extends Scene {
                     .then(() => {
                         console.log("Скопировано:", code);
                         copyText.setText("Скопировано");
-                        copyText.setPosition(-75, 10);
+                        copyText.setPosition(-75*dpr, 10*dpr);
                         copyText.setOrigin(0.5);
 
                         setTimeout(() => {
                             copyText.setText("Скопировать промокод");
-                            copyText.setPosition(-50, 10);
+                            copyText.setPosition(-50*dpr, 10*dpr);
                         }, 3000);
                     })
                     .catch((err) => {
@@ -407,10 +411,42 @@ export class WinScene extends Scene {
                     });
             });
 
+        const showInfoText = this.add.text(
+            this.cameras.main.centerX - 130*dpr,
+            this.cameras.main.centerY + 160*dpr,
+            "Инструкция по активации промокода",
+            {
+                font: `700 ${14*dpr}px Nunito`,
+                color: "#ffffff",
+                align: "center",
+            }
+        );
+        showInfoText.setInteractive({ useHandCursor: true });
+        showInfoText.setResolution(dpr < 2 ? 2 : dpr);
+        showInfoText.on("pointerdown", () => {
+            this.scene.pause("WinScene");
+            this.scene.start("MainMenu");
+            this.scene.start("PromoInfo");
+        });
+
+        const showInfoTextBounds = showInfoText.getBounds();
+        const underline = this.add.graphics();
+        underline.lineStyle(1, 0xffffff, 1);
+        underline.beginPath();
+        underline.moveTo(
+            showInfoTextBounds.left,
+            showInfoTextBounds.bottom + 1
+        );
+        underline.lineTo(
+            showInfoTextBounds.right,
+            showInfoTextBounds.bottom + 1
+        );
+        underline.strokePath();
+
         this.continueButton = this.add
-            .image(centerX, centerY + 220, "later_btn")
+            .image(centerX, centerY + 220*dpr, "later_btn")
             .setOrigin(0.5)
-            .setDisplaySize(176, 48)
+            .setDisplaySize(176*dpr, 48*dpr)
             .setInteractive({ useHandCursor: true })
             .on("pointerdown", () => this.nextStep());
     }

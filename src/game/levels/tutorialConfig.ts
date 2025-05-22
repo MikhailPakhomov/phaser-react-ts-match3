@@ -20,12 +20,11 @@ export interface TutorialConfig {
     isCompleted: boolean;
 }
 
-
 export const tutorialLevel: TutorialConfig = {
     id: 1,
     name: "Туториал",
-    rows: 7,
-    cols: 7,
+    rows: 8,
+    cols: 8,
     isCompleted: false,
     moves: 10,
     difficult: "easy",
@@ -39,6 +38,7 @@ export const tutorialLevel: TutorialConfig = {
     grid: [
         [
             { type: "energy" },
+            { type: "energy" },
             { type: "smartphone" },
             { type: "message" },
             { type: "sim" },
@@ -47,6 +47,7 @@ export const tutorialLevel: TutorialConfig = {
             { type: "energy" },
         ],
         [
+            { type: "smartphone" },
             { type: "smartphone" },
             { type: "phone" },
             { type: "energy" },
@@ -57,6 +58,7 @@ export const tutorialLevel: TutorialConfig = {
         ],
         [
             { type: "energy" },
+            { type: "energy" },
             { type: "message" },
             { type: "smartphone" },
             { type: "phone" },
@@ -66,6 +68,7 @@ export const tutorialLevel: TutorialConfig = {
         ],
         [
             { type: "energy" },
+            { type: "energy" },
             { type: "smartphone" },
             { type: "energy" },
             { type: "energy" },
@@ -74,6 +77,7 @@ export const tutorialLevel: TutorialConfig = {
             { type: "message" },
         ],
         [
+            { type: "phone" },
             { type: "phone" },
             { type: "smartphone" },
             { type: "phone" },
@@ -83,6 +87,7 @@ export const tutorialLevel: TutorialConfig = {
             { type: "message" },
         ],
         [
+            { type: "energy" },
             { type: "energy" },
             {
                 type: "horizontalHelper",
@@ -97,6 +102,7 @@ export const tutorialLevel: TutorialConfig = {
         ],
         [
             { type: "message" },
+            { type: "message" },
             { type: "smartphone" },
             { type: "sim" },
             { type: "smartphone" },
@@ -105,4 +111,4 @@ export const tutorialLevel: TutorialConfig = {
             { type: "sim" },
         ],
     ],
-}
+};

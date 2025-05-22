@@ -9,6 +9,7 @@ interface CoordLevel {
     tile: GameObjects.Image;
     label: GameObjects.Text;
 }
+const dpr = window.devicePixelRatio || 1;
 export class MainMenu extends Scene {
     mainMenuTitle: Phaser.GameObjects.Text;
     isFirstLevelPlay!: boolean;
@@ -56,12 +57,25 @@ export class MainMenu extends Scene {
         levelEntry.tile?.destroy();
         levelEntry.label?.destroy();
 
-        // опционально — удалим из массива координат:
         this.coordsLevels = this.coordsLevels.filter(
             (entry) => entry.id !== levelId
         );
     }
+
+    music:
+        | Phaser.Sound.WebAudioSound
+        | Phaser.Sound.HTML5AudioSound
+        | Phaser.Sound.NoAudioSound;
     create() {
+        
+        this.time.delayedCall(0, () => {
+            const soundData = this.cache.audio.get("background");
+            if (soundData && !this.music) {
+                this.music = this.sound.add("background", { loop: true, volume: 0.3 });
+                this.music.play();
+            }
+        });
+      
         this.game.renderer.config.antialias = true;
 
         const ctx = this.game.canvas.getContext("2d");
@@ -78,8 +92,8 @@ export class MainMenu extends Scene {
 
         const cols = 5;
         const rows = 5;
-        const cellWidth = 64;
-        const cellHeight = 66;
+        const cellWidth = 64*dpr;
+        const cellHeight = 66*dpr;
         const spacing = 0;
 
         const gridWidth = cols * cellWidth + (cols - 1) * spacing;
@@ -101,16 +115,16 @@ export class MainMenu extends Scene {
         this.mainMenuTitle = this.add
             .text(
                 centerX,
-                startY - 70,
+                startY - 70*dpr,
                 "Пройди все уровни, чтобы собрать пазл",
                 {
-                    font: "600 18px Nunito",
+                    font: `600 ${18*dpr}px Nunito`,
                     color: "#ffffff",
                     align: "center",
-                    wordWrap: { width: 278 },
+                    wordWrap: { width: 278*dpr },
                 }
             )
-            .setResolution(2)
+            .setResolution(dpr < 2 ? 2 : dpr)
             .setOrigin(0.5);
 
         this.coordsLevels = [];
@@ -127,183 +141,124 @@ export class MainMenu extends Scene {
         };
 
         if (this.gameOver) {
-            this.mainMenuTitle.destroy();
-            startY = startY - 130;
+            setTimeout(() => {
+                this.sound.add("full_puzzle").play();
+            }, 200);
 
+            this.mainMenuTitle.destroy();
+            startY = startY - 130*dpr;
+
+            this.puzzleFull = this.add.image(
+                centerX,
+                centerY - 130*dpr,
+                "puzzle_full"
+            );
+
+            this.puzzleFull.setDisplaySize(320*dpr, 330*dpr);
+            this.puzzleFull.setOrigin(0.5);
+            this.puzzleFull.setDepth(20);
+            this.puzzleFull.setAlpha(0);
+
+            this.tweens.add({
+                targets: this.puzzleFull,
+                alpha: 1,
+                duration: 1200,
+                ease: "Cubic.easeInOut",
+            });
             const showInfoText = this.add.text(
-                this.cameras.main.centerX - 130,
-                this.cameras.main.centerY + 60,
+                this.cameras.main.centerX - 130*dpr,
+                this.cameras.main.centerY + 60*dpr,
                 "Инструкция по активации промокода",
                 {
-                    font: "600 14px Nunito",
+                    font: `700 ${14*dpr}px Nunito`,
                     color: "#ffffff",
                     align: "center",
                 }
             );
             showInfoText.setInteractive({ useHandCursor: true });
-            showInfoText.setResolution(2);
+            showInfoText.setResolution(dpr < 2 ? 2 : dpr);
             showInfoText.on("pointerdown", () => {
-                this.scene.start("PromoInfo");
+                this.sound.add("click").play();
+                this.scene.pause("MainMenu");
+                this.scene.launch("PromoInfo");
             });
 
+            const showInfoTextBounds = showInfoText.getBounds();
+            const underline = this.add.graphics();
+            underline.lineStyle(1, 0xffffff, 1);
+            underline.beginPath();
+            underline.moveTo(
+                showInfoTextBounds.left,
+                showInfoTextBounds.bottom + 1
+            );
+            underline.lineTo(
+                showInfoTextBounds.right,
+                showInfoTextBounds.bottom + 1
+            );
+            underline.strokePath();
+
             const copyBg = this.add.image(0, 0, "copy_bg");
-            copyBg.setDisplaySize(278, 68);
+            copyBg.setDisplaySize(278*dpr, 68*dpr);
             copyBg.setOrigin(0.5);
 
-            const copyButton = this.add.image(110, 0, "copy_btn");
-            copyButton.setDisplaySize(28, 28);
+            const copyButton = this.add.image(110*dpr, 0, "copy_btn");
+            copyButton.setDisplaySize(28*dpr, 28*dpr);
             copyButton.setOrigin(0.5);
 
-            const copyText = this.add.text(-50, 10, "Скопировать промокод", {
-                font: "600 12px Nunito",
+            const copyText = this.add.text(-50*dpr, 10*dpr, "Скопировать промокод", {
+                font: `600 ${12*dpr}px Nunito`,
                 color: "#0083C4",
             });
             copyText.setOrigin(0.5);
-            copyText.setResolution(2);
+            copyText.setResolution(dpr < 2 ? 2 : dpr);
 
             const promoText = this.add
-                .text(-65, -10, "YOTA2025", {
-                    font: "800 20px Nunito",
+                .text(-65*dpr, -10*dpr, "YOTA2025", {
+                    font: `800 ${20*dpr}px Nunito`,
                     color: "#0083C4",
                 })
                 .setOrigin(0.5)
-                .setResolution(2);
+                .setResolution(dpr < 2 ? 2 : dpr);
 
-            const copyContainer = this.add.container(centerX, centerY + 140, [
+            const copyContainer = this.add.container(centerX, centerY + 140*dpr, [
                 copyBg,
                 copyButton,
                 copyText,
                 promoText,
             ]);
 
-            copyContainer.setDisplaySize(278, 68);
+            copyContainer.setDisplaySize(278*dpr, 68*dpr);
             copyContainer.setScale(1);
 
             copyContainer
                 .setInteractive(
-                    new Phaser.Geom.Rectangle(-140, -35, 278, 68),
+                    new Phaser.Geom.Rectangle(-140*dpr, -35*dpr, 278*dpr, 68*dpr),
                     Phaser.Geom.Rectangle.Contains
                 )
                 .on("pointerover", () => this.input.setDefaultCursor("pointer"))
                 .on("pointerout", () => this.input.setDefaultCursor("default"))
                 .on("pointerdown", () => {
-                    navigator.clipboard
+                    this.sound.add("click").play();
+                    if (navigator.clipboard && navigator.clipboard.writeText){
+                        navigator.clipboard
                         .writeText("YOTA2025")
                         .then(() => {
-
                             copyText.setText("Скопировано");
-                            copyText.setPosition(-75, 10);
+                            copyText.setPosition(-75*dpr, 10*dpr);
                             copyText.setOrigin(0.5);
 
                             setTimeout(() => {
                                 copyText.setText("Скопировать промокод");
-                                copyText.setPosition(-50, 10);
+                                copyText.setPosition(-50*dpr, 10*dpr);
                             }, 3000);
                         })
                         .catch((err) => {
                             console.error("Ошибка копирования:", err);
                             copyText.setText("Ошибка ❌");
                         });
+                    }
+
                 });
-            // this.puzzleFull = this.add.image(centerX, centerY, "puzzle_full");
-            // this.puzzleFull.setDisplaySize(320, 360);
-            // this.puzzleFull.setOrigin(0.5);
-            // this.puzzleFull.setDepth(20);
-            // this.puzzleFull.setAlpha(0);
-
-            // this.tweens.add({
-            //     targets: this.puzzleFull,
-            //     alpha: 1,
-            //     duration: 1200,
-            //     ease: "Cubic.easeInOut",
-            //     onComplete: () => {
-            //         setTimeout(() => {
-            //             const overlay = this.add.image(
-            //                 this.cameras.main.centerX,
-            //                 this.cameras.main.centerY,
-            //                 "tutorial_overlay"
-            //             );
-            //             overlay.setDisplaySize(
-            //                 this.cameras.main.width + 10,
-            //                 this.cameras.main.height + 10
-            //             );
-            //             overlay.setOrigin(0.5);
-            //             overlay.setDepth(100);
-
-            //             const bgInfo = this.add.image(
-            //                 this.cameras.main.centerX,
-            //                 this.cameras.main.centerY - 20,
-            //                 "info_promo_bg"
-            //             );
-            //             bgInfo.setDisplaySize(300, 512);
-            //             bgInfo.setOrigin(0.5);
-            //             bgInfo.setDepth(1001);
-
-            //             const infoPromoTitle = this.add.text(
-            //                 this.cameras.main.centerX,
-            //                 this.cameras.main.centerY - 230,
-            //                 "Инструкция по активации промокода",
-            //                 {
-            //                     font: "800 20px Nunito",
-            //                     color: "#ffffff",
-            //                     align: "center",
-            //                     wordWrap: { width: 252 },
-            //                 }
-            //             );
-            //             infoPromoTitle.setOrigin(0.5);
-            //             infoPromoTitle.setDepth(1001);
-            //             infoPromoTitle.setResolution(2);
-
-            //             const infoPromoText = this.add.text(
-            //                 this.cameras.main.centerX,
-            //                 this.cameras.main.centerY - 70,
-            //                 "1. Lorem ipsum dolor sit amet, consectetuer adipiscing elit. \n2. Aenean commodo ligula eget dolor. Aenean massa. \n3. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.\n4. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim.\n5. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu.",
-            //                 {
-            //                     font: "600 16px Nunito",
-            //                     color: "#ffffff",
-            //                     wordWrap: { width: 252 },
-            //                 }
-            //             );
-
-            //             infoPromoText.setOrigin(0.5);
-            //             infoPromoText.setDepth(1001);
-            //             infoPromoText.setResolution(2);
-
-            //             const activateBtn = this.add.image(
-            //                 this.cameras.main.centerX,
-            //                 this.cameras.main.centerY + 120,
-            //                 "activate_btn"
-            //             );
-            //             console.log(this.isInputLocked);
-            //             activateBtn.setOrigin(0.5);
-            //             activateBtn.setDepth(1001);
-            //             activateBtn.setScale(0.333);
-            //             activateBtn.setInteractive({ useHandCursor: true });
-            //             activateBtn.on("pointerdown", () => {
-            //                 console.log(111);
-            //                 window.open("https://www.yota.ru/");
-            //             });
-
-            //             const toMainBtn = this.add.image(
-            //                 this.cameras.main.centerX,
-            //                 this.cameras.main.centerY + 180,
-            //                 "main_menu_btn"
-            //             );
-            //             toMainBtn.setOrigin(0.5);
-            //             toMainBtn.setScale(0.333);
-            //             toMainBtn.setDepth(1001);
-            //             toMainBtn.setInteractive({ useHandCursor: true });
-            //             toMainBtn.on("pointerdown", () => {
-            //                 overlay.destroy();
-            //                 bgInfo.destroy();
-            //                 infoPromoTitle.destroy();
-            //                 infoPromoText.destroy();
-            //                 activateBtn.destroy();
-            //                 toMainBtn.destroy();
-            //             });
-            //         }, 2000);
-            //     },
-            // });
         }
 
         this.levelsArray.forEach((level, index) => {
@@ -338,6 +293,7 @@ export class MainMenu extends Scene {
                     () => {
                         if (this.isInputLocked) return;
 
+                        this.sound.add("click").play();
                         if (this.isFirstLevelPlay) {
                             this.scene.stop("MainMenu");
                             this.scene.start("Tutorial", {
@@ -367,10 +323,10 @@ export class MainMenu extends Scene {
 
                 label = this.add
                     .text(x, y, `${level.id}`, {
-                        font: "800 24px Nunito",
+                        font: `800 ${24*dpr}px Nunito`,
                         color: levelTextColor[level.difficult],
                     })
-                    .setResolution(2)
+                    .setResolution(dpr < 2 ? 2 : dpr)
                     .setOrigin(0.5);
             }
 
@@ -385,11 +341,12 @@ export class MainMenu extends Scene {
 
         const logo = this.add.image(
             centerX,
-            this.cameras.main.height - 120,
+            this.cameras.main.height - 120*dpr,
             "logo"
         );
         logo.setOrigin(0.5);
         logo.setDepth(1);
+        logo.setScale(0.333 * dpr);
 
         if (this.isShowInfo) {
             this.isInputLocked = true;
@@ -408,55 +365,56 @@ export class MainMenu extends Scene {
 
             const bgInfo = this.add.image(
                 this.cameras.main.centerX,
-                this.cameras.main.centerY - 20,
+                this.cameras.main.centerY - 20*dpr,
                 "info_bg"
             );
-            bgInfo.setDisplaySize(300, 244);
+            bgInfo.setDisplaySize(300*dpr, 244*dpr);
             bgInfo.setOrigin(0.5);
             bgInfo.setDepth(1001);
 
             const infoTitle = this.add.text(
                 this.cameras.main.centerX,
-                this.cameras.main.centerY - 85,
+                this.cameras.main.centerY - 85*dpr,
                 "Это бета-версия игры, возможны ошибки",
                 {
-                    font: "800 20px Nunito",
-                    color: "#ffffff",
+                    font: `800 ${20*dpr}px Nunito`,
+                    color: "#434C5D",
                     align: "center",
-                    wordWrap: { width: 300 },
+                    wordWrap: { width: 300*dpr },
                 }
             );
             infoTitle.setOrigin(0.5);
             infoTitle.setDepth(1002);
-            infoTitle.setResolution(2);
+            infoTitle.setResolution(dpr < 2 ? 2 : dpr);
 
             const infoText = this.add.text(
                 this.cameras.main.centerX,
-                this.cameras.main.centerY - 35,
+                this.cameras.main.centerY - 35*dpr,
                 "Мы продолжаем улучшать игру, чтобы играть было приятнее!",
                 {
-                    font: "600 16px Nunito",
-                    color: "#ffffff",
+                    font: `600 ${16*dpr}px Nunito`,
+                    color: "#434C5D",
                     align: "center",
-                    wordWrap: { width: 300 },
+                    wordWrap: { width: 300*dpr },
                 }
             );
             infoText.setOrigin(0.5);
             infoText.setDepth(1002);
-            infoText.setResolution(2);
+            infoText.setResolution(dpr < 2 ? 2 : dpr);
 
             const infoBtn = this.add
                 .image(
                     this.cameras.main.centerX,
-                    this.cameras.main.centerY + 40,
+                    this.cameras.main.centerY + 40*dpr,
                     "info_btn"
                 )
                 .setOrigin(0.5)
-                .setDisplaySize(196, 48)
+                .setDisplaySize(196*dpr, 48*dpr)
                 .setDepth(1002)
                 .setInteractive({ useHandCursor: true })
                 .on("pointerdown", () => {
                     this.isInputLocked = false;
+                    this.sound.add("click").play();
                     window.localStorage.setItem(
                         "isShowInfo",
                         JSON.stringify(false)
@@ -466,7 +424,9 @@ export class MainMenu extends Scene {
                 });
         }
 
-        if (this.isFinal && this.completedCount === 25) {
+        if (this.completedCount === 25) {
+            if (this.gameOver) return;
+
             this.scene.stop("MainMenu", {});
             this.scene.start("WinScene", {
                 isFinal: true,
@@ -478,10 +438,10 @@ export class MainMenu extends Scene {
             console.log(this.levelId);
             this.puzzle = this.add.image(
                 centerX,
-                centerY - 100,
+                centerY - 100*dpr,
                 `puzzle_${this.levelId}`
             );
-            this.puzzle.setDisplaySize(172, 192);
+            this.puzzle.setDisplaySize(172*dpr, 192*dpr);
             this.puzzle.setOrigin(0.5);
             this.puzzle.setDepth(10);
 
@@ -493,12 +453,14 @@ export class MainMenu extends Scene {
                 currentLevelcoords.tile.disableInteractive();
                 currentLevelcoords.label.destroy();
             }
-
+            setTimeout(() => {
+                this.sound.add("move_puzzle").play();
+            }, 200);
             this.tweens.add({
                 targets: this.puzzle,
                 x: currentLevelcoords?.x,
                 y: currentLevelcoords?.y,
-                scale: 0.3,
+                scale: 0.333*dpr,
                 duration: 700,
                 ease: "Cubic.easeInOut",
                 onComplete: () => {
@@ -523,16 +485,14 @@ export class MainMenu extends Scene {
                         );
                     }
                     this.completedCount++;
-
-                    window.localStorage.setItem(
-                        "completedCount",
-                        JSON.stringify(this.completedCount)
-                    );
-
                     if (this.completedCount === 25) {
+                        if (this.gameOver) return;
+
+                        this.scene.stop("MainMenu", {});
                         this.scene.start("WinScene", {
                             isFinal: true,
                         });
+                        return;
                     }
                 },
             });
@@ -547,16 +507,6 @@ export class MainMenu extends Scene {
         if (data.isShowInfoPromo) {
             this.isShowInfoPromo = data.isShowInfoPromo;
         }
-
-        // if (data.isShowInfoPromo) {
-        //     this.isFinal = false;
-        // } else {
-        //     this.isFinal = JSON.parse(window.localStorage.getItem("isFinal"));
-        //     if (this.isFinal === null) {
-        //         this.isFinal = false;
-        //         window.localStorage.setItem("isFinal", JSON.stringify(false));
-        //     }
-        // }
 
         this.isFirstLaunch = JSON.parse(
             window.localStorage.getItem("isFirstLaunch")
@@ -588,8 +538,7 @@ export class MainMenu extends Scene {
 
         this.gameOver = JSON.parse(window.localStorage.getItem("gameOver"));
         if (!this.gameOver) {
-            window.localStorage.setItem("gameOver", JSON.stringify(false));
-            this.gameOver = JSON.parse(window.localStorage.getItem("gameOver"));
+            this.gameOver = false;
         }
 
         this.levelsArray = JSON.parse(window.localStorage.getItem("levels"));
@@ -600,14 +549,12 @@ export class MainMenu extends Scene {
             );
         }
 
-        this.completedCount = JSON.parse(
-            window.localStorage.getItem("completedCount")
-        );
-        if (!this.completedCount) {
-            window.localStorage.setItem("completedCount", JSON.stringify(0));
-            this.completedCount = JSON.parse(
-                window.localStorage.getItem("completedCount")
-            );
-        }
+        this.completedCount = this.levelsArray.reduce((count, level) => {
+            if (level.isCompleted) {
+                count++;
+            }
+            return count;
+        }, 0);
+        console.log(this.completedCount);
     }
 }

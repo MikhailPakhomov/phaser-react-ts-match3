@@ -4,6 +4,7 @@ import { delayPromise, tweenPromise } from "../utils/tween-utils";
 import { LevelConfig, LevelGoal } from "../levels/levelConfig";
 
 const dpr = window.devicePixelRatio || 1;
+
 export class Game extends Scene {
     levelConfig!: LevelConfig;
     remainingMoves!: number;
@@ -33,8 +34,8 @@ export class Game extends Scene {
 
     levelCompleted = false;
 
-    cellSize = 48;
-    gap = 2;
+    cellSize = 48 * dpr;
+    gap = 2 * dpr;
 
     rows: number;
     cols: number;
@@ -112,7 +113,10 @@ export class Game extends Scene {
                     const dy = Math.abs(y1 - y2);
 
                     if ((dx === 1 && dy === 0) || (dx === 0 && dy === 1)) {
-                        this.selectedTile.setDisplaySize(baseSize, baseSize);
+                        this.selectedTile.setDisplaySize(
+                            baseSize - 5 * dpr,
+                            baseSize - 5 * dpr
+                        );
                         await this.basicSwap(this.selectedTile, tile);
 
                         if (helperType === "discoball") {
@@ -129,7 +133,10 @@ export class Game extends Scene {
                         this.selectedTile = null;
                         return;
                     } else {
-                        this.selectedTile.setDisplaySize(baseSize, baseSize);
+                        this.selectedTile.setDisplaySize(
+                            baseSize - 5 * dpr,
+                            baseSize - 5 * dpr
+                        );
                         await this.activateHelperChain([tile]);
                         this.selectedTile = null;
                         return;
@@ -163,7 +170,10 @@ export class Game extends Scene {
 
             if (tile === this.selectedTile) {
                 this.tweens.remove(this.selectedTileTween);
-                this.selectedTile.setDisplaySize(baseSize, baseSize);
+                this.selectedTile.setDisplaySize(
+                    baseSize - 5 * dpr,
+                    baseSize - 5 * dpr
+                );
                 this.selectedTile = null;
                 this.selectedTileTween = null;
                 return;
@@ -179,13 +189,19 @@ export class Game extends Scene {
 
             if ((dx === 1 && dy === 0) || (dx === 0 && dy === 1)) {
                 this.tweens.remove(this.selectedTileTween);
-                this.selectedTile.setDisplaySize(baseSize, baseSize);
+                this.selectedTile.setDisplaySize(
+                    baseSize - 5 * dpr,
+                    baseSize - 5 * dpr
+                );
                 await this.swapTiles(this.selectedTile, tile);
                 this.selectedTile = null;
                 this.selectedTileTween = null;
             } else {
                 this.tweens.remove(this.selectedTileTween);
-                this.selectedTile.setDisplaySize(baseSize, baseSize);
+                this.selectedTile.setDisplaySize(
+                    baseSize - 5 * dpr,
+                    baseSize - 5 * dpr
+                );
                 this.selectedTile = tile;
                 this.selectedTileTween = this.tweens.add(selectedAnimation);
             }
@@ -258,6 +274,7 @@ export class Game extends Scene {
         tileA: Phaser.GameObjects.Sprite,
         tileB: Phaser.GameObjects.Sprite
     ) {
+        this.sound.play("move_tile");
         const xA = tileA.getData("gridX");
         const yA = tileA.getData("gridY");
         const xB = tileB.getData("gridX");
@@ -307,7 +324,7 @@ export class Game extends Scene {
 
         if (tileA.getData("isHelper") || tileB.getData("isHelper")) return;
 
-        const displaySize = this.cellSize * this.scaleFactor;
+        const displaySize = this.cellSize - 5 * dpr;
 
         tileA.setDisplaySize(displaySize, displaySize);
         tileB.setDisplaySize(displaySize, displaySize);
@@ -499,6 +516,8 @@ export class Game extends Scene {
     }
 
     async removeMatches(matches: Phaser.GameObjects.Sprite[][]): Promise<void> {
+        this.sound.play("remove_tile");
+
         const tweens: Promise<void>[] = [];
         const tilesToDestroyLater: Phaser.GameObjects.Sprite[] = [];
         const damagedTiles = new Set<Phaser.GameObjects.Sprite>();
@@ -514,6 +533,9 @@ export class Game extends Scene {
             { dx: 0, dy: 1 },
         ];
 
+        let iceSoundPlayed = false;
+        let boxSoundPlayed = false;
+
         for (const group of matches) {
             for (const tile of group) {
                 const x = tile.getData("gridX");
@@ -528,6 +550,10 @@ export class Game extends Scene {
                     if (!neighbor || damagedTiles.has(neighbor)) continue;
 
                     if (neighbor.getData("ice")) {
+                        if (!iceSoundPlayed) {
+                            this.sound.play("ice");
+                            iceSoundPlayed = true;
+                        }
                         const ice = neighbor.getData("ice");
                         const iceSprite = neighbor.getData("iceSprite");
                         if (ice.strength > 1) {
@@ -544,6 +570,10 @@ export class Game extends Scene {
                     }
 
                     if (neighbor.getData("box")) {
+                        if (!boxSoundPlayed) {
+                            this.sound.play("box");
+                            boxSoundPlayed = true;
+                        }
                         const box = neighbor.getData("box");
                         const sprite =
                             neighbor.getData("boxSprite") || neighbor;
@@ -635,7 +665,8 @@ export class Game extends Scene {
         tile: Phaser.GameObjects.Sprite,
         size?: number,
         tweens?: Promise<void>[],
-        tilesToDestroyLater?: Phaser.GameObjects.Sprite[]
+        tilesToDestroyLater?: Phaser.GameObjects.Sprite[],
+        isDiscoBall?: boolean
     ): Promise<void> {
         if (!tile || typeof tile.getData !== "function") return;
 
@@ -674,10 +705,9 @@ export class Game extends Scene {
                     y: targetY,
                     scale: 0,
                     alpha: 0.9,
-                    duration: 550,
+                    duration: 400,
                     ease: "Cubic.easeIn",
                     onComplete: () => {
-                        console.log(type);
                         this.updateGoalProgress(type);
                         this.checkWin();
                         clone.destroy();
@@ -701,6 +731,9 @@ export class Game extends Scene {
                 duration: 100,
                 ease: "Power1",
                 onComplete: () => {
+                    if (!isDiscoBall) {
+                        this.sound.play("remove_tile");
+                    }
                     this.spawnTileParticles(tile.x, tile.y, type);
                 },
             });
@@ -746,27 +779,27 @@ export class Game extends Scene {
         const textureKey = `particle_${type}`;
 
         const particles = this.add.particles(0, 0, textureKey, {
-            x: { min: -12, max: 12 },
-            y: { min: -12, max: 12 },
+            x: { min: -12 * dpr, max: 12 * dpr },
+            y: { min: -12 * dpr, max: 12 * dpr },
             speed: { min: 10, max: 20 },
             angle: { min: 0, max: 360 },
-            scale: { start: 0.8, end: 0 },
+            scale: { start: 0.8 * dpr, end: 0 },
             alpha: { start: 0.8, end: 0 },
             lifespan: 200,
-            gravityY: 50,
+            gravityY: 50 * dpr,
             quantity: 5,
             blendMode: "NORMAL",
         });
 
         const blackParticles = this.add.particles(0, 0, `particle_black`, {
-            x: { min: -12, max: 12 },
-            y: { min: -12, max: 12 },
+            x: { min: -12 * dpr, max: 12 * dpr },
+            y: { min: -12 * dpr, max: 12 * dpr },
             speed: { min: 10, max: 15 },
             angle: { min: 0, max: 360 },
-            scale: { start: 0.8, end: 0 },
+            scale: { start: 0.8 * dpr, end: 0 },
             alpha: { start: 0.8, end: 0 },
             lifespan: 50,
-            gravityY: 50,
+            gravityY: 50 * dpr,
             quantity: 3,
             blendMode: "NORMAL",
         });
@@ -791,6 +824,8 @@ export class Game extends Scene {
             tileB: { x: number; y: number };
         }
     ): Promise<void> {
+        this.sound.play("move_tile");
+
         const { tileA: oldA, tileB: oldB } = coords;
 
         this.grid[oldA.y][oldA.x] = tileA;
@@ -833,6 +868,7 @@ export class Game extends Scene {
     }
 
     async dropTiles(): Promise<void> {
+        this.sound.play("move_tile");
         const tweens: Promise<void>[] = [];
         const gap = this.gap;
         const size = this.cellSize;
@@ -915,6 +951,7 @@ export class Game extends Scene {
     }
 
     async fillEmptyTiles(): Promise<void> {
+        this.sound.play("move_tile");
         const gap = this.gap;
         const cellSize = this.cellSize;
         const tweenPromises: Promise<void>[] = [];
@@ -931,8 +968,8 @@ export class Game extends Scene {
                     );
                     sprite.setOrigin(0.5);
                     sprite.setDisplaySize(
-                        cellSize * this.scaleFactor - 5,
-                        cellSize * this.scaleFactor - 5
+                        cellSize * this.scaleFactor - 5 * dpr,
+                        cellSize * this.scaleFactor - 5 * dpr
                     );
                     sprite.setInteractive();
                     sprite.setData("gridX", x);
@@ -1058,12 +1095,12 @@ export class Game extends Scene {
         let sprite: Phaser.GameObjects.Sprite | Phaser.GameObjects.Container;
 
         if (type === "verticalHelper") {
-            sprite = this.createDoubleRocketVertical(posX, posY, 10);
+            sprite = this.createDoubleRocketVertical(posX, posY);
         } else if (type === "horizontalHelper") {
-            sprite = this.createDoubleRocketHorizontal(posX, posY, 10);
+            sprite = this.createDoubleRocketHorizontal(posX, posY);
         } else if (type === "discoball") {
             const from = this.cellSize;
-            const to = this.cellSize - 10;
+            const to = this.cellSize - 10 * dpr;
 
             sprite = this.add.sprite(posX, posY, type);
             sprite.setOrigin(0.5);
@@ -1108,8 +1145,8 @@ export class Game extends Scene {
                 (child) => "setDisplaySize" in child
             ) as Phaser.GameObjects.Sprite[];
 
-            const toW = 34;
-            const toH = 15;
+            const toW = 34 * dpr;
+            const toH = 15 * dpr;
 
             for (const rocket of targets) {
                 this.tweens.add({
@@ -1194,7 +1231,11 @@ export class Game extends Scene {
         const damagedIce = new Set<string>();
         const damagedBoxes = new Set<string>();
 
-        const damageIceAt = (x: number, y: number): boolean => {
+        const damageIceAt = (
+            x: number,
+            y: number,
+            playIceSoundOnce: () => void
+        ): boolean => {
             const tile = this.grid?.[y]?.[x];
             if (!tile) return false;
 
@@ -1207,6 +1248,7 @@ export class Game extends Scene {
 
             damagedIce.add(key);
 
+            playIceSoundOnce();
             if (ice.strength > 1) {
                 ice.strength--;
                 if (iceSprite) iceSprite.setTexture("ice_cracked");
@@ -1217,7 +1259,11 @@ export class Game extends Scene {
             return true;
         };
 
-        const damageBoxAt = (x: number, y: number): boolean => {
+        const damageBoxAt = (
+            x: number,
+            y: number,
+            playBoxSoundOnce: () => void
+        ): boolean => {
             const tile = this.grid?.[y]?.[x];
             if (!tile) return false;
 
@@ -1228,6 +1274,7 @@ export class Game extends Scene {
             if (damagedBoxes.has(key)) return true;
 
             damagedBoxes.add(key);
+            playBoxSoundOnce();
 
             if (box.strength > 1) {
                 box.strength--;
@@ -1296,6 +1343,7 @@ export class Game extends Scene {
                 damageBoxAt
             );
         } else if (type === "discoball") {
+            this.sound.play("discoball");
             this.cameras.main.shake(200, 0.02);
             if (!typeToRemove) {
                 await tweenPromise(this, {
@@ -1355,6 +1403,7 @@ export class Game extends Scene {
         damageIceAt: Function,
         damageBoxAt: Function
     ): Promise<void> {
+        this.sound.play("rocket");
         const cellSize = this.cellSize;
         const spacing = this.gap;
         const baseY = this.offsetY + row * (cellSize + spacing) + cellSize / 2;
@@ -1381,30 +1430,41 @@ export class Game extends Scene {
 
         const launchRocket = async (startX: number, direction: number) => {
             const rocket = this.add.sprite(startX, baseY, "rocket");
-            rocket.setDisplaySize(37, 17);
+            rocket.setDisplaySize(37 * dpr, 17 * dpr);
             rocket.setOrigin(0.5);
             rocket.setAngle(direction < 0 ? 0 : 180);
             rocket.setDepth(999);
 
             const rocketTrail = this.add.particles(0, 0, "rocketTrail", {
-                speed: 0, 
+                speed: 0,
                 lifespan: 400,
                 frequency: 30,
                 quantity: 1,
-                scale: { start: 1.3, end: 0 },
+                scale: { start: 1.3 * dpr, end: 0 },
                 alpha: { start: 1, end: 0 },
                 blendMode: "ADD",
-            
-                rotate: direction < 0 ? 0 : 180, 
-                angle: direction < 0 ? 180 : 0   
+
+                rotate: direction < 0 ? 0 : 180,
+                angle: direction < 0 ? 180 : 0,
             });
             rocketTrail.setDepth(1000);
             rocketTrail.startFollow(rocket);
-            
-            
 
             let x = col;
 
+            const playBoxSoundOnce = () => {
+                if (!boxDamageSoundPlayed) {
+                    boxDamageSoundPlayed = true;
+                    this.sound.play("box");
+                }
+            };
+
+            const playIceSoundOnce = () => {
+                if (!iceDamageSoundPlayed) {
+                    iceDamageSoundPlayed = true;
+                    this.sound.play("ice");
+                }
+            };
             while (x >= 0 && x < this.grid[0].length) {
                 const targetX =
                     this.offsetX + x * (cellSize + spacing) + cellSize / 2;
@@ -1421,8 +1481,8 @@ export class Game extends Scene {
                     const tx = tile.getData("gridX");
                     const ty = tile.getData("gridY");
 
-                    const boxWasDamaged = damageBoxAt(tx, ty);
-                    const iceWasDamaged = damageIceAt(tx, ty);
+                    const boxWasDamaged = damageBoxAt(tx, ty, playBoxSoundOnce);
+                    const iceWasDamaged = damageIceAt(tx, ty, playIceSoundOnce);
                     const stillHasBox = tile.getData("box");
                     const stillHasIce = tile.getData("ice");
 
@@ -1437,6 +1497,7 @@ export class Game extends Scene {
                             triggerHelper(tile);
                         } else {
                             const type = tile.getData("type");
+
                             const isTarget =
                                 type === "box"
                                     ? this.levelConfig.goals.some(
@@ -1494,6 +1555,8 @@ export class Game extends Scene {
             this.time.delayedCall(300, () => rocketTrail.destroy());
             rocket.destroy();
         };
+        let boxDamageSoundPlayed = false;
+        let iceDamageSoundPlayed = false;
 
         await Promise.all([
             launchRocket(
@@ -1522,6 +1585,7 @@ export class Game extends Scene {
         damageIceAt: Function,
         damageBoxAt: Function
     ): Promise<void> {
+        this.sound.play("rocket");
         const cellSize = this.cellSize;
         const spacing = this.gap;
         const baseX = this.offsetX + col * (cellSize + spacing) + cellSize / 2;
@@ -1544,28 +1608,39 @@ export class Game extends Scene {
         const launchRocket = async (startY: number, direction: number) => {
             const rocket = this.add.sprite(baseX, startY, "rocket");
             rocket.setOrigin(0.5);
-            rocket.setDisplaySize(37, 17);
+            rocket.setDisplaySize(37 * dpr, 17 * dpr);
 
             rocket.setAngle(direction < 0 ? 90 : -90);
             rocket.setDepth(999);
 
             const rocketTrail = this.add.particles(0, 0, "rocketTrail", {
-                speed: 0, 
+                speed: 0,
                 lifespan: 300,
                 frequency: 30,
                 quantity: 1,
-                scale: { start: 1, end: 0 },
+                scale: { start: 1.3 * dpr, end: 0 },
                 alpha: { start: 1, end: 0 },
                 blendMode: "ADD",
-        
-                
-                rotate: direction < 0 ? 90 : 270
+
+                rotate: direction < 0 ? 90 : 270,
             });
-        
+
             rocketTrail.setDepth(998);
             rocketTrail.startFollow(rocket);
 
             let y = row;
+            const playIceSoundOnce = () => {
+                if (!iceDamageSoundPlayed) {
+                    iceDamageSoundPlayed = true;
+                    this.sound.play("ice");
+                }
+            };
+            const playBoxSoundOnce = () => {
+                if (!boxDamageSoundPlayed) {
+                    boxDamageSoundPlayed = true;
+                    this.sound.play("box"); // название звука
+                }
+            };
 
             while (y >= 0 && y < this.grid.length) {
                 const targetY =
@@ -1583,8 +1658,8 @@ export class Game extends Scene {
                     const tx = tile.getData("gridX");
                     const ty = tile.getData("gridY");
 
-                    const boxWasDamaged = damageBoxAt(tx, ty);
-                    const iceWasDamaged = damageIceAt(tx, ty);
+                    const boxWasDamaged = damageBoxAt(tx, ty, playBoxSoundOnce);
+                    const iceWasDamaged = damageIceAt(tx, ty, playIceSoundOnce);
                     const stillHasBox = tile.getData("box");
                     const stillHasIce = tile.getData("ice");
 
@@ -1657,6 +1732,8 @@ export class Game extends Scene {
             rocket.destroy();
         };
 
+        let boxDamageSoundPlayed = false;
+        let iceDamageSoundPlayed = false;
         await Promise.all([
             launchRocket(
                 this.offsetY + row * (cellSize + spacing) + cellSize / 2,
@@ -1917,9 +1994,15 @@ export class Game extends Scene {
         );
 
         matchedTiles.forEach((tile) => {
-            this.animateAndRemoveMatchesGoals(tile, targetSize, tweenPromises);
+            this.animateAndRemoveMatchesGoals(
+                tile,
+                targetSize,
+                tweenPromises,
+                [],
+                true
+            );
         });
-
+        this.sound.play("remove_tile");
         this.grid[centerY][centerX] = null;
 
         tweenPromises.push(
@@ -2144,7 +2227,7 @@ export class Game extends Scene {
 
         const iceSprite = this.add.sprite(sprite.x, sprite.y, textureKey);
         iceSprite.setOrigin(0.5);
-        iceSprite.setDisplaySize(48, 48);
+        iceSprite.setDisplaySize(48 * dpr, 48 * dpr);
         iceSprite.setDepth(10);
         iceSprite.setAlpha(0.7);
         iceSprite.disableInteractive();
@@ -2157,15 +2240,16 @@ export class Game extends Scene {
         y: number,
         initialSize = 34
     ): Phaser.GameObjects.Container {
+        console.log("privet");
         const height = initialSize * (15 / 34); // сохраняем соотношение
 
-        const rocketLeft = this.add.sprite(-8, 0, "rocket");
-        rocketLeft.setDisplaySize(initialSize, height);
+        const rocketLeft = this.add.sprite(-8 * dpr, 0, "rocket");
+        rocketLeft.setDisplaySize(initialSize * dpr, height * dpr);
         rocketLeft.setAngle(-90);
         rocketLeft.setOrigin(0.5);
 
-        const rocketRight = this.add.sprite(8, 0, "rocket");
-        rocketRight.setDisplaySize(initialSize, height);
+        const rocketRight = this.add.sprite(8 * dpr, 0, "rocket");
+        rocketRight.setDisplaySize(initialSize * dpr, height * dpr);
         rocketRight.setAngle(90);
         rocketRight.setOrigin(0.5);
 
@@ -2192,13 +2276,13 @@ export class Game extends Scene {
     ): Phaser.GameObjects.Container {
         const height = initialSize * (15 / 34); // сохраняем пропорции
 
-        const rocketTop = this.add.sprite(0, 8, "rocket");
-        rocketTop.setDisplaySize(initialSize, height);
+        const rocketTop = this.add.sprite(0, 8 * dpr, "rocket");
+        rocketTop.setDisplaySize(initialSize * dpr, height * dpr);
         rocketTop.setAngle(0);
         rocketTop.setOrigin(0.5);
 
-        const rocketBottom = this.add.sprite(0, -8, "rocket");
-        rocketBottom.setDisplaySize(initialSize, height);
+        const rocketBottom = this.add.sprite(0, -8 * dpr, "rocket");
+        rocketBottom.setDisplaySize(initialSize * dpr, height * dpr);
         rocketBottom.setAngle(180);
         rocketBottom.setOrigin(0.5);
 
@@ -2235,12 +2319,12 @@ export class Game extends Scene {
         );
     }
     createGoalsPanel(goals: LevelGoal[]) {
-        const panelY = this.offsetY - 40;
+        const panelY = this.offsetY - 40 * dpr;
         const centerX = this.cameras.main.centerX;
 
         const panelWidth =
             this.cellSize * goals.length + this.gap + this.cellSize / 2;
-        const panelHeight = 50;
+        const panelHeight = 50 * dpr;
         const cornerRadius = 16;
 
         const bgKey = `goalsPanelBg_${goals.length}`;
@@ -2270,7 +2354,7 @@ export class Game extends Scene {
         background.setOrigin(0.5);
         background.setDepth(10);
 
-        const iconSpacing = 50;
+        const iconSpacing = 50 * dpr;
         const totalWidth = (goals.length - 1) * iconSpacing;
         const startX = centerX - totalWidth / 2;
 
@@ -2280,14 +2364,14 @@ export class Game extends Scene {
             const iconX = startX + index * iconSpacing;
 
             const icon = this.add.sprite(iconX, panelY, goal.type);
-            icon.setDisplaySize(42, 42);
+            icon.setDisplaySize(42 * dpr, 42 * dpr);
             icon.setOrigin(0.5);
             icon.setDepth(11);
 
             const circle = this.add.graphics();
-            const radius = 12;
-            const circleX = iconX + 12;
-            const circleY = panelY + 10;
+            const radius = 12 * dpr;
+            const circleX = iconX + 12 * dpr;
+            const circleY = panelY + 10 * dpr;
 
             circle.fillStyle(0x000000, 1);
             circle.fillCircle(radius, radius, radius);
@@ -2299,13 +2383,13 @@ export class Game extends Scene {
                 circleY,
                 goal.count.toString(),
                 {
-                    font: "800 14px Nunito",
+                    font: `800 ${14 * dpr}px Nunito`,
                     color: "#ffffff",
                 }
             );
             text.setOrigin(0.5);
             text.setDepth(13);
-            text.setResolution(2);
+            text.setResolution(dpr < 2 ? 2 : dpr);
 
             this.goalIcons[goal.type] = {
                 icon,
@@ -2316,14 +2400,23 @@ export class Game extends Scene {
             };
         });
     }
-    updateGoalProgress(type: string) {
+    async updateGoalProgress(type: string) {
         const goal = this.goalIcons?.[type];
         if (!goal) return;
+
 
         goal.current++;
 
         const remaining = Math.max(0, goal.target - goal.current);
         goal.text.setText(remaining.toString());
+
+           
+    this.tweens.killTweensOf(goal.circle);
+    this.tweens.killTweensOf(goal.text);
+
+   
+    goal.circle.setScale(1);
+    goal.text.setScale(1);
 
         this.tweens.add({
             targets: goal.circle,
@@ -2389,6 +2482,36 @@ export class Game extends Scene {
     }
 
     create() {
+        console.log(
+            window.devicePixelRatio,
+            window.innerWidth,
+            window.innerHeight
+        );
+        function applyNearestFilterToAllTextures(scene: Phaser.Scene) {
+            const gl = scene.sys.renderer.gl;
+
+            for (const key in scene.textures.list) {
+                const tex = scene.textures.list[key];
+                const source = tex?.source?.[0];
+
+                if (source && source.glTexture instanceof WebGLTexture) {
+                    gl.bindTexture(gl.TEXTURE_2D, source.glTexture);
+                    gl.texParameteri(
+                        gl.TEXTURE_2D,
+                        gl.TEXTURE_MIN_FILTER,
+                        gl.NEAREST
+                    );
+                    gl.texParameteri(
+                        gl.TEXTURE_2D,
+                        gl.TEXTURE_MAG_FILTER,
+                        gl.NEAREST
+                    );
+                    gl.bindTexture(gl.TEXTURE_2D, null);
+                }
+            }
+        }
+        this.time.delayedCall(0, () => applyNearestFilterToAllTextures(this));
+
         this.holePositions = new Set();
         this.isProcessing = false;
         this.isInputLocked = false;
@@ -2450,7 +2573,7 @@ export class Game extends Scene {
         const gridWidth = cols * (cellSize + gap) - gap;
         const gridHeight = rows * (cellSize + gap) - gap;
 
-        const padding = 40;
+        const padding = 40 * dpr;
         const availableWidth = this.cameras.main.width - padding;
         const availableHeight = this.cameras.main.height - padding;
 
@@ -2544,7 +2667,10 @@ export class Game extends Scene {
                 } else {
                     sprite = this.add.sprite(posX, posY, type);
                     sprite.setOrigin(0.5);
-                    sprite.setDisplaySize(cellSize - 5, cellSize - 5);
+                    sprite.setDisplaySize(
+                        cellSize - 5 * dpr,
+                        cellSize - 5 * dpr
+                    );
                     sprite.setInteractive();
                     sprite.setDepth(5);
                 }
@@ -2567,35 +2693,40 @@ export class Game extends Scene {
         });
 
         this.movesBg = this.add.image(
-            this.offsetX + 50,
-            this.offsetY - 104,
+            this.offsetX + 50 * dpr,
+            this.offsetY - 104 * dpr,
             "moves_bg"
         );
         this.movesBg.setOrigin(0.5);
         this.movesBg.setDepth(100);
-        this.movesBg.setDisplaySize(83, 40);
+        this.movesBg.setDisplaySize(83 * dpr, 40 * dpr);
 
-        this.movesText = this.add.text(this.movesBg.x, this.movesBg.y - 2, "", {
-            font: "800 20px Nunito",
-            color: "#0095ff",
-            fontStyle: "bold",
-        });
+        this.movesText = this.add.text(
+            this.movesBg.x,
+            this.movesBg.y - 2 * dpr,
+            "",
+            {
+                font: `800 ${20 * dpr}px Nunito`,
+                color: "#0095ff",
+            }
+        );
         this.movesText.setOrigin(0.5);
         this.movesText.setDepth(101);
-        this.movesText.setResolution(2);
+        this.movesText.setResolution(dpr < 2 ? 2 : dpr);
 
         this.updateMovesUI();
 
         this.pauseButton = this.add.image(
-            this.offsetX + cellSize * cols - 10,
-            this.offsetY - 104,
+            this.offsetX + cellSize * cols - 10 * dpr,
+            this.offsetY - 104 * dpr,
             "pause"
         );
         this.pauseButton.setOrigin(0.5);
-        this.pauseButton.setInteractive();
+        this.pauseButton.setInteractive({ useHandCursor: true });
         this.pauseButton.setDepth(100);
         this.pauseButton.setDisplaySize(this.cellSize, this.cellSize);
         this.pauseButton.on("pointerdown", () => {
+            this.sound.play("click");
             this.scene.launch("Pause", {
                 cellSize: this.cellSize,
                 offsetX: this.offsetX,
@@ -2609,11 +2740,12 @@ export class Game extends Scene {
 
         const logo = this.add.image(
             this.cameras.main.centerX,
-            this.cameras.main.height - 120,
+            this.cameras.main.height - 120 * dpr,
             "logo"
         );
         logo.setOrigin(0.5);
         logo.setDepth(10);
+        logo.setScale(0.333 * dpr);
 
         EventBus.emit("current-scene-ready", this);
     }

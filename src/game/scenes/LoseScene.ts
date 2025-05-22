@@ -4,6 +4,7 @@ import { EventBus } from "../EventBus";
 import { delayPromise } from "../utils/tween-utils";
 import { LevelConfig } from "../levels/levelConfig";
 
+const dpr = window.devicePixelRatio || 1;
 export class LoseScene extends Scene {
     private step: number = 0;
     private menuButton!: Phaser.GameObjects.Image;
@@ -21,6 +22,7 @@ export class LoseScene extends Scene {
     }
 
     create() {
+        this.sound.play("lose");
         this.game.renderer.config.antialias = true;
 
         const ctx = this.game.canvas.getContext("2d");
@@ -34,11 +36,11 @@ export class LoseScene extends Scene {
         const centerX = this.cameras.main.centerX;
         const centerY = this.cameras.main.centerY;
 
-        const rays = this.add.sprite(centerX, centerY - 120, "win_bg");
-        rays.setAlpha(0.7);
+        const rays = this.add.sprite(centerX, centerY - 120 * dpr, "win_bg");
+        
         rays.setOrigin(0.5);
+        rays.setScale(0.333 * dpr);
 
-        // 🌞 Появление + медленное вращение и пульсация
         this.tweens.add({
             targets: rays,
             alpha: 0.5,
@@ -46,7 +48,6 @@ export class LoseScene extends Scene {
             ease: "Power1",
         });
 
-        // 🌀 Медленное вращение (едва заметное)
         this.tweens.add({
             targets: rays,
             angle: 360,
@@ -55,22 +56,21 @@ export class LoseScene extends Scene {
             repeat: -1,
         });
 
-        // 💫 Лёгкая пульсация масштаба
         this.tweens.add({
             targets: rays,
-            scale: { from: 1, to: 1.2 },
+            scale: { from: 0.333*dpr, to: 0.444*dpr },
             duration: 2000,
             yoyo: true,
             ease: "Sine.easeInOut",
             repeat: -1,
         });
 
-        const sadMobile = this.add.sprite(centerX, centerY - 130, "sad_mobile");
+        const sadMobile = this.add.sprite(centerX, centerY - 130*dpr, "sad_mobile");
         sadMobile.setScale(0);
 
         this.tweens.add({
             targets: sadMobile,
-            scale: 0.35,
+            scale: 0.333*dpr,
             duration: 1000,
             ease: "Cubic.easeInOut",
         });
@@ -85,48 +85,36 @@ export class LoseScene extends Scene {
         });
 
         this.add
-            .text(centerX, centerY + 40, "Ты проиграл", {
-                font: "800 28px Nunito",
+            .text(centerX, centerY + 40*dpr, "Почти получилось!", {
+                font: `800 ${28*dpr}px Nunito`,
                 color: "#ffffff",
                 fontStyle: "bold",
             })
             .setOrigin(0.5)
-            .setResolution(2);
+            .setResolution(dpr < 2 ? 2 : dpr);
 
         this.add
             .text(
                 centerX,
-                centerY + 90,
+                centerY + 90*dpr,
                 `Выбери другой уровень или попробуй снова`,
                 {
-                    font: "600 18px Nunito",
+                    font: `600 ${18*dpr}px Nunito`,
                     color: "#ffffff",
-                    align: "center", // выравнивание
-                    wordWrap: { width: 276, useAdvancedWrap: true },
+                    align: "center",
+                    wordWrap: { width: 276*dpr, useAdvancedWrap: true },
                 }
             )
             .setOrigin(0.5)
-            .setResolution(2);
-
-        // this.continueButton = this.add
-        //     .text(centerX, centerY + 200, "Продолжить", {
-        //         fontFamily: "Nunito",
-        //         fontSize: "18px",
-        //         backgroundColor: "#34c7fd",
-        //         color: "#ffffff",
-        //         padding: { x: 16, y: 8 },
-        //     })
-        //     .setOrigin(0.5)
-        //     .setResolution(2)
-        //     .setInteractive({ useHandCursor: true })
-        //     .on("pointerdown", () => this.scene.start("MainMenu", {}));
+            .setResolution(dpr < 2 ? 2 : dpr);
 
         this.replayButton = this.add
-            .image(centerX, centerY + 200, "replay_btn")
+            .image(centerX, centerY + 200*dpr, "replay_btn")
             .setOrigin(0.5)
-            .setDisplaySize(176, 48)
+            .setDisplaySize(176*dpr, 48*dpr)
             .setInteractive({ useHandCursor: true })
             .on("pointerdown", () => {
+                this.sound.add("click").play();
                 this.tweens.add({
                     targets: sadMobile,
                     scale: 0,
@@ -140,11 +128,12 @@ export class LoseScene extends Scene {
             });
 
         this.menuButton = this.add
-            .image(centerX, centerY + 250, "main_menu_btn")
+            .image(centerX, centerY + 250*dpr, "main_menu_btn")
             .setOrigin(0.5)
-            .setDisplaySize(176, 48)
+            .setDisplaySize(176*dpr, 48*dpr)
             .setInteractive({ useHandCursor: true })
             .on("pointerdown", () => {
+                this.sound.add("click").play();
                 this.tweens.add({
                     targets: sadMobile,
                     scale: 0,
